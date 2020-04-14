@@ -1,1 +1,1 @@
-from ib.store import Store
+from ib.store import IBStore

@@ -3,7 +3,7 @@ from ibapi.client import EClient
 
 import threading
 
-class Store(EWrapper, EClient):
+class IBStore(EWrapper, EClient):
 
     def __init__(self, host='127.0.0.1', port=4001, clientId=1, auto_conn=True):
         self.__host = host

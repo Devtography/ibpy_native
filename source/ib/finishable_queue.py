@@ -1,0 +1,4 @@
+# Queue status
+STARTED = 103
+FINISHED = 200
+TIMEOUT = 408

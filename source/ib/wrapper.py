@@ -1,7 +1,7 @@
 from ibapi.wrapper import EWrapper
+from .finishable_queue import FinishableQueue, STARTED, FINISHED, TIMEOUT
 
 import queue
-import finishable_queue as fq
 
 class IBWrapper(EWrapper):
     """
@@ -14,7 +14,7 @@ class IBWrapper(EWrapper):
     def __init__(self):
         self.__err_queue = queue.Queue()
 
-        super().__init__(self)
+        super().__init__()
 
     # Error handling
     def has_err(self):
@@ -54,4 +54,4 @@ class IBWrapper(EWrapper):
         if reqId not in self.__contract_details_queue.keys():
             self.init_contract_details_queue(reqId)
 
-        self.__contract_details_queue[reqId].put(fq.FINISHED)
+        self.__contract_details_queue[reqId].put(FINISHED)

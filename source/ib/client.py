@@ -1,8 +1,7 @@
 from ibapi.contract import Contract
 from ibapi.client import EClient
-from ib.wrapper import IBWrapper
-
-import ib.finishable_queue as fq
+from .wrapper import IBWrapper
+from .finishable_queue import FinishableQueue, STARTED, FINISHED, TIMEOUT
 
 MAX_WAIT_SECONDS = 10
 
@@ -13,16 +12,16 @@ class IBClient(EClient):
     """
     def __init__(self, wrapper: IBWrapper):
         self.__wrapper = wrapper
-        super().__init__(self, wrapper)
+        super().__init__(wrapper)
 
-    def resolve_contract(self, contract: Contract, req_id: int):
+    def resolve_contract(self, contract: Contract, req_id: int) -> Contract:
         """
         From a partially formed contract, returns a fully fledged version
         :returns fully resolved IB contract
         """
 
         # Make place to store the data that will be returned
-        contract_details_queue = fq.FinishableQueue(
+        contract_details_queue = FinishableQueue(
             self.__wrapper.init_contract_details_queue(req_id)
         )
 
@@ -38,7 +37,7 @@ class IBClient(EClient):
         while self.__wrapper.has_err():
             print(self.__wrapper.get_err())
 
-        if contract_details_queue.get_status() == fq.TIMEOUT:
+        if contract_details_queue.get_status() == TIMEOUT:
             print("Exceed maximum wait for wrapper to confirm finished")
 
         if len(new_contract_details) == 0:

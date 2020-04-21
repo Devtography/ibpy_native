@@ -1,1 +1,1 @@
-from .store import IBStore
+from .bridge import IBBridge

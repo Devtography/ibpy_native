@@ -1,5 +1,5 @@
-from ib.wrapper import IBWrapper
-from ib.client import IBClient
+from .wrapper import IBWrapper
+from .client import IBClient
 
 import threading
 

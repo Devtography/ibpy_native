@@ -5,7 +5,7 @@ from ibapi.contract import Contract
 import unittest
 import threading
 
-class TestClient(unittest.TestCase):
+class TestIBClient(unittest.TestCase):
 
     def setUp(self):
         self.wrapper = wrapper.IBWrapper()
@@ -32,6 +32,3 @@ class TestClient(unittest.TestCase):
 
     def tearDown(self):
         self.client.disconnect()
-
-if __name__ == '__main__':
-    unittest.main()

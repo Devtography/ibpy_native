@@ -1,14 +1,16 @@
+import enum
 import queue
 
 # Queue status
-STARTED = 103
-FINISHED = 200
-TIMEOUT = 408
+class Status(enum.Enum):
+    STARTED = 103
+    FINISHED = 200
+    TIMEOUT = 408
 
 class FinishableQueue(object):
     def __init__(self, queue_to_finish: queue.Queue):
         self.__queue = queue_to_finish
-        self.__status = STARTED
+        self.__status = Status.STARTED
 
     def get(self, timeout: int):
         """"
@@ -23,18 +25,18 @@ class FinishableQueue(object):
             try:
                 current_element = self.__queue.get(timeout=timeout)
 
-                if current_element is FINISHED:
+                if current_element is Status.FINISHED:
                     finished = True
-                    self.__status = FINISHED
+                    self.__status = Status.FINISHED
                 else:
                     contents_of_queue.append(current_element)
                     # then keep going and try and get more data
 
             except queue.Empty:
                 finished = True
-                self.__status = TIMEOUT
+                self.__status = Status.TIMEOUT
 
         return contents_of_queue
 
-    def get_status(self):
+    def get_status(self) -> Status:
         return self.__status

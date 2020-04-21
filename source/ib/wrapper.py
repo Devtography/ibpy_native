@@ -1,5 +1,5 @@
 from ibapi.wrapper import EWrapper
-from .finishable_queue import FinishableQueue, STARTED, FINISHED, TIMEOUT
+from .finishable_queue import FinishableQueue, Status as QStatus
 
 import queue
 
@@ -54,4 +54,4 @@ class IBWrapper(EWrapper):
         if reqId not in self.__contract_details_queue.keys():
             self.init_contract_details_queue(reqId)
 
-        self.__contract_details_queue[reqId].put(FINISHED)
+        self.__contract_details_queue[reqId].put(QStatus.FINISHED)

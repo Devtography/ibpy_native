@@ -1,7 +1,7 @@
 from ibapi.contract import Contract
 from ibapi.client import EClient
 from .wrapper import IBWrapper
-from .finishable_queue import FinishableQueue, STARTED, FINISHED, TIMEOUT
+from .finishable_queue import FinishableQueue, Status as QStatus
 
 MAX_WAIT_SECONDS = 10
 
@@ -37,7 +37,7 @@ class IBClient(EClient):
         while self.__wrapper.has_err():
             print(self.__wrapper.get_err())
 
-        if contract_details_queue.get_status() == TIMEOUT:
+        if contract_details_queue.get_status() == QStatus.TIMEOUT:
             print("Exceed maximum wait for wrapper to confirm finished")
 
         if len(new_contract_details) == 0:

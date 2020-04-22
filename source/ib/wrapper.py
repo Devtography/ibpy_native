@@ -1,4 +1,4 @@
-from ibapi.wrapper import EWrapper
+from ibapi.wrapper import EWrapper, ListOfHistoricalTickLast
 from .finishable_queue import FinishableQueue, Status as QStatus
 
 import queue
@@ -10,6 +10,7 @@ class IBWrapper(EWrapper):
     """
 
     __contract_details_queue = {}
+    __head_timestamp_queue = {}
 
     def __init__(self):
         self.__err_queue = queue.Queue()
@@ -55,3 +56,16 @@ class IBWrapper(EWrapper):
             self.init_contract_details_queue(reqId)
 
         self.__contract_details_queue[reqId].put(QStatus.FINISHED)
+
+    # Get earliest data point for a given instrument and data
+    def init_head_timestamp_queue(self, req_id: int):
+        self.__head_timestamp_queue[req_id] = queue.Queue()
+
+        return self.__head_timestamp_queue[req_id]
+
+    def headTimestamp(self, reqId: int, headTimestamp: str):
+        # override method
+        if reqId not in self.__head_timestamp_queue.keys():
+            self.init_contract_details_queue(reqId)
+
+        self.__head_timestamp_queue[reqId].put(QStatus.FINISHED)

@@ -19,7 +19,7 @@ class IBBridge:
             self.connect()
 
     def is_connected(self) -> bool:
-        return self.__client.isConnected
+        return self.__client.isConnected()
 
     def connect(self):
         if not self.is_connected():

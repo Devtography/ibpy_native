@@ -34,8 +34,7 @@ class IBClient(EClient):
             timeout=MAX_WAIT_SECONDS
         )
 
-        while self.__wrapper.has_err():
-            print(self.__wrapper.get_err())
+        self.__check_error()
 
         if contract_details_queue.get_status() == QStatus.TIMEOUT:
             print("Exceed maximum wait for wrapper to confirm finished")
@@ -52,3 +51,11 @@ class IBClient(EClient):
         resolved_contract = new_contract_details[0].contract
 
         return resolved_contract
+
+    # Private functions
+    def __check_error(self):
+        """
+        Check if the error queue in wrapper contains any error returned from IB
+        """
+        while self.__wrapper.has_err():
+            print(self.__wrapper.get_err())

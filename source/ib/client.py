@@ -3,13 +3,18 @@ from ibapi.client import EClient
 from .wrapper import IBWrapper
 from .finishable_queue import FinishableQueue, Status as QStatus
 
-MAX_WAIT_SECONDS = 10
+import enum
+
+class Const(enum.Enum):
+    MAX_WAIT_SECONDS = 10
+    MSG_TIMEOUT = "Exceed maximum wait for wrapper to confirm finished"
 
 class IBClient(EClient):
     """
     The client calls the native methods from IBWrapper instead of 
     overriding native methods
     """
+
     def __init__(self, wrapper: IBWrapper):
         self.__wrapper = wrapper
         super().__init__(wrapper)
@@ -31,13 +36,13 @@ class IBClient(EClient):
 
         # Run until we get a valid contract(s) or timeout
         new_contract_details = contract_details_queue.get(
-            timeout=MAX_WAIT_SECONDS
+            timeout=Const.MAX_WAIT_SECONDS
         )
 
         self.__check_error()
 
         if contract_details_queue.get_status() == QStatus.TIMEOUT:
-            print("Exceed maximum wait for wrapper to confirm finished")
+            print(Const.MSG_TIMEOUT)
 
         if len(new_contract_details) == 0:
             print("Failed to get additional contract details: \

@@ -1,6 +1,6 @@
 from ibapi.contract import Contract
 from ibapi.client import EClient
-from .wrapper import IBWrapper
+from .wrapper import IBWrapper, IBError
 from .finishable_queue import FinishableQueue, Status as QStatus
 
 import enum
@@ -56,10 +56,48 @@ class IBClient(EClient):
 
         return resolved_contract
 
+    def resolve_head_timestamp(
+        self, contract: Contract, ticker_id: int
+    ) -> str:
+        """
+        Fetch the earliest available data point for a given instrument from IB.
+        :returns 
+        """
+        queue = FinishableQueue(
+            self.__wrapper.init_head_timestamp_queue(ticker_id)
+        )
+
+        print("Getting earliest available data point for the given instrument from IB... ")
+            
+        self.reqHeadTimeStamp(ticker_id, contract, "TRADES", 1, 1)
+
+        head_timestamp=queue.get(timeout=Const.MAX_WAIT_SECONDS.value)
+        
+        self.__check_error()
+
+        if queue.get_status() == QStatus.TIMEOUT:
+            print(Const.MSG_TIMEOUT.value)
+
+        if len(head_timestamp) == 0:
+            print("Failed to get the earliest available data point")
+
+            return None
+
+        if len(head_timestamp) > 1:
+            print("[Abnormal] Multiple result received: returning 1st result")
+
+        return head_timestamp[0]
+
     # Private functions
     def __check_error(self):
         """
         Check if the error queue in wrapper contains any error returned from IB
         """
         while self.__wrapper.has_err():
-            print(self.__wrapper.get_err())
+            err: IBError = self.__wrapper.get_err()
+
+            if err.id == -1:
+                # -1 means a notification not error
+                continue
+            else:
+                print(err)

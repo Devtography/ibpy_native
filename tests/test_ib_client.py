@@ -2,8 +2,13 @@ from source.ib import wrapper
 from source.ib import client
 from ibapi.contract import Contract
 
+import enum
 import unittest
 import threading
+
+class Const(enum.Enum):
+    RID_RESOLVE_CONTRACT = 43
+    RID_RESOLVE_HEAD_TIMESTAMP = 14001
 
 class TestIBClient(unittest.TestCase):
 
@@ -25,10 +30,33 @@ class TestIBClient(unittest.TestCase):
         contract.symbol = "MYM"
         contract.exchange = "ECBOT"
 
-        resolved_contract = self.client.resolve_contract(contract, 43)
+        resolved_contract = self.client.resolve_contract(
+            contract, Const.RID_RESOLVE_CONTRACT.value
+        )
 
         self.assertIsNotNone(resolved_contract)
         print(resolved_contract)
+
+    def test_resolve_head_timestamp(self):
+        contract = Contract()
+        contract.secType = "STK"
+        contract.symbol = "AAPL"
+        contract.exchange = "SMART"
+        contract.currency = "USD"
+
+        resolved_contract = self.client.resolve_contract(
+            contract, Const.RID_RESOLVE_CONTRACT.value
+        )
+
+        print(resolved_contract)
+
+        head_timestamp = self.client.resolve_head_timestamp(
+            resolved_contract, Const.RID_RESOLVE_HEAD_TIMESTAMP.value
+        )
+
+        self.assertIsNotNone(head_timestamp)
+
+        print(head_timestamp)
 
     def tearDown(self):
         self.client.disconnect()

@@ -3,6 +3,23 @@ from .finishable_queue import FinishableQueue, Status as QStatus
 
 import queue
 
+class IBError:
+    """
+    Error object to handle the error retruns from IB
+    """
+
+    def __init__(self, id: int, errorCode: int, errorString: str):
+        self.id = id
+        self.errorCode = errorCode
+        self.errorString = errorString
+
+    def __str__(self):
+        # override method
+        error_msg = "IB error id %d errorcode %d string %s" \
+            % (self.id, self.errorCode, self.errorString)
+
+        return error_msg
+
 class IBWrapper(EWrapper):
     """
     The wrapper deals with the action coming back from the IB gateway or 
@@ -32,10 +49,9 @@ class IBWrapper(EWrapper):
        
     def error(self, id, errorCode, errorString):
         # override method
-        error_msg = "IB error id %d errorcode %d string %s" \
-            % (id, errorCode, errorString)
-
-        self.__err_queue.put(error_msg)
+        err = IBError(id, errorCode, errorString)
+        
+        self.__err_queue.put(err)
 
     # Get contract details
     def init_contract_details_queue(self, reqId):

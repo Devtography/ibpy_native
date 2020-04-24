@@ -68,4 +68,5 @@ class IBWrapper(EWrapper):
         if reqId not in self.__head_timestamp_queue.keys():
             self.init_contract_details_queue(reqId)
 
+        self.__head_timestamp_queue[reqId].put(headTimestamp)
         self.__head_timestamp_queue[reqId].put(QStatus.FINISHED)

@@ -36,17 +36,16 @@ class IBClient(EClient):
 
         # Run until we get a valid contract(s) or timeout
         new_contract_details = contract_details_queue.get(
-            timeout=Const.MAX_WAIT_SECONDS
+            timeout=Const.MAX_WAIT_SECONDS.value
         )
 
         self.__check_error()
 
         if contract_details_queue.get_status() == QStatus.TIMEOUT:
-            print(Const.MSG_TIMEOUT)
+            print(Const.MSG_TIMEOUT.value)
 
         if len(new_contract_details) == 0:
-            print("Failed to get additional contract details: \
-                returning unresolved contract")
+            print("Failed to get additional contract details: returning unresolved contract")
             
             return contract
 

@@ -9,6 +9,7 @@ import threading
 class Const(enum.Enum):
     RID_RESOLVE_CONTRACT = 43
     RID_RESOLVE_HEAD_TIMESTAMP = 14001
+    RID_RESOLVE_HEAD_TIMESTAMP_EPOCH = 14002
 
 class TestIBClient(unittest.TestCase):
 
@@ -54,9 +55,19 @@ class TestIBClient(unittest.TestCase):
             resolved_contract, Const.RID_RESOLVE_HEAD_TIMESTAMP.value
         )
 
+        print(head_timestamp)
+
         self.assertIsNotNone(head_timestamp)
+        self.assertIsInstance(head_timestamp, str)
+
+        head_timestamp = self.client.resolve_head_timestamp(
+            contract, Const.RID_RESOLVE_HEAD_TIMESTAMP_EPOCH.value, True
+        )
 
         print(head_timestamp)
+
+        self.assertIsNotNone(head_timestamp)
+        self.assertTrue(head_timestamp.isdecimal())
 
     def tearDown(self):
         self.client.disconnect()

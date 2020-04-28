@@ -57,22 +57,26 @@ class IBClient(EClient):
         return resolved_contract
 
     def resolve_head_timestamp(
-        self, contract: Contract, ticker_id: int
+        self, contract: Contract, ticker_id: int, unix_time: bool = False
     ) -> str:
         """
         Fetch the earliest available data point for a given instrument from IB.
-        :returns 
+
+        :returns timestamp in TWS/IB Gateway timezone specified at login or 
+        unix time
         """
         queue = FinishableQueue(
             self.__wrapper.init_head_timestamp_queue(ticker_id)
         )
 
         print("Getting earliest available data point for the given instrument from IB... ")
-            
-        self.reqHeadTimeStamp(ticker_id, contract, "TRADES", 1, 1)
+
+        self.reqHeadTimeStamp(
+            ticker_id, contract, "TRADES", 1, 2 if unix_time else 1
+        )
 
         head_timestamp=queue.get(timeout=Const.MAX_WAIT_SECONDS.value)
-        
+
         self.__check_error()
 
         if queue.get_status() == QStatus.TIMEOUT:

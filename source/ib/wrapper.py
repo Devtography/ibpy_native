@@ -5,7 +5,7 @@ from .finishable_queue import FinishableQueue, Status as QStatus
 import queue
 import typing
 
-class IBError:
+class IBError(Exception):
     """
     Error object to handle the error retruns from IB
     """
@@ -14,6 +14,8 @@ class IBError:
         self.id = id
         self.errorCode = errorCode
         self.errorString = errorString
+
+        super().__init__(errorString)
 
     def __str__(self):
         # override method

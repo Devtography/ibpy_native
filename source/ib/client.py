@@ -39,7 +39,10 @@ class IBClient(EClient):
             timeout=Const.MAX_WAIT_SECONDS.value
         )
 
-        self.__check_error()
+        try:
+            self.__check_error()
+        except IBError as err:
+            print(err)
 
         if contract_details_queue.get_status() == QStatus.TIMEOUT:
             print(Const.MSG_TIMEOUT.value)
@@ -77,7 +80,10 @@ class IBClient(EClient):
 
         head_timestamp=queue.get(timeout=Const.MAX_WAIT_SECONDS.value)
 
-        self.__check_error()
+        try:
+            self.__check_error()
+        except IBError as err:
+            print(err)
 
         if queue.get_status() == QStatus.TIMEOUT:
             print(Const.MSG_TIMEOUT.value)
@@ -104,4 +110,4 @@ class IBClient(EClient):
                 # -1 means a notification not error
                 continue
             else:
-                print(err)
+                raise err

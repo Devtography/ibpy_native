@@ -1,6 +1,7 @@
 from ibapi.contract import Contract
 from ibapi.client import EClient
-from .wrapper import IBWrapper, IBError
+from .wrapper import IBWrapper
+from .error import IBError
 from .finishable_queue import FinishableQueue, Status as QStatus
 
 import enum

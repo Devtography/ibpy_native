@@ -4,6 +4,8 @@ from .wrapper import IBWrapper
 from .error import IBError
 from .finishable_queue import FinishableQueue, Status as QStatus
 
+from typing_extensions import Literal
+
 import enum
 
 class Const(enum.Enum):
@@ -61,43 +63,55 @@ class IBClient(EClient):
         return resolved_contract
 
     def resolve_head_timestamp(
-        self, contract: Contract, ticker_id: int, unix_time: bool = False
-    ) -> str:
+        self, req_id: int, contract: Contract,
+        show: Literal['BID', 'ASK', 'TRADES'] = 'TRADES'
+    ) -> int:
         """
         Fetch the earliest available data point for a given instrument from IB.
 
-        :returns timestamp in TWS/IB Gateway timezone specified at login or 
-        unix time
+        :returns unix timestamp of the earliest available data point
         """
+        if show not in {'BID', 'ASK', 'TRADES'}:
+            raise ValueError(
+                "Value of argument `show` can only be either 'BID', 'ASK', or "
+                "'TRADES'"
+            )
+
         queue = FinishableQueue(
-            self.__wrapper.init_head_timestamp_queue(ticker_id)
+            self.__wrapper.init_head_timestamp_queue(req_id)
         )
 
-        print("Getting earliest available data point for the given instrument from IB... ")
+        print("Getting earliest available data point for the given " 
+            "instrument from IB... ")
 
-        self.reqHeadTimeStamp(
-            ticker_id, contract, "TRADES", 1, 2 if unix_time else 1
-        )
+        self.reqHeadTimeStamp(req_id, contract, show, 0, 2)
 
         head_timestamp=queue.get(timeout=Const.MAX_WAIT_SECONDS.value)
 
         try:
             self.__check_error()
         except IBError as err:
-            print(err)
+            raise err
 
         if queue.get_status() == QStatus.TIMEOUT:
-            print(Const.MSG_TIMEOUT.value)
+            raise IBError(
+                    req_id, IBErrorCode.REQ_TIMEOUT.value,
+                    Const.MSG_TIMEOUT.value
+                )
 
         if len(head_timestamp) == 0:
-            print("Failed to get the earliest available data point")
-
-            return None
+            raise IBError(
+                req_id, IBErrorCode.RES_NO_CONTENT.value,
+                "Failed to get the earliest available data point"
+            )
 
         if len(head_timestamp) > 1:
-            print("[Abnormal] Multiple result received: returning 1st result")
+            raise IBError(
+                req_id, IBErrorCode.RES_UNEXPECTED.value,
+                "[Abnormal] Multiple result received"
+            )
 
-        return head_timestamp[0]
+        return int(head_timestamp[0])
 
     # Private functions
     def __check_error(self):

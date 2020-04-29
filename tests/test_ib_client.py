@@ -1,5 +1,5 @@
-from source.ib import wrapper
-from source.ib import client
+from source.ib.wrapper import IBWrapper 
+from source.ib.client import IBClient
 from ibapi.contract import Contract
 
 import enum
@@ -12,10 +12,18 @@ class Const(enum.Enum):
     RID_RESOLVE_HEAD_TIMESTAMP_EPOCH = 14002
 
 class TestIBClient(unittest.TestCase):
+    __contract = Contract()
+    __contract.secType = "STK"
+    __contract.symbol = "AAPL"
+    __contract.exchange = "SMART"
+    __contract.currency = "USD"
 
     def setUp(self):
         self.wrapper = wrapper.IBWrapper()
         self.client = client.IBClient(self.wrapper)
+
+        self.wrapper = IBWrapper()
+        self.client = IBClient(self.wrapper)
 
         self.client.connect('127.0.0.1', 4002, 1001)
 
@@ -39,26 +47,20 @@ class TestIBClient(unittest.TestCase):
         print(resolved_contract)
 
     def test_resolve_head_timestamp(self):
-        contract = Contract()
-        contract.secType = "STK"
-        contract.symbol = "AAPL"
-        contract.exchange = "SMART"
-        contract.currency = "USD"
-
         resolved_contract = self.client.resolve_contract(
-            contract, Const.RID_RESOLVE_CONTRACT.value
+            self.__contract, Const.RID_RESOLVE_CONTRACT.value
         )
 
         print(resolved_contract)
 
         head_timestamp = self.client.resolve_head_timestamp(
-            resolved_contract, Const.RID_RESOLVE_HEAD_TIMESTAMP.value
+            Const.RID_RESOLVE_HEAD_TIMESTAMP.value, resolved_contract
         )
 
         print(head_timestamp)
 
         self.assertIsNotNone(head_timestamp)
-        self.assertIsInstance(head_timestamp, str)
+        self.assertIsInstance(head_timestamp, int)
 
         head_timestamp = self.client.resolve_head_timestamp(
             contract, Const.RID_RESOLVE_HEAD_TIMESTAMP_EPOCH.value, True

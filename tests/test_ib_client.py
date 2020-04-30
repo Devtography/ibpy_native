@@ -1,15 +1,24 @@
 from source.ib.wrapper import IBWrapper 
 from source.ib.client import IBClient
+from source.ib.error import IBError
+
 from ibapi.contract import Contract
+from ibapi.wrapper import (HistoricalTick, HistoricalTickBidAsk,
+    HistoricalTickLast)
+from datetime import datetime
+from typing import List
 
 import enum
 import unittest
 import threading
+import pytz
 
-class Const(enum.Enum):
+class Const(enum.IntEnum):
     RID_RESOLVE_CONTRACT = 43
     RID_RESOLVE_HEAD_TIMESTAMP = 14001
     RID_RESOLVE_HEAD_TIMESTAMP_EPOCH = 14002
+    RID_FETCH_HISTORICAL_TICKS = 18001
+    RID_FETCH_HISTORICAL_TICKS_ERR = 18002
 
 class TestIBClient(unittest.TestCase):
     __contract = Contract()
@@ -18,9 +27,9 @@ class TestIBClient(unittest.TestCase):
     __contract.exchange = "SMART"
     __contract.currency = "USD"
 
-    def setUp(self):
-        self.wrapper = wrapper.IBWrapper()
-        self.client = client.IBClient(self.wrapper)
+    @classmethod
+    def setUpClass(self):
+        IBClient.TZ = pytz.timezone('America/New_York')
 
         self.wrapper = IBWrapper()
         self.client = IBClient(self.wrapper)
@@ -62,14 +71,88 @@ class TestIBClient(unittest.TestCase):
         self.assertIsNotNone(head_timestamp)
         self.assertIsInstance(head_timestamp, int)
 
-        head_timestamp = self.client.resolve_head_timestamp(
-            contract, Const.RID_RESOLVE_HEAD_TIMESTAMP_EPOCH.value, True
+    def test_fetch_historical_ticks(self):
+        resolved_contract = self.client.resolve_contract(self.__contract,
+            Const.RID_RESOLVE_CONTRACT.value)
+
+        data = self.client.fetch_historical_ticks(
+            Const.RID_FETCH_HISTORICAL_TICKS.value, resolved_contract, 
+            start=IBClient.TZ.localize(
+                datetime(2020, 4, 29, 10, 30, 0)
+            ),
+            end=IBClient.TZ.localize(
+                datetime(2020, 4, 29, 10, 31, 0)
+            ),
+            show='MIDPOINT'
         )
 
-        print(head_timestamp)
+        self.assertIsInstance(data[0], list)
+        self.assertTrue(data[1], True)
+        self.assertGreater(len(data[0]), 0)
+        self.assertIsInstance(data[0][0], HistoricalTick)
 
-        self.assertIsNotNone(head_timestamp)
-        self.assertTrue(head_timestamp.isdecimal())
+        data = self.client.fetch_historical_ticks(
+            Const.RID_FETCH_HISTORICAL_TICKS.value, resolved_contract, 
+            start=IBClient.TZ.localize(
+                datetime(2020, 4, 29, 10, 30, 0)
+            ),
+            end=IBClient.TZ.localize(
+                datetime(2020, 4, 29, 10, 31, 0)
+            ),
+            show='BID_ASK'
+        )
 
-    def tearDown(self):
+        self.assertIsInstance(data[0], list)
+        self.assertTrue(data[1], True)
+        self.assertGreater(len(data[0]), 0)
+        self.assertIsInstance(data[0][0], HistoricalTickBidAsk)
+
+        data = self.client.fetch_historical_ticks(
+            Const.RID_FETCH_HISTORICAL_TICKS.value, resolved_contract, 
+            start=IBClient.TZ.localize(
+                datetime(2020, 4, 29, 10, 30, 0)
+            ),
+            end=IBClient.TZ.localize(
+                datetime(2020, 4, 29, 10, 31, 0)
+            )
+        )
+
+        self.assertIsInstance(data[0], list)
+        self.assertTrue(data[1], True)
+        self.assertGreater(len(data[0]), 0)
+        self.assertIsInstance(data[0][0], HistoricalTickLast)
+
+    def test_fetch_historical_ticks_err(self):
+        resolved_contract = self.client.resolve_contract(self.__contract,
+            Const.RID_RESOLVE_CONTRACT.value)
+
+        # Incorrect value of `show`
+        with self.assertRaises(ValueError):
+            self.client.fetch_historical_ticks(
+                Const.RID_FETCH_HISTORICAL_TICKS_ERR.value, resolved_contract,
+                show='LAST'
+            )
+
+        # Timezone of start & end are not identical
+        with self.assertRaises(ValueError):
+            self.client.fetch_historical_ticks(
+                Const.RID_FETCH_HISTORICAL_TICKS_ERR.value, resolved_contract,
+                datetime.now().astimezone(pytz.timezone('Asia/Hong_Kong'))
+            )
+
+        # Invalid contract object
+        with self.assertRaises(IBError):
+            self.client.fetch_historical_ticks(
+                Const.RID_FETCH_HISTORICAL_TICKS_ERR.value, Contract()
+            )
+
+        # Start time is earlier than earliest available data point
+        with self.assertRaises(ValueError):
+            self.client.fetch_historical_ticks(
+                Const.RID_FETCH_HISTORICAL_TICKS_ERR.value, resolved_contract,
+                IBClient.TZ.localize(datetime(1980, 12, 12, 9))
+            )
+
+    @classmethod
+    def tearDownClass(self):
         self.client.disconnect()

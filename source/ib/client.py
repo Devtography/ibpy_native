@@ -1,15 +1,28 @@
-from ibapi.contract import Contract
-from ibapi.client import EClient
-from .wrapper import IBWrapper, IBError
+from .wrapper import IBWrapper
+from .error import IBError, IBErrorCode
 from .finishable_queue import FinishableQueue, Status as QStatus
 
+from ibapi.contract import Contract
+from ibapi.client import EClient
+from ibapi.wrapper import (HistoricalTick, HistoricalTickBidAsk,
+    HistoricalTickLast)
+from datetime import datetime
+from typing import List, Optional, Tuple, Union
+from typing_extensions import Literal
+
 import enum
+import pytz
+import random
 
 class Const(enum.Enum):
-    MAX_WAIT_SECONDS = 10
+    MAX_WAIT_SECONDS = 10 # Max wait time for requests
+    TIME_FMT = '%Y%m%d %H:%M:%S' # IB time format
     MSG_TIMEOUT = "Exceed maximum wait for wrapper to confirm finished"
 
 class IBClient(EClient):
+    # Static variable to define the timezone
+    TZ = pytz.timezone('America/New_York')
+
     """
     The client calls the native methods from IBWrapper instead of 
     overriding native methods
@@ -39,7 +52,10 @@ class IBClient(EClient):
             timeout=Const.MAX_WAIT_SECONDS.value
         )
 
-        self.__check_error()
+        try:
+            self.__check_error()
+        except IBError as err:
+            print(err)
 
         if contract_details_queue.get_status() == QStatus.TIMEOUT:
             print(Const.MSG_TIMEOUT.value)
@@ -57,36 +73,237 @@ class IBClient(EClient):
         return resolved_contract
 
     def resolve_head_timestamp(
-        self, contract: Contract, ticker_id: int
-    ) -> str:
+        self, req_id: int, contract: Contract,
+        show: Literal['BID', 'ASK', 'TRADES'] = 'TRADES'
+    ) -> int:
         """
         Fetch the earliest available data point for a given instrument from IB.
-        :returns 
+
+        :returns unix timestamp of the earliest available data point
         """
+        if show not in {'BID', 'ASK', 'TRADES'}:
+            raise ValueError(
+                "Value of argument `show` can only be either 'BID', 'ASK', or "
+                "'TRADES'"
+            )
+
         queue = FinishableQueue(
-            self.__wrapper.init_head_timestamp_queue(ticker_id)
+            self.__wrapper.init_head_timestamp_queue(req_id)
         )
 
-        print("Getting earliest available data point for the given instrument from IB... ")
-            
-        self.reqHeadTimeStamp(ticker_id, contract, "TRADES", 1, 1)
+        print("Getting earliest available data point for the given " 
+            "instrument from IB... ")
+
+        self.reqHeadTimeStamp(req_id, contract, show, 0, 2)
 
         head_timestamp=queue.get(timeout=Const.MAX_WAIT_SECONDS.value)
-        
-        self.__check_error()
+
+        try:
+            self.__check_error()
+        except IBError as err:
+            raise err
 
         if queue.get_status() == QStatus.TIMEOUT:
-            print(Const.MSG_TIMEOUT.value)
+            raise IBError(
+                    req_id, IBErrorCode.REQ_TIMEOUT.value,
+                    Const.MSG_TIMEOUT.value
+                )
 
         if len(head_timestamp) == 0:
-            print("Failed to get the earliest available data point")
-
-            return None
+            raise IBError(
+                req_id, IBErrorCode.RES_NO_CONTENT.value,
+                "Failed to get the earliest available data point"
+            )
 
         if len(head_timestamp) > 1:
-            print("[Abnormal] Multiple result received: returning 1st result")
+            raise IBError(
+                req_id, IBErrorCode.RES_UNEXPECTED.value,
+                "[Abnormal] Multiple result received"
+            )
 
-        return head_timestamp[0]
+        return int(head_timestamp[0])
+
+    def fetch_historical_ticks(
+        self, req_id: int, contract: Contract,
+        start: Optional[datetime] = None, 
+        end: datetime = datetime.now().astimezone(TZ),
+        show: Literal['MIDPOINT', 'BID_ASK', 'TRADES'] = 'TRADES'
+    ) -> Tuple[list, bool]:
+        """
+        Fetch the historical ticks data for a given instrument from IB.
+        
+        :returns the ticks data (fetched recursively to get around IB 1000 
+        ticks limit)
+        """
+        # Pre-process & error checking
+        if show not in {'MIDPOINT', 'BID_ASK', 'TRADES'}:
+            raise ValueError(
+                "Value of argument `show` can only be either 'MIDPOINT', "
+                "'BID_ASK', or 'TRADES'"
+            )
+
+        if start is not None:
+            if type(start.tzinfo) != type(end.tzinfo):
+                raise ValueError("Timezone of the start time and end time "
+                    "must be the same")
+
+            if start.timestamp() > end.timestamp():
+                raise ValueError(
+                    "Specificed start time cannot be later than end time"
+                )
+        
+        # Get corresponding head timestamp for ticks data type to fetch
+        timestamp_to_fetch = show if show is 'TRADES' else 'BID'
+
+        try:
+            head_timestamp = datetime.fromtimestamp(
+                self.resolve_head_timestamp(
+                    random.randint(100000, 109999), contract,
+                    timestamp_to_fetch
+                )
+            ).astimezone(end.tzinfo)
+        except ValueError as err:
+            raise err
+        except IBError as err:
+            raise IBError(req_id, err.errorCode, err.errorString)
+
+        # Back to error checking
+        if start is not None:
+            if start.timestamp() < head_timestamp.timestamp():
+                raise ValueError(
+                    "Specificed start time is earlier than the earliest "
+                    "available data point - "
+                    + head_timestamp.strftime(Const.TIME_FMT.value)
+                )
+
+        # Time to fetch the ticks
+        queue = FinishableQueue(
+            self.__wrapper.init_historical_ticks_data_queue(req_id)
+        )
+
+        all_ticks: list = []
+
+        real_start_time = None
+        if start is not None:
+            real_start_time = (
+                IBClient.TZ.localize(start) if start.tzinfo is None
+                else start
+            )
+
+        next_end_time = (
+            IBClient.TZ.localize(end) if end.tzinfo is None else end
+        )
+
+        finished = False
+
+        print("Getting historical ticks data [" + show
+            + "] for the given instrument from IB...")
+
+        while not finished:
+            self.reqHistoricalTicks(
+                req_id, contract, "", 
+                next_end_time.strftime(Const.TIME_FMT.value), 
+                1000, show, 0, False, []
+            )
+
+            result: List[
+                List[Union[
+                    HistoricalTick,
+                    HistoricalTickBidAsk, 
+                    HistoricalTickLast
+                ]],
+                bool
+            ] = queue.get(timeout=Const.MAX_WAIT_SECONDS.value)
+
+            # Error checking
+            try:
+                self.__check_error()
+            except IBError as err:
+                raise err
+
+            if queue.get_status() == QStatus.TIMEOUT:
+                # Checks if it's in the middle of the data fetching loop
+                if len(all_ticks) > 0:
+                    print("Request timeout while fetching the remaining ticks: "
+                        + "returning " + str(len(all_ticks)) 
+                        + "ticks fetched")
+                    # Returns already fetched data instead of having the
+                    # pervious time used for fetching data all wasted
+                    all_ticks.reverse()
+
+                    return (all_ticks, False)
+                else:
+                    raise IBError(
+                        req_id, IBErrorCode.REQ_TIMEOUT.value,
+                        Const.MSG_TIMEOUT.value
+                    )
+
+            if len(result) == 0:
+                raise IBError(req_id, IBErrorCode.RES_NO_CONTENT.value,
+                    "Failed to get historical ticks data")
+
+            if len(result) != 2:
+                # The result should be a list that contains 2 items: 
+                # [ticks: ListOfHistoricalTick(BidAsk/Last), done: bool]
+                raise IBError(req_id, IBErrorCode.RES_UNEXPECTED.value,
+                    "[Abnormal] Incorrect number of items received: "
+                    + str(len(result)))
+
+            ticks = result[0]
+
+            if len(ticks) == 0 and len(all_ticks) == 0:
+                raise IBError(req_id, IBErrorCode.RES_NO_CONTENT.value,
+                    "[Abnormal] Request completed without issue but results "
+                    "from IB contains no historical ticks data")
+            
+            # Process the data
+            if len(ticks) > 0:
+                if real_start_time is not None:
+                    # Exclude record(s) which are earlier than specified 
+                    # start time
+                    exclude_to_idx = 0
+
+                    for idx, tick in enumerate(ticks):
+                        if tick.time >= real_start_time.timestamp():
+                            exclude_to_idx = idx
+                            break
+                    del idx, tick
+
+                    if exclude_to_idx > 0:
+                        ticks = ticks[exclude_to_idx:]
+
+                # Reverses the list of tick data as the data are fetched 
+                # reversely from end time. Thus, reverses the list `ticks` to 
+                # append the tick data to `all_ticks` more efficient.
+                ticks.reverse()
+                all_ticks.extend(ticks)
+
+                print(str(len(all_ticks)) + " ticks fetched; " 
+                    "Last tick time - "
+                    + (datetime.fromtimestamp(ticks[-1].time)
+                        .astimezone(next_end_time.tzinfo)
+                        .strftime(Const.TIME_FMT.value)
+                    )
+                )
+
+            # All ticks data within the specificed range has been fetched from
+            # IB, finish the while loop
+            if len(ticks) < 1000 and len(all_ticks) > 0:
+                finished = True
+                break
+
+            # Updates the next end time to fetch the data again if 
+            # there's more data to be fetched from IB
+            next_end_time = datetime.fromtimestamp(
+                ticks[-1].time
+            ).astimezone(next_end_time.tzinfo)
+
+            # Resets the queue for next historical ticks request
+            queue.reset()
+
+        all_ticks.reverse()
+
+        return (all_ticks, True)
 
     # Private functions
     def __check_error(self):
@@ -100,4 +317,4 @@ class IBClient(EClient):
                 # -1 means a notification not error
                 continue
             else:
-                print(err)
+                raise err

@@ -1,24 +1,11 @@
-from ibapi.wrapper import EWrapper, ListOfHistoricalTickLast
 from .finishable_queue import FinishableQueue, Status as QStatus
+from .error import IBError
+
+from ibapi.wrapper import (EWrapper, HistoricalTick, HistoricalTickBidAsk,
+    HistoricalTickLast)
+from typing import Union, List
 
 import queue
-
-class IBError:
-    """
-    Error object to handle the error retruns from IB
-    """
-
-    def __init__(self, id: int, errorCode: int, errorString: str):
-        self.id = id
-        self.errorCode = errorCode
-        self.errorString = errorString
-
-    def __str__(self):
-        # override method
-        error_msg = "IB error id %d errorcode %d string %s" \
-            % (self.id, self.errorCode, self.errorString)
-
-        return error_msg
 
 class IBWrapper(EWrapper):
     """
@@ -28,6 +15,7 @@ class IBWrapper(EWrapper):
 
     __contract_details_queue = {}
     __head_timestamp_queue = {}
+    __historical_ticks_data_queue = {}
 
     def __init__(self):
         self.__err_queue = queue.Queue()
@@ -86,3 +74,51 @@ class IBWrapper(EWrapper):
 
         self.__head_timestamp_queue[reqId].put(headTimestamp)
         self.__head_timestamp_queue[reqId].put(QStatus.FINISHED)
+
+    # Fetch historical ticks data
+    def init_historical_ticks_data_queue(self, req_id: int) -> queue.Queue:
+        self.__historical_ticks_data_queue[req_id] = queue.Queue()
+
+        return self.__historical_ticks_data_queue[req_id]
+
+    def historicalTicks(
+        self, reqId: int, ticks: List[HistoricalTick], done: bool
+    ):
+        # override method
+        self.__handle_historical_ticks_results(reqId, ticks, done)
+
+    def historicalTicksBidAsk(
+        self, reqId: int, ticks: List[HistoricalTickBidAsk], done: bool
+    ):
+        # override method
+        self.__handle_historical_ticks_results(reqId, ticks, done)
+
+    def historicalTicksLast(
+        self, reqId: int, ticks: List[HistoricalTickLast], done: bool
+    ):
+        # override method
+        self.__handle_historical_ticks_results(reqId, ticks, done)
+        
+    ## Private functions
+    def __handle_historical_ticks_results(
+        self,
+        req_id: int,
+        ticks: Union[
+            List[HistoricalTick],
+            List[HistoricalTickBidAsk],
+            List[HistoricalTickLast]
+        ],
+        done: bool
+    ):
+        """
+        Handles results return from functions `historicalTicks`, 
+        `historicalTicksBidAsk`, and `historicalTicksLast` by putting the 
+        results into corresponding queue & marks the queue as finished.
+        """
+
+        if req_id not in self.__historical_ticks_data_queue.keys():
+            self.init_historical_ticks_data_queue(req_id)
+
+        self.__historical_ticks_data_queue[req_id].put(ticks)
+        self.__historical_ticks_data_queue[req_id].put(done)
+        self.__historical_ticks_data_queue[req_id].put(QStatus.FINISHED)

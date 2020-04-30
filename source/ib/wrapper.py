@@ -1,10 +1,11 @@
-from ibapi.wrapper import (EWrapper, ListOfHistoricalTick,
-    ListOfHistoricalTickBidAsk, ListOfHistoricalTickLast)
 from .finishable_queue import FinishableQueue, Status as QStatus
 from .error import IBError
 
+from ibapi.wrapper import (EWrapper, HistoricalTick, HistoricalTickBidAsk,
+    HistoricalTickLast)
+from typing import Union, List
+
 import queue
-import typing
 
 class IBWrapper(EWrapper):
     """
@@ -81,19 +82,19 @@ class IBWrapper(EWrapper):
         return self.__historical_ticks_data_queue[req_id]
 
     def historicalTicks(
-        self, reqId: int, ticks: ListOfHistoricalTick, done: bool
+        self, reqId: int, ticks: List[HistoricalTick], done: bool
     ):
         # override method
         self.__handle_historical_ticks_results(reqId, ticks, done)
 
     def historicalTicksBidAsk(
-        self, reqId: int, ticks: ListOfHistoricalTickBidAsk, done: bool
+        self, reqId: int, ticks: List[HistoricalTickBidAsk], done: bool
     ):
         # override method
         self.__handle_historical_ticks_results(reqId, ticks, done)
 
     def historicalTicksLast(
-        self, reqId: int, ticks: ListOfHistoricalTickLast, done: bool
+        self, reqId: int, ticks: List[HistoricalTickLast], done: bool
     ):
         # override method
         self.__handle_historical_ticks_results(reqId, ticks, done)
@@ -102,10 +103,10 @@ class IBWrapper(EWrapper):
     def __handle_historical_ticks_results(
         self,
         req_id: int,
-        ticks: typing.Union[
-            ListOfHistoricalTick,
-            ListOfHistoricalTickBidAsk,
-            ListOfHistoricalTickLast
+        ticks: Union[
+            List[HistoricalTick],
+            List[HistoricalTickBidAsk],
+            List[HistoricalTickLast]
         ],
         done: bool
     ):

@@ -1,6 +1,8 @@
 from .wrapper import IBWrapper
 from .client import IBClient
 
+from datetime import tzinfo
+
 import threading
 
 class IBBridge:
@@ -17,6 +19,20 @@ class IBBridge:
 
         if auto_conn:
             self.connect()
+
+    @staticmethod
+    def set_timezone(tz: tzinfo):
+        """
+        Set the timezone for the bridge to match the IB Gateway/TWS timezone 
+        specified at login.
+
+        Default timezone `America/New_York` will be used if this function has
+        never been called.
+
+        * Value of `tz` should be returned from `pytz.timezone(zone: str)`
+        """
+        IBClient.TZ = tz
+
 
     def is_connected(self) -> bool:
         return self.__client.isConnected()

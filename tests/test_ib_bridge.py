@@ -1,11 +1,18 @@
 from source.ib import IBBridge
+from source.ib.client import IBClient
 
+import pytz
 import unittest
 
 TEST_PORT = 4002
 TEST_ID = 1001
 
 class TestIBBridge(unittest.TestCase):
+
+    def test_set_timezone(self):
+        IBBridge.set_timezone(pytz.timezone('Asia/Hong_Kong'))
+
+        self.assertEqual(IBClient.TZ, pytz.timezone('Asia/Hong_Kong'))
     
     def test_init_auto_connect(self):
         bridge = IBBridge(port=TEST_PORT, client_id=TEST_ID)

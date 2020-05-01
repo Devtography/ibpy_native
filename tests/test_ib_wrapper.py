@@ -41,63 +41,63 @@ class TestIBWrapper(unittest.TestCase):
     def test_historical_ticks(self):
         end_time = "20200327 16:30:00"
 
-        queue = FinishableQueue(
-            self.wrapper.init_historical_ticks_data_queue(
-                Const.RID_FETCH_HISTORICAL_TICKS.value
-            )
+        queue = self.wrapper.get_request_queue(
+            Const.RID_FETCH_HISTORICAL_TICKS.value
         )
+
+        f_queue = FinishableQueue(queue)
 
         self.client.reqHistoricalTicks(
             Const.RID_FETCH_HISTORICAL_TICKS.value, self.resolved_contract,
             "", end_time, 1000, "MIDPOINT", 1, False, []
         )
 
-        result = queue.get(timeout=Const.QUEUE_MAX_WAIT_SEC.value)
+        result = f_queue.get(timeout=Const.QUEUE_MAX_WAIT_SEC.value)
 
         self.assertFalse(self.wrapper.has_err())
-        self.assertNotEqual(queue.get_status(), Status.TIMEOUT)
+        self.assertNotEqual(f_queue.get_status(), Status.TIMEOUT)
         self.assertEqual(len(result), 2)
         self.assertIsInstance(result[0], ListOfHistoricalTick)
 
     def test_historical_ticks_bid_ask(self):
         end_time = "20200327 16:30:00"
-
-        queue = FinishableQueue(
-            self.wrapper.init_historical_ticks_data_queue(
-                Const.RID_FETCH_HISTORICAL_TICKS.value
-            )
+        
+        queue = self.wrapper.get_request_queue(
+            Const.RID_FETCH_HISTORICAL_TICKS.value
         )
+
+        f_queue = FinishableQueue(queue)
 
         self.client.reqHistoricalTicks(
             Const.RID_FETCH_HISTORICAL_TICKS.value, self.resolved_contract,
             "", end_time, 1000, "BID_ASK", 1, False, []
         )
 
-        result = queue.get(timeout=Const.QUEUE_MAX_WAIT_SEC.value)
+        result = f_queue.get(timeout=Const.QUEUE_MAX_WAIT_SEC.value)
 
         self.assertFalse(self.wrapper.has_err())
-        self.assertNotEqual(queue.get_status(), Status.TIMEOUT)
+        self.assertNotEqual(f_queue.get_status(), Status.TIMEOUT)
         self.assertEqual(len(result), 2)
         self.assertIsInstance(result[0], ListOfHistoricalTickBidAsk)
 
     def test_historical_ticks_last(self):
         end_time = "20200327 16:30:00"
 
-        queue = FinishableQueue(
-            self.wrapper.init_historical_ticks_data_queue(
-                Const.RID_FETCH_HISTORICAL_TICKS.value
-            )
+        queue = self.wrapper.get_request_queue(
+            Const.RID_FETCH_HISTORICAL_TICKS.value
         )
+
+        f_queue = FinishableQueue(queue)
 
         self.client.reqHistoricalTicks(
             Const.RID_FETCH_HISTORICAL_TICKS.value, self.resolved_contract,
             "", end_time, 1000, "TRADES", 1, False, []
         )
 
-        result = queue.get(timeout=Const.QUEUE_MAX_WAIT_SEC.value)
+        result = f_queue.get(timeout=Const.QUEUE_MAX_WAIT_SEC.value)
 
         self.assertFalse(self.wrapper.has_err())
-        self.assertNotEqual(queue.get_status(), Status.TIMEOUT)
+        self.assertNotEqual(f_queue.get_status(), Status.TIMEOUT)
         self.assertEqual(len(result), 2)
         self.assertIsInstance(result[0], ListOfHistoricalTickLast)
 

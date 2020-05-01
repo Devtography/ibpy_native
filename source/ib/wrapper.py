@@ -1,9 +1,9 @@
 from .finishable_queue import FinishableQueue, Status as QStatus
-from .error import IBError
+from .error import IBError, IBErrorCode
 
 from ibapi.wrapper import (EWrapper, HistoricalTick, HistoricalTickBidAsk,
     HistoricalTickLast)
-from typing import Union, List
+from typing import List, Union
 
 import queue
 
@@ -13,14 +13,24 @@ class IBWrapper(EWrapper):
     TWS instance
     """
 
-    __contract_details_queue = {}
-    __head_timestamp_queue = {}
-    __historical_ticks_data_queue = {}
+    __req_queue = {}
 
     def __init__(self):
         self.__err_queue = queue.Queue()
 
         super().__init__()
+
+    def get_request_queue(self, req_id: int) -> queue.Queue:
+        """
+        Initialise queue or returned the existing queue with ID `req_id`
+        """
+        self.__init_req_queue(req_id)
+
+        if not self.__req_queue[req_id].empty():
+            raise IBError(req_id, IBErrorCode.QUEUE_IN_USE.value,
+                f"Request queue with ID {str(req_id)} is currently in use")
+
+        return self.__req_queue[req_id]
 
     # Error handling
     def has_err(self):
@@ -42,45 +52,27 @@ class IBWrapper(EWrapper):
         self.__err_queue.put(err)
 
     # Get contract details
-    def init_contract_details_queue(self, reqId):
-        self.__contract_details_queue[reqId] = queue.Queue()
-
-        return self.__contract_details_queue[reqId]
-
     def contractDetails(self, reqId, contractDetails):
         # override method
-        if reqId not in self.__contract_details_queue.keys():
-            self.init_contract_details_queue(reqId)
+        self.__init_req_queue(reqId)
 
-        self.__contract_details_queue[reqId].put(contractDetails)
+        self.__req_queue[reqId].put(contractDetails)
 
     def contractDetailsEnd(self, reqId):
         # override method
-        if reqId not in self.__contract_details_queue.keys():
-            self.init_contract_details_queue(reqId)
+        self.__init_req_queue(reqId)
 
-        self.__contract_details_queue[reqId].put(QStatus.FINISHED)
+        self.__req_queue[reqId].put(QStatus.FINISHED)
 
     # Get earliest data point for a given instrument and data
-    def init_head_timestamp_queue(self, req_id: int):
-        self.__head_timestamp_queue[req_id] = queue.Queue()
-
-        return self.__head_timestamp_queue[req_id]
-
     def headTimestamp(self, reqId: int, headTimestamp: str):
         # override method
-        if reqId not in self.__head_timestamp_queue.keys():
-            self.init_contract_details_queue(reqId)
+        self.__init_req_queue(reqId)
 
-        self.__head_timestamp_queue[reqId].put(headTimestamp)
-        self.__head_timestamp_queue[reqId].put(QStatus.FINISHED)
+        self.__req_queue[reqId].put(headTimestamp)
+        self.__req_queue[reqId].put(QStatus.FINISHED)
 
     # Fetch historical ticks data
-    def init_historical_ticks_data_queue(self, req_id: int) -> queue.Queue:
-        self.__historical_ticks_data_queue[req_id] = queue.Queue()
-
-        return self.__historical_ticks_data_queue[req_id]
-
     def historicalTicks(
         self, reqId: int, ticks: List[HistoricalTick], done: bool
     ):
@@ -100,6 +92,13 @@ class IBWrapper(EWrapper):
         self.__handle_historical_ticks_results(reqId, ticks, done)
         
     ## Private functions
+    def __init_req_queue(self, req_id: int):
+        """
+        Initial a new queue if there's no queue at `__req_queue[req_id]`
+        """
+        if req_id not in self.__req_queue.keys():
+            self.__req_queue[req_id] = queue.Queue()
+
     def __handle_historical_ticks_results(
         self,
         req_id: int,
@@ -115,10 +114,8 @@ class IBWrapper(EWrapper):
         `historicalTicksBidAsk`, and `historicalTicksLast` by putting the 
         results into corresponding queue & marks the queue as finished.
         """
+        self.__init_req_queue(req_id)
 
-        if req_id not in self.__historical_ticks_data_queue.keys():
-            self.init_historical_ticks_data_queue(req_id)
-
-        self.__historical_ticks_data_queue[req_id].put(ticks)
-        self.__historical_ticks_data_queue[req_id].put(done)
-        self.__historical_ticks_data_queue[req_id].put(QStatus.FINISHED)
+        self.__req_queue[req_id].put(ticks)
+        self.__req_queue[req_id].put(done)
+        self.__req_queue[req_id].put(QStatus.FINISHED)

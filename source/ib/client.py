@@ -20,13 +20,13 @@ class Const(enum.Enum):
     MSG_TIMEOUT = "Exceed maximum wait for wrapper to confirm finished"
 
 class IBClient(EClient):
-    # Static variable to define the timezone
-    TZ = pytz.timezone('America/New_York')
-
     """
-    The client calls the native methods from IBWrapper instead of 
+    The client calls the native methods from IBWrapper instead of
     overriding native methods
     """
+
+    # Static variable to define the timezone
+    TZ = pytz.timezone('America/New_York')
 
     def __init__(self, wrapper: IBWrapper):
         self.__wrapper = wrapper
@@ -39,16 +39,19 @@ class IBClient(EClient):
         """
 
         # Make place to store the data that will be returned
-        contract_details_queue = FinishableQueue(
-            self.__wrapper.init_contract_details_queue(req_id)
-        )
+        try:
+            queue = self.__wrapper.get_request_queue(req_id)
+        except IBError as err:
+            raise err
+
+        f_queue = FinishableQueue(queue)
 
         print("Getting full contract details from IB...")
 
         self.reqContractDetails(req_id, contract)
 
         # Run until we get a valid contract(s) or timeout
-        new_contract_details = contract_details_queue.get(
+        new_contract_details = f_queue.get(
             timeout=Const.MAX_WAIT_SECONDS.value
         )
 
@@ -57,7 +60,7 @@ class IBClient(EClient):
         except IBError as err:
             print(err)
 
-        if contract_details_queue.get_status() == QStatus.TIMEOUT:
+        if f_queue.get_status() == QStatus.TIMEOUT:
             print(Const.MSG_TIMEOUT.value)
 
         if len(new_contract_details) == 0:
@@ -87,23 +90,26 @@ class IBClient(EClient):
                 "'TRADES'"
             )
 
-        queue = FinishableQueue(
-            self.__wrapper.init_head_timestamp_queue(req_id)
-        )
+        try:
+            queue = self.__wrapper.get_request_queue(req_id)
+        except IBError as err:
+            raise err
+
+        f_queue = FinishableQueue(queue)
 
         print("Getting earliest available data point for the given " 
             "instrument from IB... ")
 
         self.reqHeadTimeStamp(req_id, contract, show, 0, 2)
 
-        head_timestamp=queue.get(timeout=Const.MAX_WAIT_SECONDS.value)
+        head_timestamp = f_queue.get(timeout=Const.MAX_WAIT_SECONDS.value)
 
         try:
             self.__check_error()
         except IBError as err:
             raise err
 
-        if queue.get_status() == QStatus.TIMEOUT:
+        if f_queue.get_status() == QStatus.TIMEOUT:
             raise IBError(
                     req_id, IBErrorCode.REQ_TIMEOUT.value,
                     Const.MSG_TIMEOUT.value
@@ -177,9 +183,12 @@ class IBClient(EClient):
                 )
 
         # Time to fetch the ticks
-        queue = FinishableQueue(
-            self.__wrapper.init_historical_ticks_data_queue(req_id)
-        )
+        try:
+            queue = self.__wrapper.get_request_queue(req_id)
+        except IBError as err:
+            raise err
+
+        f_queue = FinishableQueue(queue)
 
         all_ticks: list = []
 
@@ -213,7 +222,7 @@ class IBClient(EClient):
                     HistoricalTickLast
                 ]],
                 bool
-            ] = queue.get(timeout=Const.MAX_WAIT_SECONDS.value)
+            ] = f_queue.get(timeout=Const.MAX_WAIT_SECONDS.value)
 
             # Error checking
             try:
@@ -221,7 +230,7 @@ class IBClient(EClient):
             except IBError as err:
                 raise err
 
-            if queue.get_status() == QStatus.TIMEOUT:
+            if f_queue.get_status() == QStatus.TIMEOUT:
                 # Checks if it's in the middle of the data fetching loop
                 if len(all_ticks) > 0:
                     print("Request timeout while fetching the remaining ticks: "
@@ -299,7 +308,7 @@ class IBClient(EClient):
             ).astimezone(next_end_time.tzinfo)
 
             # Resets the queue for next historical ticks request
-            queue.reset()
+            f_queue.reset()
 
         all_ticks.reverse()
 

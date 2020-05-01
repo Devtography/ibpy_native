@@ -4,6 +4,7 @@ class IBErrorCode(enum.IntEnum):
     REQ_TIMEOUT = 50504
     RES_NO_CONTENT = 50204
     RES_UNEXPECTED = 50214
+    QUEUE_IN_USE = 50400
 
 class IBError(Exception):
     """

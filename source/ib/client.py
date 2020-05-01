@@ -15,7 +15,6 @@ import pytz
 import random
 
 class Const(enum.Enum):
-    MAX_WAIT_SECONDS = 10 # Max wait time for requests
     TIME_FMT = '%Y%m%d %H:%M:%S' # IB time format
     MSG_TIMEOUT = "Exceed maximum wait for wrapper to confirm finished"
 
@@ -28,11 +27,16 @@ class IBClient(EClient):
     # Static variable to define the timezone
     TZ = pytz.timezone('America/New_York')
 
+    # Default timeout time in second for requests
+    REQ_TIMEOUT = 10
+
     def __init__(self, wrapper: IBWrapper):
         self.__wrapper = wrapper
         super().__init__(wrapper)
 
-    def resolve_contract(self, req_id: int, contract: Contract) -> Contract:
+    def resolve_contract(
+        self, req_id: int, contract: Contract, timeout: int = REQ_TIMEOUT
+    ) -> Contract:
         """
         From a partially formed contract, returns a fully fledged version
         :returns fully resolved IB contract
@@ -51,7 +55,7 @@ class IBClient(EClient):
         self.reqContractDetails(req_id, contract)
 
         # Run until we get a valid contract(s) or timeout
-        contract_details = f_queue.get(timeout=Const.MAX_WAIT_SECONDS.value)
+        contract_details = f_queue.get(timeout=timeout)
 
         try:
             self.__check_error()
@@ -79,7 +83,8 @@ class IBClient(EClient):
 
     def resolve_head_timestamp(
         self, req_id: int, contract: Contract,
-        show: Literal['BID', 'ASK', 'TRADES'] = 'TRADES'
+        show: Literal['BID', 'ASK', 'TRADES'] = 'TRADES',
+        timeout: int = REQ_TIMEOUT
     ) -> int:
         """
         Fetch the earliest available data point for a given instrument from IB.
@@ -104,7 +109,7 @@ class IBClient(EClient):
 
         self.reqHeadTimeStamp(req_id, contract, show, 0, 2)
 
-        head_timestamp = f_queue.get(timeout=Const.MAX_WAIT_SECONDS.value)
+        head_timestamp = f_queue.get(timeout=timeout)
 
         try:
             self.__check_error()
@@ -135,7 +140,8 @@ class IBClient(EClient):
         self, req_id: int, contract: Contract,
         start: Optional[datetime] = None, 
         end: datetime = datetime.now().astimezone(TZ),
-        show: Literal['MIDPOINT', 'BID_ASK', 'TRADES'] = 'TRADES'
+        show: Literal['MIDPOINT', 'BID_ASK', 'TRADES'] = 'TRADES',
+        timeout: int = REQ_TIMEOUT
     ) -> Tuple[list, bool]:
         """
         Fetch the historical ticks data for a given instrument from IB.
@@ -224,7 +230,7 @@ class IBClient(EClient):
                     HistoricalTickLast
                 ]],
                 bool
-            ] = f_queue.get(timeout=Const.MAX_WAIT_SECONDS.value)
+            ] = f_queue.get(timeout=timeout)
 
             # Error checking
             try:

@@ -72,6 +72,8 @@ class TestIBClient(unittest.TestCase):
         self.assertIsInstance(head_timestamp, int)
 
     def test_fetch_historical_ticks(self):
+        timeout = 60
+
         resolved_contract = self.client.resolve_contract(
             Const.RID_RESOLVE_CONTRACT.value, self.__contract
         )
@@ -84,7 +86,7 @@ class TestIBClient(unittest.TestCase):
             end=IBClient.TZ.localize(
                 datetime(2020, 4, 29, 10, 31, 0)
             ),
-            show='MIDPOINT'
+            show='MIDPOINT', timeout=timeout
         )
 
         self.assertIsInstance(data[0], list)
@@ -100,7 +102,7 @@ class TestIBClient(unittest.TestCase):
             end=IBClient.TZ.localize(
                 datetime(2020, 4, 29, 10, 31, 0)
             ),
-            show='BID_ASK'
+            show='BID_ASK', timeout=timeout
         )
 
         self.assertIsInstance(data[0], list)
@@ -115,7 +117,8 @@ class TestIBClient(unittest.TestCase):
             ),
             end=IBClient.TZ.localize(
                 datetime(2020, 4, 29, 10, 31, 0)
-            )
+            ),
+            timeout=timeout
         )
 
         self.assertIsInstance(data[0], list)

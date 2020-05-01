@@ -49,7 +49,7 @@ class TestIBClient(unittest.TestCase):
         contract.exchange = "ECBOT"
 
         resolved_contract = self.client.resolve_contract(
-            contract, Const.RID_RESOLVE_CONTRACT.value
+            Const.RID_RESOLVE_CONTRACT.value, contract
         )
 
         self.assertIsNotNone(resolved_contract)
@@ -57,7 +57,7 @@ class TestIBClient(unittest.TestCase):
 
     def test_resolve_head_timestamp(self):
         resolved_contract = self.client.resolve_contract(
-            self.__contract, Const.RID_RESOLVE_CONTRACT.value
+            Const.RID_RESOLVE_CONTRACT.value, self.__contract
         )
 
         print(resolved_contract)
@@ -72,8 +72,9 @@ class TestIBClient(unittest.TestCase):
         self.assertIsInstance(head_timestamp, int)
 
     def test_fetch_historical_ticks(self):
-        resolved_contract = self.client.resolve_contract(self.__contract,
-            Const.RID_RESOLVE_CONTRACT.value)
+        resolved_contract = self.client.resolve_contract(
+            Const.RID_RESOLVE_CONTRACT.value, self.__contract
+        )
 
         data = self.client.fetch_historical_ticks(
             Const.RID_FETCH_HISTORICAL_TICKS.value, resolved_contract, 
@@ -123,8 +124,9 @@ class TestIBClient(unittest.TestCase):
         self.assertIsInstance(data[0][0], HistoricalTickLast)
 
     def test_fetch_historical_ticks_err(self):
-        resolved_contract = self.client.resolve_contract(self.__contract,
-            Const.RID_RESOLVE_CONTRACT.value)
+        resolved_contract = self.client.resolve_contract(
+            Const.RID_RESOLVE_CONTRACT.value, self.__contract
+        )
 
         # Incorrect value of `show`
         with self.assertRaises(ValueError):

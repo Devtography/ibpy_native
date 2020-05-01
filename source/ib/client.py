@@ -32,7 +32,7 @@ class IBClient(EClient):
         self.__wrapper = wrapper
         super().__init__(wrapper)
 
-    def resolve_contract(self, contract: Contract, req_id: int) -> Contract:
+    def resolve_contract(self, req_id: int, contract: Contract) -> Contract:
         """
         From a partially formed contract, returns a fully fledged version
         :returns fully resolved IB contract
@@ -51,27 +51,29 @@ class IBClient(EClient):
         self.reqContractDetails(req_id, contract)
 
         # Run until we get a valid contract(s) or timeout
-        new_contract_details = f_queue.get(
-            timeout=Const.MAX_WAIT_SECONDS.value
-        )
+        contract_details = f_queue.get(timeout=Const.MAX_WAIT_SECONDS.value)
 
         try:
             self.__check_error()
         except IBError as err:
-            print(err)
+            raise err
 
         if f_queue.get_status() == QStatus.TIMEOUT:
-            print(Const.MSG_TIMEOUT.value)
+            raise IBError(
+                req_id, IBErrorCode.REQ_TIMEOUT.value,
+                Const.MSG_TIMEOUT.value
+            )
 
-        if len(new_contract_details) == 0:
-            print("Failed to get additional contract details: returning unresolved contract")
-            
-            return contract
+        if len(contract_details) == 0:
+            raise IBError(
+                req_id, IBErrorCode.RES_NO_CONTENT.value,
+                "Failed to get additional contract details"
+            )
 
-        if len(new_contract_details) > 1:
+        if len(contract_details) > 1:
             print("Multiple contracts found: returning 1st contract")
 
-        resolved_contract = new_contract_details[0].contract
+        resolved_contract = contract_details[0].contract
 
         return resolved_contract
 

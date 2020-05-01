@@ -33,7 +33,7 @@ class TestIBWrapper(unittest.TestCase):
         setattr(self.client, "_thread", thread)
 
         self.resolved_contract = self.client.resolve_contract(
-            self.contract, Const.RID_RESOLVE_CONTRACT.value
+            Const.RID_RESOLVE_CONTRACT.value, self.contract
         )
 
         print(self.resolved_contract)

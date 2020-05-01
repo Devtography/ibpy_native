@@ -15,13 +15,14 @@ class Const(enum.Enum):
     QUEUE_MAX_WAIT_SEC = 10
 
 class TestIBWrapper(unittest.TestCase):
-    contract = Contract()
-    contract.secType = "STK"
-    contract.symbol = "AAPL"
-    contract.exchange = "SMART"
-    contract.currency = "USD"
+    __contract = Contract()
+    __contract.secType = "STK"
+    __contract.symbol = "AAPL"
+    __contract.exchange = "SMART"
+    __contract.currency = "USD"
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(self):
         self.wrapper = wrapper.IBWrapper()
         self.client = client.IBClient(self.wrapper)
 
@@ -33,7 +34,7 @@ class TestIBWrapper(unittest.TestCase):
         setattr(self.client, "_thread", thread)
 
         self.resolved_contract = self.client.resolve_contract(
-            Const.RID_RESOLVE_CONTRACT.value, self.contract
+            Const.RID_RESOLVE_CONTRACT.value, self.__contract
         )
 
         print(self.resolved_contract)
@@ -101,5 +102,6 @@ class TestIBWrapper(unittest.TestCase):
         self.assertEqual(len(result), 2)
         self.assertIsInstance(result[0], ListOfHistoricalTickLast)
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(self):
         self.client.disconnect()

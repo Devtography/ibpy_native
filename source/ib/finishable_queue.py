@@ -4,6 +4,7 @@ import queue
 # Queue status
 class Status(enum.Enum):
     STARTED = 103
+    ERROR = 500
     FINISHED = 200
     TIMEOUT = 408
 
@@ -28,6 +29,8 @@ class FinishableQueue(object):
 
                 if current_element is Status.FINISHED:
                     self.__status = Status.FINISHED
+                elif current_element is Status.ERROR:
+                    self.__status = Status.ERROR
                 else:
                     contents_of_queue.append(current_element)
                     # then keep going and try and get more data
@@ -50,4 +53,5 @@ class FinishableQueue(object):
 
     def __finished(self) -> bool:
         return (self.__status is Status.TIMEOUT
-            or self.__status is Status.FINISHED)
+            or self.__status is Status.FINISHED
+            or self.__status is Status.ERROR)

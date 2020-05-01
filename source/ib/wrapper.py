@@ -3,7 +3,7 @@ from .error import IBError, IBErrorCode
 
 from ibapi.wrapper import (EWrapper, HistoricalTick, HistoricalTickBidAsk,
     HistoricalTickLast)
-from typing import List, Union
+from typing import List, Optional, Union
 
 import queue
 
@@ -36,7 +36,7 @@ class IBWrapper(EWrapper):
     def has_err(self):
         return not self.__err_queue.empty()
  
-    def get_err(self, timeout=10):
+    def get_err(self, timeout=10) -> Optional[IBError]:
         if self.has_err():
             try:
                 return self.__err_queue.get(timeout=timeout)
@@ -50,6 +50,10 @@ class IBWrapper(EWrapper):
         err = IBError(id, errorCode, errorString)
         
         self.__err_queue.put(err)
+
+        # -1 indicates a notification and not true error condition
+        if id is not -1:
+            self.__req_queue[id].put(QStatus.ERROR)
 
     # Get contract details
     def contractDetails(self, reqId, contractDetails):

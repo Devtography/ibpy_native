@@ -1,4 +1,4 @@
-from .finishable_queue import FinishableQueue, Status as QStatus
+from .finishable_queue import FinishableQueue, Status
 from .error import IBError, IBErrorCode
 
 from ibapi.wrapper import (EWrapper, HistoricalTick, HistoricalTickBidAsk,
@@ -53,7 +53,7 @@ class IBWrapper(EWrapper):
 
         # -1 indicates a notification and not true error condition
         if id is not -1:
-            self.__req_queue[id].put(QStatus.ERROR)
+            self.__req_queue[id].put(Status.ERROR)
 
     # Get contract details
     def contractDetails(self, reqId, contractDetails):
@@ -66,7 +66,7 @@ class IBWrapper(EWrapper):
         # override method
         self.__init_req_queue(reqId)
 
-        self.__req_queue[reqId].put(QStatus.FINISHED)
+        self.__req_queue[reqId].put(Status.FINISHED)
 
     # Get earliest data point for a given instrument and data
     def headTimestamp(self, reqId: int, headTimestamp: str):
@@ -74,7 +74,7 @@ class IBWrapper(EWrapper):
         self.__init_req_queue(reqId)
 
         self.__req_queue[reqId].put(headTimestamp)
-        self.__req_queue[reqId].put(QStatus.FINISHED)
+        self.__req_queue[reqId].put(Status.FINISHED)
 
     # Fetch historical ticks data
     def historicalTicks(
@@ -122,4 +122,4 @@ class IBWrapper(EWrapper):
 
         self.__req_queue[req_id].put(ticks)
         self.__req_queue[req_id].put(done)
-        self.__req_queue[req_id].put(QStatus.FINISHED)
+        self.__req_queue[req_id].put(Status.FINISHED)

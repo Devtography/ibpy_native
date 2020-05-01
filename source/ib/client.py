@@ -1,6 +1,6 @@
 from .wrapper import IBWrapper
 from .error import IBError, IBErrorCode
-from .finishable_queue import FinishableQueue, Status as QStatus
+from .finishable_queue import FinishableQueue, Status
 
 from ibapi.contract import Contract
 from ibapi.client import EClient
@@ -62,7 +62,7 @@ class IBClient(EClient):
         except IBError as err:
             raise err
 
-        if f_queue.get_status() == QStatus.TIMEOUT:
+        if f_queue.get_status() == Status.TIMEOUT:
             raise IBError(
                 req_id, IBErrorCode.REQ_TIMEOUT.value,
                 Const.MSG_TIMEOUT.value
@@ -116,7 +116,7 @@ class IBClient(EClient):
         except IBError as err:
             raise err
 
-        if f_queue.get_status() == QStatus.TIMEOUT:
+        if f_queue.get_status() == Status.TIMEOUT:
             raise IBError(
                     req_id, IBErrorCode.REQ_TIMEOUT.value,
                     Const.MSG_TIMEOUT.value
@@ -238,7 +238,7 @@ class IBClient(EClient):
             except IBError as err:
                 raise err
 
-            if f_queue.get_status() == QStatus.TIMEOUT:
+            if f_queue.get_status() == Status.TIMEOUT:
                 # Checks if it's in the middle of the data fetching loop
                 if len(all_ticks) > 0:
                     print("Request timeout while fetching the remaining ticks: "

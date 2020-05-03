@@ -1,6 +1,8 @@
-from .wrapper import IBWrapper
 from .client import IBClient
+from .error import IBError
+from .wrapper import IBWrapper
 
+from ibapi.wrapper import Contract
 from datetime import tzinfo
 
 import threading
@@ -48,3 +50,23 @@ class IBBridge:
 
     def disconnect(self):
         self.__client.disconnect()
+
+    def get_us_stock_contract(
+        self, req_id: int, symbol: str, timeout: int = IBClient.REQ_TIMEOUT
+    ) -> Contract:
+        """
+        Resolve the IB US stock contract
+        """
+
+        contract = Contract()
+        contract.currency = 'USD'
+        contract.exchange = 'SMART'
+        contract.secType = 'STK'
+        contract.symbol = symbol
+
+        try:
+            result = self.__client.resolve_contract(req_id, contract, timeout)
+        except IBError as err:
+            raise err
+
+        return result

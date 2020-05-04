@@ -48,6 +48,10 @@ class TestIBBridge(unittest.TestCase):
 
         self.assertEqual(IBClient.TZ, pytz.timezone('Asia/Hong_Kong'))
 
+        # Reset timezone to New York
+        IBBridge.set_timezone(pytz.timezone('America/New_York'))
+        self.assertEqual(IBClient.TZ, pytz.timezone('America/New_York'))
+
     def test_get_us_stock_contract(self):
         contract = self._bridge.get_us_stock_contract(_RID_GET_US_STK, 'AAPL')
 

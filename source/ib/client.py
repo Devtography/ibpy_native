@@ -166,30 +166,6 @@ class IBClient(EClient):
                     "Specificed start time cannot be later than end time"
                 )
         
-        # Get corresponding head timestamp for ticks data type to fetch
-        timestamp_to_fetch = show if show is 'TRADES' else 'BID'
-
-        try:
-            head_timestamp = datetime.fromtimestamp(
-                self.resolve_head_timestamp(
-                    random.randint(100000, 109999), contract,
-                    timestamp_to_fetch
-                )
-            ).astimezone(end.tzinfo)
-        except ValueError as err:
-            raise err
-        except IBError as err:
-            raise IBError(req_id, err.errorCode, err.errorString)
-
-        # Back to error checking
-        if start is not None:
-            if start.timestamp() < head_timestamp.timestamp():
-                raise ValueError(
-                    "Specificed start time is earlier than the earliest "
-                    "available data point - "
-                    + head_timestamp.strftime(Const.TIME_FMT.value)
-                )
-
         # Time to fetch the ticks
         try:
             queue = self.__wrapper.get_request_queue(req_id)

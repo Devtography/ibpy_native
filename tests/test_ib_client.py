@@ -151,13 +151,6 @@ class TestIBClient(unittest.TestCase):
                 Const.RID_FETCH_HISTORICAL_TICKS_ERR.value, Contract()
             )
 
-        # Start time is earlier than earliest available data point
-        with self.assertRaises(ValueError):
-            self.client.fetch_historical_ticks(
-                Const.RID_FETCH_HISTORICAL_TICKS_ERR.value, resolved_contract,
-                IBClient.TZ.localize(datetime(1980, 12, 12, 9))
-            )
-
     @classmethod
     def tearDownClass(self):
         self.client.disconnect()

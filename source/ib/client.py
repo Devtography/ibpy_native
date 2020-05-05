@@ -110,6 +110,10 @@ class IBClient(EClient):
 
         head_timestamp = f_queue.get(timeout=timeout)
 
+        # Cancel the head time stamp request to release the ID after the 
+        # request queue is finished/timeout
+        self.cancelHeadTimeStamp(req_id)
+
         try:
             self.__check_error()
         except IBError as err:

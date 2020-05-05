@@ -63,7 +63,7 @@ class IBBridge:
         self.__client.disconnect()
 
     def get_us_stock_contract(
-        self, req_id: int, symbol: str, timeout: int = IBClient.REQ_TIMEOUT
+        self, symbol: str, timeout: int = IBClient.REQ_TIMEOUT
     ) -> Contract:
         """
         Resolve the IB US stock contract
@@ -76,7 +76,9 @@ class IBBridge:
         contract.symbol = symbol
 
         try:
-            result = self.__client.resolve_contract(req_id, contract, timeout)
+            result = self.__client.resolve_contract(
+                self.__gen_req_id(), contract, timeout
+            )
         except IBError as err:
             raise err
 
@@ -109,7 +111,7 @@ class IBBridge:
         try:
             head_timestamp = datetime.fromtimestamp(
                 self.__client.resolve_head_timestamp(
-                    random.randint(100000, 109999), contract,
+                    self.__gen_req_id(), contract,
                     'TRADES' if data_type is 'TRADES' else 'BID',
                     timeout
                 )
@@ -142,7 +144,7 @@ class IBBridge:
         while attempts_count > 0:
             try:
                 ticks = self.__client.fetch_historical_ticks(
-                    random.randint(0, 9999), contract,
+                    self.__gen_req_id(), contract,
                     start if start is None else IBClient.TZ.localize(start),
                     next_end_time, data_type, timeout
                 )
@@ -181,3 +183,10 @@ class IBBridge:
             'ticks': all_ticks,
             'completed': False
         }
+
+    def __gen_req_id(self) -> int:
+        """
+        Returns a random integer from 1 to 999999 as internal req_id for 
+        IB API requests
+        """
+        return random.randint(1, 999999)

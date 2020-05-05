@@ -10,10 +10,6 @@ import unittest
 TEST_PORT = 4002
 TEST_ID = 1001
 
-_RID_GET_US_STK = 43001
-_RID_GET_HISTORICAL_TICKS = 18001
-_RID_GET_HISTORICAL_TICKS_ERR = 18002
-
 class TestIBBridgeConn(unittest.TestCase):
     """
     Test case for connection related functions in `IBBridge`
@@ -56,14 +52,12 @@ class TestIBBridge(unittest.TestCase):
         self.assertEqual(IBClient.TZ, pytz.timezone('America/New_York'))
 
     def test_get_us_stock_contract(self):
-        contract = self._bridge.get_us_stock_contract(_RID_GET_US_STK, 'AAPL')
+        contract = self._bridge.get_us_stock_contract('AAPL')
 
         self.assertIsInstance(contract, Contract)
 
     def test_get_historical_ticks(self):
-        contract = self._bridge.get_us_stock_contract(
-            _RID_GET_HISTORICAL_TICKS, 'AAPL'
-        )
+        contract = self._bridge.get_us_stock_contract('AAPL')
 
         result = self._bridge.get_historical_ticks(
             contract,
@@ -75,9 +69,7 @@ class TestIBBridge(unittest.TestCase):
         self.assertTrue(result['completed'])
 
     def test_get_historical_ticks_err(self):
-        contract = self._bridge.get_us_stock_contract(
-            _RID_GET_HISTORICAL_TICKS_ERR, 'AAPL'
-        )
+        contract = self._bridge.get_us_stock_contract('AAPL')
 
         # start/end should not contains timezone info
         with self.assertRaises(ValueError):

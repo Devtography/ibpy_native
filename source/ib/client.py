@@ -12,7 +12,6 @@ from typing_extensions import Literal
 
 import enum
 import pytz
-import random
 
 class Const(enum.Enum):
     TIME_FMT = '%Y%m%d %H:%M:%S' # IB time format
@@ -142,7 +141,14 @@ class IBClient(EClient):
         end: datetime = datetime.now().astimezone(TZ),
         show: Literal['MIDPOINT', 'BID_ASK', 'TRADES'] = 'TRADES',
         timeout: int = REQ_TIMEOUT
-    ) -> Tuple[list, bool]:
+    ) -> Tuple[
+            List[Union[
+                HistoricalTick,
+                HistoricalTickBidAsk, 
+                HistoricalTickLast
+            ]],
+            bool
+        ]:
         """
         Fetch the historical ticks data for a given instrument from IB.
         
@@ -218,8 +224,7 @@ class IBClient(EClient):
                 # Checks if it's in the middle of the data fetching loop
                 if len(all_ticks) > 0:
                     print("Request timeout while fetching the remaining ticks: "
-                        + "returning " + str(len(all_ticks)) 
-                        + "ticks fetched")
+                        f"returning {str(len(all_ticks))} ticks fetched")
                     # Returns already fetched data instead of having the
                     # pervious time used for fetching data all wasted
                     all_ticks.reverse()

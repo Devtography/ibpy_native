@@ -1,11 +1,22 @@
-from .client import IBClient
-from .error import IBError
+from .client import IBClient, Const
+from .error import IBError, IBErrorCode
 from .wrapper import IBWrapper
 
-from ibapi.wrapper import Contract
-from datetime import tzinfo
+from ibapi.wrapper import (Contract, HistoricalTick, HistoricalTickBidAsk,
+    HistoricalTickLast)
+from datetime import datetime, tzinfo
+from typing import Optional, Union
+from typing_extensions import Literal, TypedDict
 
+import random
 import threading
+
+class IBTicksResult(TypedDict):
+    """
+    Use for type hint the returns of `IBBridge.get_historical_ticks`
+    """
+    ticks: Union[HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast]
+    completed: bool
 
 class IBBridge:
 
@@ -70,3 +81,103 @@ class IBBridge:
             raise err
 
         return result
+
+    def get_historical_ticks(
+        self, contract: Contract,
+        start: Optional[datetime] = None,
+        end: datetime = datetime.now(),
+        data_type: Literal['MIDPOINT', 'BID_ASK', 'TRADES'] = 'TRADES',
+        attempts: int = 1, timeout: int = IBClient.REQ_TIMEOUT
+    ) -> IBTicksResult:
+        """
+        Retrieve historical ticks data for specificed instrument/contract
+        from IB
+        """
+        # Error checking
+        if end.tzinfo is not None or (start is not None
+        and start.tzinfo is not None):
+            raise ValueError(
+                "Timezone should not be specified in either `start` or `end`."
+            )
+
+        if data_type not in {'MIDPOINT', 'BID_ASK', 'TRADES'}:
+            raise ValueError(
+                "Value of argument `data_type` can only be either 'MIDPOINT', "
+                "'BID_ASK', or 'TRADES'"
+            )
+
+        try:
+            head_timestamp = datetime.fromtimestamp(
+                self.__client.resolve_head_timestamp(
+                    random.randint(100000, 109999), contract,
+                    'TRADES' if data_type is 'TRADES' else 'BID',
+                    timeout
+                )
+            ).astimezone(IBClient.TZ)
+        except (ValueError, IBError) as err:
+            raise err
+
+        if end.timestamp() < head_timestamp.timestamp():
+            raise ValueError(
+                "Specificed end time is earlier than the earliest available "
+                f"datapoint - {head_timestamp.strftime(Const.TIME_FMT.value)}"
+            )
+
+        if start is not None:
+            if start.timestamp() < head_timestamp.timestamp():
+                raise ValueError(
+                    "Specificed start time is earlier than the earliest "
+                    "available datapoint - "
+                    + head_timestamp.strftime(Const.TIME_FMT.value)
+                )
+            if end.timestamp() < start.timestamp():
+                raise ValueError(
+                    "Specificed end time cannot be earlier than start time"
+                )
+
+        next_end_time = IBClient.TZ.localize(end)
+        attempts_count = attempts
+        all_ticks = []
+
+        while attempts_count > 0:
+            try:
+                ticks = self.__client.fetch_historical_ticks(
+                    random.randint(0, 9999), contract,
+                    start if start is None else IBClient.TZ.localize(start),
+                    next_end_time, data_type, timeout
+                )
+
+                #  `ticks[1]`` is a boolean represents if the data are all
+                # fetched without timeout
+                if ticks[1]:
+                    if attempts_count == attempts:
+                        return {
+                            'ticks': ticks[0],
+                            'completed': True
+                        }
+                    else:
+                        return {
+                            'ticks': ticks[0].extend(all_ticks),
+                            'completed': True
+                        }
+                
+                ticks[0].extend(all_ticks)
+                all_ticks = ticks[0]
+
+                next_end_time = datetime.fromtimestamp(
+                    ticks[0][0].time
+                ).astimezone(IBClient.TZ)
+                attempts_count = attempts_count - 1
+            except ValueError as err:
+                raise err
+            except IBError as err:
+                if (err.errorCode == IBErrorCode.REQ_TIMEOUT
+                and len(all_ticks) > 0):
+                    break
+                
+                raise err
+
+        return {
+            'ticks': all_ticks,
+            'completed': False
+        }

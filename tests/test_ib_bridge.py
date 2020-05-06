@@ -61,6 +61,15 @@ class TestIBBridge(unittest.TestCase):
 
         self.assertIsInstance(contract, Contract)
 
+    def test_get_earliest_data_point(self):
+        contract = self._bridge.get_us_stock_contract('AAPL')
+
+        head_trade = self._bridge.get_earliest_data_point(contract)
+        self.assertEqual(datetime(1980, 12, 12, 9, 30), head_trade)
+
+        head_bid_ask = self._bridge.get_earliest_data_point(contract, 'BID_ASK')
+        self.assertEqual(datetime(2004, 1, 23, 9, 30), head_bid_ask)
+
     def test_get_historical_ticks(self):
         contract = self._bridge.get_us_stock_contract('AAPL')
 

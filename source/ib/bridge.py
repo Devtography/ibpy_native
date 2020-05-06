@@ -111,6 +111,33 @@ class IBBridge:
 
         return result
 
+    def get_earliest_data_point(
+        self, contract: Contract,
+        data_type: Literal['BID_ASK', 'TRADES'] = 'TRADES',
+        timeout: int = IBClient.REQ_TIMEOUT
+    ) -> datetime:
+        """
+        Returns the earliest data point of specified contract
+        """
+        if data_type not in {'BID_ASK', 'TRADES'}:
+            raise ValueError(
+                "Value of argument `data_type` can only be either 'BID_ASK' "
+                "or 'TRADES'"
+            )
+
+        try:
+            result = self.__client.resolve_head_timestamp(
+                req_id=self.__gen_req_id(), contract=contract,
+                show=data_type if data_type is 'TRADES' else 'BID',
+                timeout=timeout
+            )
+        except (ValueError, IBError) as err:
+            raise err
+
+        dt = datetime.fromtimestamp(result).astimezone(IBClient.TZ)
+
+        return dt.replace(tzinfo=None)
+
     def get_historical_ticks(
         self, contract: Contract,
         start: Optional[datetime] = None,

@@ -84,6 +84,33 @@ class IBBridge:
 
         return result
 
+    def get_us_future_contract(
+        self, symbol: str, contract_month: str = '',
+        timeout: int = IBClient.REQ_TIMEOUT
+    ) -> Contract:
+        """
+        Search the US future contract from IB.
+
+        Ramarks:
+          - The value of `contract_month` should be in format of `YYYYMM`. The 
+          current on going contract will be returned if it's left empty.
+        """
+        contract = Contract()
+        contract.currency = 'USD'
+        contract.secType = 'FUT'
+        contract.includeExpired = True
+        contract.symbol = symbol
+        contract.lastTradeDateOrContractMonth = contract_month
+
+        try:
+            result = self.__client.resolve_contract(
+                self.__gen_req_id(), contract, timeout
+            )
+        except IBError as err:
+            raise err
+
+        return result
+
     def get_historical_ticks(
         self, contract: Contract,
         start: Optional[datetime] = None,

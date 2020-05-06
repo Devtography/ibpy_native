@@ -56,6 +56,11 @@ class TestIBBridge(unittest.TestCase):
 
         self.assertIsInstance(contract, Contract)
 
+    def test_get_us_future_contract(self):
+        contract = self._bridge.get_us_future_contract('MYM')
+
+        self.assertIsInstance(contract, Contract)
+
     def test_get_historical_ticks(self):
         contract = self._bridge.get_us_stock_contract('AAPL')
 

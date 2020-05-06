@@ -12,7 +12,6 @@ from typing_extensions import Literal
 
 import enum
 import pytz
-import random
 
 class Const(enum.Enum):
     TIME_FMT = '%Y%m%d %H:%M:%S' # IB time format
@@ -111,6 +110,10 @@ class IBClient(EClient):
 
         head_timestamp = f_queue.get(timeout=timeout)
 
+        # Cancel the head time stamp request to release the ID after the 
+        # request queue is finished/timeout
+        self.cancelHeadTimeStamp(req_id)
+
         try:
             self.__check_error()
         except IBError as err:
@@ -142,7 +145,14 @@ class IBClient(EClient):
         end: datetime = datetime.now().astimezone(TZ),
         show: Literal['MIDPOINT', 'BID_ASK', 'TRADES'] = 'TRADES',
         timeout: int = REQ_TIMEOUT
-    ) -> Tuple[list, bool]:
+    ) -> Tuple[
+            List[Union[
+                HistoricalTick,
+                HistoricalTickBidAsk, 
+                HistoricalTickLast
+            ]],
+            bool
+        ]:
         """
         Fetch the historical ticks data for a given instrument from IB.
         
@@ -166,30 +176,6 @@ class IBClient(EClient):
                     "Specificed start time cannot be later than end time"
                 )
         
-        # Get corresponding head timestamp for ticks data type to fetch
-        timestamp_to_fetch = show if show is 'TRADES' else 'BID'
-
-        try:
-            head_timestamp = datetime.fromtimestamp(
-                self.resolve_head_timestamp(
-                    random.randint(100000, 109999), contract,
-                    timestamp_to_fetch
-                )
-            ).astimezone(end.tzinfo)
-        except ValueError as err:
-            raise err
-        except IBError as err:
-            raise IBError(req_id, err.errorCode, err.errorString)
-
-        # Back to error checking
-        if start is not None:
-            if start.timestamp() < head_timestamp.timestamp():
-                raise ValueError(
-                    "Specificed start time is earlier than the earliest "
-                    "available data point - "
-                    + head_timestamp.strftime(Const.TIME_FMT.value)
-                )
-
         # Time to fetch the ticks
         try:
             queue = self.__wrapper.get_request_queue(req_id)
@@ -242,8 +228,7 @@ class IBClient(EClient):
                 # Checks if it's in the middle of the data fetching loop
                 if len(all_ticks) > 0:
                     print("Request timeout while fetching the remaining ticks: "
-                        + "returning " + str(len(all_ticks)) 
-                        + "ticks fetched")
+                        f"returning {str(len(all_ticks))} ticks fetched")
                     # Returns already fetched data instead of having the
                     # pervious time used for fetching data all wasted
                     all_ticks.reverse()

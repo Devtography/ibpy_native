@@ -58,8 +58,10 @@ class TestIBBridge(unittest.TestCase):
 
     def test_get_us_future_contract(self):
         contract = self._bridge.get_us_future_contract('MYM')
-
         self.assertIsInstance(contract, Contract)
+
+        with self.assertRaises(ValueError):
+            self._bridge.get_us_future_contract('MYM', 'abcd')
 
     def test_get_earliest_data_point(self):
         contract = self._bridge.get_us_stock_contract('AAPL')

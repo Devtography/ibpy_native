@@ -85,7 +85,7 @@ class IBBridge:
         return result
 
     def get_us_future_contract(
-        self, symbol: str, contract_month: str = '',
+        self, symbol: str, contract_month: Optional[str] = None,
         timeout: int = IBClient.REQ_TIMEOUT
     ) -> Contract:
         """
@@ -93,12 +93,24 @@ class IBBridge:
 
         Ramarks:
           - The value of `contract_month` should be in format of `YYYYMM`. The 
-          current on going contract will be returned if it's left empty.
+          current on going contract will be returned if it's left as `None`.
         """
+        include_expired = False
+
+        if contract_month is None:
+            contract_month = ''
+        else:
+            if len(contract_month) != 6 or not contract_month.isdecimal():
+                raise ValueError(
+                    "Value of argument `contract_month` should be in format of "
+                    "'YYYYMM'"
+                )
+            include_expired = True
+
         contract = Contract()
         contract.currency = 'USD'
         contract.secType = 'FUT'
-        contract.includeExpired = True
+        contract.includeExpired = include_expired
         contract.symbol = symbol
         contract.lastTradeDateOrContractMonth = contract_month
 

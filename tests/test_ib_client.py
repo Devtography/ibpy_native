@@ -1,6 +1,6 @@
-from source.ib.wrapper import IBWrapper 
-from source.ib.client import IBClient
-from source.ib.error import IBError
+from ibpy_native.wrapper import IBWrapper 
+from ibpy_native.client import IBClient
+from ibpy_native.error import IBError
 
 from ibapi.contract import Contract
 from ibapi.wrapper import (HistoricalTick, HistoricalTickBidAsk,

@@ -1,5 +1,5 @@
-from source.ib import IBBridge
-from source.ib.client import IBClient
+from ibpy_native import IBBridge
+from ibpy_native.client import IBClient
 
 from datetime import datetime
 from ibapi.wrapper import Contract

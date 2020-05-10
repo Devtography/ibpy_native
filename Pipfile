@@ -9,8 +9,6 @@ yapf = "*"
 pylint = "*"
 
 [packages]
-backtrader = "*"
-ibapi = {path = "./lib/ib/ibapi-9.79.1-py3-none-any.whl"}
 pytz = "*"
 typing-extensions = "*"
 

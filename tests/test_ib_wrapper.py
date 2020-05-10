@@ -1,5 +1,5 @@
-from source.ib import client, wrapper
-from source.ib.finishable_queue import FinishableQueue, Status
+from ibpy_native import client, wrapper
+from ibpy_native.finishable_queue import FinishableQueue, Status
 from ibapi.contract import Contract
 from ibapi.wrapper import (
     ListOfHistoricalTick, ListOfHistoricalTickBidAsk, ListOfHistoricalTickLast

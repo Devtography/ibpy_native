@@ -4,9 +4,13 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
+rope = "*"
+yapf = "*"
+pylint = "*"
 
 [packages]
-backtrader = "*"
+pytz = "*"
+typing-extensions = "*"
 
 [requires]
 python_version = "3.7"

@@ -8,6 +8,7 @@ rope = "*"
 yapf = "*"
 pylint = "*"
 pipenv-setup = "*"
+twine = "*"
 
 [packages]
 pytz = "*"

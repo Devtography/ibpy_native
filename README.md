@@ -62,6 +62,7 @@ using this package (`ibpy-native`), you are assumed that you agreed the
 ## Remarks
 `ibpy_native` is not a product of Interactive Brokers, nor is this project 
 affiliated with IB. If you'd like to use `ibpy_native` in any commercial 
-application/product. 
+application/product, you must contact Interactive Brokers LLC for permission 
+of using IB API commercial.
 
 [TWS API Non-Commercial License]: https://interactivebrokers.github.io/index.html

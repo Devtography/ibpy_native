@@ -7,6 +7,8 @@ verify_ssl = true
 rope = "*"
 yapf = "*"
 pylint = "*"
+pipenv-setup = "*"
+twine = "*"
 
 [packages]
 pytz = "*"

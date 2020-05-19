@@ -160,6 +160,9 @@ class IBClient(EClient):
         ticks limit)
         """
         # Pre-process & error checking
+        if contract.currency != 'USD':
+            raise ValueError("Function supports US contracts only")
+
         if show not in {'MIDPOINT', 'BID_ASK', 'TRADES'}:
             raise ValueError(
                 "Value of argument `show` can only be either 'MIDPOINT', "

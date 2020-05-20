@@ -289,10 +289,13 @@ class IBClient(EClient):
                 # to avoid IB cutting off the data at the date start point for 
                 # the instrument.
                 # e.g. 
-                next_end_time = next_end_time - timedelta(
-                    minutes=next_end_time.minute % 30,
-                    seconds=next_end_time.second
-                )
+                delta = timedelta(minutes=next_end_time.minute % 30,
+                                  seconds=next_end_time.second)
+
+                if delta.total_seconds() == 0:
+                    next_end_time = next_end_time - timedelta(minutes=30)
+                else:
+                    next_end_time = next_end_time - delta
 
             if next_end_time.timestamp() <= real_start_time.timestamp():
                 if len(all_ticks) > 0:

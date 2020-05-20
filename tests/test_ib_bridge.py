@@ -73,12 +73,13 @@ class TestIBBridge(unittest.TestCase):
         self.assertEqual(datetime(2004, 1, 23, 9, 30), head_bid_ask)
 
     def test_get_historical_ticks(self):
-        contract = self._bridge.get_us_stock_contract('AAPL')
+        contract = self._bridge.get_us_future_contract('mym', '202003')
 
         result = self._bridge.get_historical_ticks(
             contract,
-            datetime(2020, 4, 29, 10, 30),
-            datetime(2020, 4, 29, 10, 32)
+            datetime(2020, 3, 16, 6, 30),
+            datetime(2020, 3, 16, 11, 0, 0),
+            timeout=120
         )
 
         self.assertGreater(len(result['ticks']), 0)

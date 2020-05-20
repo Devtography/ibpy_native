@@ -135,20 +135,23 @@ class TestIBClient(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.client.fetch_historical_ticks(
                 Const.RID_FETCH_HISTORICAL_TICKS_ERR.value, resolved_contract,
-                show='LAST'
+                datetime.now(), show='LAST'
             )
 
         # Timezone of start & end are not identical
         with self.assertRaises(ValueError):
             self.client.fetch_historical_ticks(
                 Const.RID_FETCH_HISTORICAL_TICKS_ERR.value, resolved_contract,
-                datetime.now().astimezone(pytz.timezone('Asia/Hong_Kong'))
+                datetime.now().astimezone(pytz.timezone('Asia/Hong_Kong')),
+                datetime.now().astimezone(pytz.timezone('America/New_York'))
             )
 
         # Invalid contract object
         with self.assertRaises(IBError):
             self.client.fetch_historical_ticks(
-                Const.RID_FETCH_HISTORICAL_TICKS_ERR.value, Contract()
+                Const.RID_FETCH_HISTORICAL_TICKS_ERR.value, Contract(),
+                datetime(2020, 5, 20, 3, 20, 0).astimezone(IBClient.TZ),
+                datetime.now().astimezone(IBClient.TZ)
             )
 
     @classmethod

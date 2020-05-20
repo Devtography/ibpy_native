@@ -203,6 +203,10 @@ class IBBridge:
                     "Specificed end time cannot be earlier than start time"
                 )
 
+            start = IBClient.TZ.localize(start)
+        else:
+            start = head_timestamp
+
         next_end_time = IBClient.TZ.localize(end)
         attempts_count = attempts
         all_ticks = []
@@ -211,8 +215,7 @@ class IBBridge:
             try:
                 ticks = self.__client.fetch_historical_ticks(
                     self.__gen_req_id(), contract,
-                    start if start is None else IBClient.TZ.localize(start),
-                    next_end_time, data_type, timeout
+                    start, next_end_time, data_type, timeout
                 )
 
                 #  `ticks[1]`` is a boolean represents if the data are all

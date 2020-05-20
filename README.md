@@ -11,6 +11,8 @@ Alternatively, install from source. Execute `setup.py` from the root directory.
 python setup.py install
 ```
 
+__*Always use the newest version while the project is still in alpha!*__
+
 ## Usage
 ```python
 import ibpy_native

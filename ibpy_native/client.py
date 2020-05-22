@@ -217,7 +217,10 @@ class IBClient(EClient):
             try:
                 self.__check_error()
             except IBError as err:
-                raise err
+                if err.errorCode == 200 and len(all_ticks) > 0:
+                    continue
+                else:
+                    raise err
 
             if f_queue.get_status() == Status.TIMEOUT:
                 # Checks if it's in the middle of the data fetching loop

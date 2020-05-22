@@ -48,6 +48,20 @@ head_time = bridge.get_earliest_data_point(contract=aapl, data_type='TRADES')
 ticks = bridge.get_historical_ticks(contract=aapl, data_type='TRADES', timeout=100)
 ```
 
+Scripts in `cmd` folder are designed provide instant access to some functions 
+implemented in `ibpy_native`. You can simply run the Python scripts in virtual 
+environment to make use of them.
+```sh
+# Make sure you are at root directory of the package before calling pipenv to 
+# run the script or enter the virtual environment, as it will load the .env 
+# file which adds the current directory path to PYTHONPATH.
+pipenv shell
+
+# e.g. fetch all historical ticks of YM 2020 MAR contract
+python cmd/fetch_us_historical_ticks.py YM fut 202003
+```
+Other options for the scripts can be found by using the `-h` or `--help` flags.
+
 ## System requirements
 - Python >= 3.5; Pervious versions are not supported (development is based on 
 Python 3.7.7)

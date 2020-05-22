@@ -6,8 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.3] - 2020-05-20
+`v0.1.3` is a minor release includes a script to fetch historical ticks of 
+US contracts for quick use.
+
+### Added
+- script `cmd/fetch_us_historical_ticks.py` to fetch historical ticks,
+
+### Changed
+- `README` to introduce the usage of the newly included script.
+
+### Notes
+- version in `setup.py` remains as `0.1.2` as there is nothing changed for 
+files included in the package released.
+
 ## [v0.1.2] - 2020-05-20
-`v0.1.2` is a minor hotfix releases fixed the issue found immediately after the 
+`v0.1.2` is a minor hotfix release fixed the issue found immediately after the 
 release of `v0.1.1`.
 
 ### Added
@@ -24,7 +38,7 @@ already at `hh:00:00` or `hh:30:00` by minus 30 minutes directly.
 unexpectedly.
 
 ### Added
-- README section `Known issues`, `Development status` & `Contributions`.
+- `README` section `Known issues`, `Development status` & `Contributions`.
 
 ### Changed
 - `start` is no longer an optional parameter for function 
@@ -42,6 +56,7 @@ returns with `finished` mark as `True` unexpectedly while IB returns less than
 1000 records but there're more historical ticks those should be fetched 
 in next request.
 
-[Unreleased]: https://github.com/Devtography/ibpy_native/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/Devtography/ibpy_native/compare/v0.1.3...HEAD
+[v0.1.3]: https://github.com/Devtography/ibpy_native/compare/v0.1.3...v0.1.2
 [v0.1.2]: https://github.com/Devtography/ibpy_native/compare/v0.1.2...v0.1.1
 [v0.1.1]: https://github.com/Devtography/ibpy_native/compare/v0.1.0...v0.1.1

@@ -1,15 +1,18 @@
-from .finishable_queue import FinishableQueue, Status
-from .error import IBError, IBErrorCode
-
-from ibapi.wrapper import (EWrapper, HistoricalTick, HistoricalTickBidAsk,
-    HistoricalTickLast)
+"""
+code implementation of IB API resposes handling.
+"""
+import queue
 from typing import List, Optional, Union
 
-import queue
+from ibapi.wrapper import (EWrapper, HistoricalTick, HistoricalTickBidAsk,
+                           HistoricalTickLast)
+
+from .finishable_queue import Status
+from .error import IBError, IBErrorCode
 
 class IBWrapper(EWrapper):
     """
-    The wrapper deals with the action coming back from the IB gateway or 
+    The wrapper deals with the action coming back from the IB gateway or
     TWS instance
     """
 
@@ -22,21 +25,36 @@ class IBWrapper(EWrapper):
 
     def get_request_queue(self, req_id: int) -> queue.Queue:
         """
-        Initialise queue or returned the existing queue with ID `req_id`
+        Initialise queue or returned the existing queue with ID `req_id`.
         """
         self.__init_req_queue(req_id)
 
         if not self.__req_queue[req_id].empty():
-            raise IBError(req_id, IBErrorCode.QUEUE_IN_USE.value,
-                f"Request queue with ID {str(req_id)} is currently in use")
+            raise IBError(
+                req_id, IBErrorCode.QUEUE_IN_USE.value,
+                f"Request queue with ID {str(req_id)} is currently in use"
+            )
 
         return self.__req_queue[req_id]
 
     # Error handling
-    def has_err(self):
+    def has_err(self) -> bool:
+        """
+        Check if there's any error in the error queue.
+
+        Returns:
+            The boolean indicates if the error queue contains any error or not.
+        """
         return not self.__err_queue.empty()
- 
+
     def get_err(self, timeout=10) -> Optional[IBError]:
+        """
+        Get the error from error queue.
+
+        Returns:
+            `IBError` if there's any in the error queue;
+            `None` if there is no error.
+        """
         if self.has_err():
             try:
                 return self.__err_queue.get(timeout=timeout)
@@ -44,16 +62,16 @@ class IBWrapper(EWrapper):
                 return None
 
         return None
-       
-    def error(self, id, errorCode, errorString):
+
+    def error(self, reqId, errorCode, errorString):
         # override method
-        err = IBError(id, errorCode, errorString)
-        
+        err = IBError(reqId, errorCode, errorString)
+
         self.__err_queue.put(err)
 
         # -1 indicates a notification and not true error condition
-        if id is not -1:
-            self.__req_queue[id].put(Status.ERROR)
+        if reqId is not -1:
+            self.__req_queue[reqId].put(Status.ERROR)
 
     # Get contract details
     def contractDetails(self, reqId, contractDetails):
@@ -78,23 +96,23 @@ class IBWrapper(EWrapper):
 
     # Fetch historical ticks data
     def historicalTicks(
-        self, reqId: int, ticks: List[HistoricalTick], done: bool
-    ):
+            self, reqId: int, ticks: List[HistoricalTick], done: bool
+        ):
         # override method
         self.__handle_historical_ticks_results(reqId, ticks, done)
 
     def historicalTicksBidAsk(
-        self, reqId: int, ticks: List[HistoricalTickBidAsk], done: bool
-    ):
+            self, reqId: int, ticks: List[HistoricalTickBidAsk], done: bool
+        ):
         # override method
         self.__handle_historical_ticks_results(reqId, ticks, done)
 
     def historicalTicksLast(
-        self, reqId: int, ticks: List[HistoricalTickLast], done: bool
-    ):
+            self, reqId: int, ticks: List[HistoricalTickLast], done: bool
+        ):
         # override method
         self.__handle_historical_ticks_results(reqId, ticks, done)
-        
+
     ## Private functions
     def __init_req_queue(self, req_id: int):
         """
@@ -104,18 +122,18 @@ class IBWrapper(EWrapper):
             self.__req_queue[req_id] = queue.Queue()
 
     def __handle_historical_ticks_results(
-        self,
-        req_id: int,
-        ticks: Union[
-            List[HistoricalTick],
-            List[HistoricalTickBidAsk],
-            List[HistoricalTickLast]
-        ],
-        done: bool
-    ):
+            self,
+            req_id: int,
+            ticks: Union[
+                List[HistoricalTick],
+                List[HistoricalTickBidAsk],
+                List[HistoricalTickLast]
+            ],
+            done: bool
+        ):
         """
-        Handles results return from functions `historicalTicks`, 
-        `historicalTicksBidAsk`, and `historicalTicksLast` by putting the 
+        Handles results return from functions `historicalTicks`,
+        `historicalTicksBidAsk`, and `historicalTicksLast` by putting the
         results into corresponding queue & marks the queue as finished.
         """
         self.__init_req_queue(req_id)

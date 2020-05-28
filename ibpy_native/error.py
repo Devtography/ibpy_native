@@ -7,6 +7,9 @@ class IBErrorCode(enum.IntEnum):
     """
     Error codes
     """
+    # Error codes defined by IB
+    INVALID_CONTRACT = 200
+    # Self-defined error codes
     REQ_TIMEOUT = 50504
     RES_NO_CONTENT = 50204
     RES_UNEXPECTED = 50214

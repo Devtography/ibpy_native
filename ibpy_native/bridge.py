@@ -11,7 +11,7 @@ from typing_extensions import Literal, TypedDict
 from ibapi.wrapper import (Contract, HistoricalTick, HistoricalTickBidAsk,
                            HistoricalTickLast)
 from .client import IBClient, Const
-from .error import IBError, IBErrorCode
+from .error import IBError
 from .wrapper import IBWrapper
 
 class IBTicksResult(TypedDict):
@@ -195,7 +195,7 @@ class IBBridge:
             head_timestamp = datetime.fromtimestamp(
                 self.__client.resolve_head_timestamp(
                     self.__gen_req_id(), contract,
-                    'TRADES' if data_type is 'TRADES' else 'BID',
+                    'TRADES' if data_type == 'TRADES' else 'BID',
                     timeout
                 )
             ).astimezone(IBClient.TZ)
@@ -229,6 +229,8 @@ class IBBridge:
         all_ticks = []
 
         while attempts_count > 0:
+            attempts_count = attempts_count - 1
+
             try:
                 ticks = self.__client.fetch_historical_ticks(
                     self.__gen_req_id(), contract,
@@ -243,11 +245,11 @@ class IBBridge:
                             'ticks': ticks[0],
                             'completed': True
                         }
-                    else:
-                        return {
-                            'ticks': ticks[0].extend(all_ticks),
-                            'completed': True
-                        }
+
+                    return {
+                        'ticks': ticks[0].extend(all_ticks),
+                        'completed': True
+                    }
 
                 ticks[0].extend(all_ticks)
                 all_ticks = ticks[0]
@@ -255,15 +257,24 @@ class IBBridge:
                 next_end_time = datetime.fromtimestamp(
                     ticks[0][0].time
                 ).astimezone(IBClient.TZ)
-                attempts_count = attempts_count - 1
             except ValueError as err:
                 raise err
             except IBError as err:
-                if (err.err_code == IBErrorCode.REQ_TIMEOUT
-                        and len(all_ticks) > 0):
+                if attempts_count > 0:
+                    if len(all_ticks) > 0:
+                        # Updates the end time for next attempt
+                        next_end_time = datetime.fromtimestamp(
+                            all_ticks[0].time
+                        ).astimezone(IBClient.TZ)
+
+                    continue
+
+                if attempts_count == 0 and len(all_ticks) > 0:
+                    print("Reached maximum attempts. Ending...")
                     break
 
-                raise err
+                if attempts_count == 0 and len(all_ticks) == 0:
+                    raise err
 
         return {
             'ticks': all_ticks,

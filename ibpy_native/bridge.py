@@ -11,7 +11,7 @@ from typing_extensions import Literal, TypedDict
 from ibapi.wrapper import (Contract, HistoricalTick, HistoricalTickBidAsk,
                            HistoricalTickLast)
 from .client import IBClient, Const
-from .error import IBError
+from .error import IBError, IBErrorCode
 from .wrapper import IBWrapper
 
 class IBTicksResult(TypedDict):
@@ -228,7 +228,7 @@ class IBBridge:
         all_ticks = []
 
         while attempts > 0:
-            attempts = attempts - 1
+            attempts -= 1
 
             try:
                 ticks = self.__client.fetch_historical_ticks(
@@ -255,6 +255,16 @@ class IBBridge:
             except ValueError as err:
                 raise err
             except IBError as err:
+                if err.err_code == IBErrorCode.DUPLICATE_TICKER_ID:
+                    # Restore the attempts count for error `Duplicate ticker ID`
+                    # as it shouldn't happen with the newly generated random
+                    # number as ID, but sometimes IB just cannot release the
+                    # ID used as soon as it has responded the request and throws
+                    # the duplicate ticker ID error.
+                    attempts += 1
+
+                    continue
+
                 if attempts > 0:
                     if len(all_ticks) > 0:
                         # Updates the end time for next attempt

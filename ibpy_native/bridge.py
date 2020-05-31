@@ -225,11 +225,10 @@ class IBBridge:
             start = head_timestamp
 
         next_end_time = IBClient.TZ.localize(end)
-        attempts_count = attempts
         all_ticks = []
 
-        while attempts_count > 0:
-            attempts_count = attempts_count - 1
+        while attempts > 0:
+            attempts = attempts - 1
 
             try:
                 ticks = self.__client.fetch_historical_ticks(
@@ -237,17 +236,13 @@ class IBBridge:
                     start, next_end_time, data_type, timeout
                 )
 
-                #  `ticks[1]`` is a boolean represents if the data are all
+                #  `ticks[1]` is a boolean represents if the data are all
                 # fetched without timeout
                 if ticks[1]:
-                    if attempts_count == attempts:
-                        return {
-                            'ticks': ticks[0],
-                            'completed': True
-                        }
+                    ticks[0].extend(all_ticks)
 
                     return {
-                        'ticks': ticks[0].extend(all_ticks),
+                        'ticks': ticks[0],
                         'completed': True
                     }
 
@@ -260,7 +255,7 @@ class IBBridge:
             except ValueError as err:
                 raise err
             except IBError as err:
-                if attempts_count > 0:
+                if attempts > 0:
                     if len(all_ticks) > 0:
                         # Updates the end time for next attempt
                         next_end_time = datetime.fromtimestamp(
@@ -269,11 +264,11 @@ class IBBridge:
 
                     continue
 
-                if attempts_count == 0 and len(all_ticks) > 0:
+                if attempts == 0 and len(all_ticks) > 0:
                     print("Reached maximum attempts. Ending...")
                     break
 
-                if attempts_count == 0 and len(all_ticks) == 0:
+                if attempts == 0 and len(all_ticks) == 0:
                     raise err
 
         return {

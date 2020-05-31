@@ -222,7 +222,7 @@ class _FetchCmd:
 
         fetch_result = bridge.get_historical_ticks(
             contract=contract, start=start_time, end=end_time,
-            data_type=args.data_type, attempts=10, timeout=180
+            data_type=args.data_type, attempts=-1, timeout=180
         )
 
         if fetch_result['completed']:

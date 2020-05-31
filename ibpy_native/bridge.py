@@ -224,11 +224,17 @@ class IBBridge:
         else:
             start = head_timestamp
 
+        if attempts < 1 and attempts != -1:
+            raise ValueError(
+                "Value of argument `attempts` must be positive integer or -1"
+            )
+
+        # Process the request
         next_end_time = IBClient.TZ.localize(end)
         all_ticks = []
 
-        while attempts > 0:
-            attempts -= 1
+        while attempts > 0 or attempts == -1:
+            attempts = attempts - 1 if attempts != -1 else attempts
 
             try:
                 ticks = self.__client.fetch_historical_ticks(
@@ -261,7 +267,7 @@ class IBBridge:
                     # number as ID, but sometimes IB just cannot release the
                     # ID used as soon as it has responded the request and throws
                     # the duplicate ticker ID error.
-                    attempts += 1
+                    attempts = attempts + 1 if attempts != -1 else attempts
 
                     continue
 

@@ -139,11 +139,18 @@ class TestIBBridge(unittest.TestCase):
         with self.assertRaises(ValueError):
             self._bridge.get_historical_ticks(contract, datetime(1972, 12, 12))
 
+        # `end` is earlier than `start`
         with self.assertRaises(ValueError):
             self._bridge.get_historical_ticks(
                 contract,
-                datetime(2020, 4, 29, 9, 30),
-                datetime(2020, 4, 28, 9, 30)
+                start=datetime(2020, 4, 29, 9, 30),
+                end=datetime(2020, 4, 28, 9, 30)
+            )
+
+        # Invalid `attempts` value
+        with self.assertRaises(ValueError):
+            self._bridge.get_historical_ticks(
+                contract, attempts=0
             )
 
     @classmethod

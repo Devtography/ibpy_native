@@ -1,19 +1,24 @@
-from ibpy_native.wrapper import IBWrapper 
-from ibpy_native.client import IBClient
-from ibpy_native.error import IBError
-
-from ibapi.contract import Contract
-from ibapi.wrapper import (HistoricalTick, HistoricalTickBidAsk,
-    HistoricalTickLast)
-from datetime import datetime
-from typing import List
-
+"""
+Unit tests for module `ibpy_native.client`.
+"""
 import enum
 import unittest
 import threading
+from datetime import datetime
+
 import pytz
+from ibpy_native.wrapper import IBWrapper
+from ibpy_native.client import IBClient
+from ibpy_native.error import IBError
+from ibapi.contract import Contract
+from ibapi.wrapper import (
+    HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast
+)
 
 class Const(enum.IntEnum):
+    """
+    Predefined request IDs for tests in `TestIBClient`.
+    """
     RID_RESOLVE_CONTRACT = 43
     RID_RESOLVE_HEAD_TIMESTAMP = 14001
     RID_RESOLVE_HEAD_TIMESTAMP_EPOCH = 14002
@@ -21,6 +26,9 @@ class Const(enum.IntEnum):
     RID_FETCH_HISTORICAL_TICKS_ERR = 18002
 
 class TestIBClient(unittest.TestCase):
+    """
+    Unit tests for class `IBClient`.
+    """
     __contract = Contract()
     __contract.secType = "STK"
     __contract.symbol = "AAPL"
@@ -28,20 +36,23 @@ class TestIBClient(unittest.TestCase):
     __contract.currency = "USD"
 
     @classmethod
-    def setUpClass(self):
+    def setUpClass(cls):
         IBClient.TZ = pytz.timezone('America/New_York')
 
-        self.wrapper = IBWrapper()
-        self.client = IBClient(self.wrapper)
+        cls.wrapper = IBWrapper()
+        cls.client = IBClient(cls.wrapper)
 
-        self.client.connect('127.0.0.1', 4002, 1001)
+        cls.client.connect('127.0.0.1', 4002, 1001)
 
-        thread = threading.Thread(target = self.client.run)
+        thread = threading.Thread(target=cls.client.run)
         thread.start()
 
-        setattr(self.client, "_thread", thread)
+        setattr(cls.client, "_thread", thread)
 
     def test_resolve_contract(self):
+        """
+        Test function `resolve_contract`.
+        """
         contract = Contract()
         contract.secType = "FUT"
         contract.lastTradeDateOrContractMonth = "202006"
@@ -56,6 +67,9 @@ class TestIBClient(unittest.TestCase):
         print(resolved_contract)
 
     def test_resolve_head_timestamp(self):
+        """
+        Test function `resolve_head_timestamp`.
+        """
         resolved_contract = self.client.resolve_contract(
             Const.RID_RESOLVE_CONTRACT.value, self.__contract
         )
@@ -72,6 +86,9 @@ class TestIBClient(unittest.TestCase):
         self.assertIsInstance(head_timestamp, int)
 
     def test_fetch_historical_ticks(self):
+        """
+        Test function `fetch_historical_ticks`.
+        """
         timeout = 60
 
         resolved_contract = self.client.resolve_contract(
@@ -79,7 +96,7 @@ class TestIBClient(unittest.TestCase):
         )
 
         data = self.client.fetch_historical_ticks(
-            Const.RID_FETCH_HISTORICAL_TICKS.value, resolved_contract, 
+            Const.RID_FETCH_HISTORICAL_TICKS.value, resolved_contract,
             start=IBClient.TZ.localize(
                 datetime(2020, 4, 29, 10, 30, 0)
             ),
@@ -95,7 +112,7 @@ class TestIBClient(unittest.TestCase):
         self.assertIsInstance(data[0][0], HistoricalTick)
 
         data = self.client.fetch_historical_ticks(
-            Const.RID_FETCH_HISTORICAL_TICKS.value, resolved_contract, 
+            Const.RID_FETCH_HISTORICAL_TICKS.value, resolved_contract,
             start=IBClient.TZ.localize(
                 datetime(2020, 4, 29, 10, 30, 0)
             ),
@@ -111,7 +128,7 @@ class TestIBClient(unittest.TestCase):
         self.assertIsInstance(data[0][0], HistoricalTickBidAsk)
 
         data = self.client.fetch_historical_ticks(
-            Const.RID_FETCH_HISTORICAL_TICKS.value, resolved_contract, 
+            Const.RID_FETCH_HISTORICAL_TICKS.value, resolved_contract,
             start=IBClient.TZ.localize(
                 datetime(2020, 4, 29, 10, 30, 0)
             ),
@@ -127,6 +144,9 @@ class TestIBClient(unittest.TestCase):
         self.assertIsInstance(data[0][0], HistoricalTickLast)
 
     def test_fetch_historical_ticks_err(self):
+        """
+        Test function `fetch_historical_ticks` for the error cases.
+        """
         resolved_contract = self.client.resolve_contract(
             Const.RID_RESOLVE_CONTRACT.value, self.__contract
         )
@@ -155,5 +175,5 @@ class TestIBClient(unittest.TestCase):
             )
 
     @classmethod
-    def tearDownClass(self):
-        self.client.disconnect()
+    def tearDownClass(cls):
+        cls.client.disconnect()

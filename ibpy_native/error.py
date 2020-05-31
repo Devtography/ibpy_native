@@ -8,6 +8,7 @@ class IBErrorCode(enum.IntEnum):
     Error codes
     """
     # Error codes defined by IB
+    DUPLICATE_TICKER_ID = 102
     INVALID_CONTRACT = 200
     # Self-defined error codes
     REQ_TIMEOUT = 50504

@@ -354,7 +354,7 @@ class IBClient(EClient):
 
             print(f"{datetime.now()}: {err}")
 
-            if err.id == -1:
+            if err.rid == -1:
                 # -1 means a notification not error
                 continue
 

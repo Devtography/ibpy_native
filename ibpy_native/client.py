@@ -227,8 +227,16 @@ class IBClient(EClient):
             try:
                 self.__check_error()
             except IBError as err:
-                if err.err_code == 200 and len(all_ticks) > 0:
-                    continue
+                if len(all_ticks) > 0:
+                    if err.err_code == IBErrorCode.INVALID_CONTRACT:
+                        # Continue if IB returns error `No security definition
+                        # has been found for the request` as it's not possible
+                        # that ticks can be fetched on pervious attempts for an
+                        # invalid contract.
+                        f_queue.reset()
+                        continue
+
+                    break
 
                 raise err
 
@@ -237,11 +245,11 @@ class IBClient(EClient):
                 if len(all_ticks) > 0:
                     print("Request timeout while fetching the remaining ticks: "
                           f"returning {str(len(all_ticks))} ticks fetched")
-                    # Returns already fetched data instead of having the
-                    # pervious time used for fetching data all wasted
-                    all_ticks.reverse()
 
-                    return (all_ticks, False)
+                    # Breaks the while loop to return already fetched data
+                    # instead of having the pervious time used for fetching
+                    # data all wasted
+                    break
 
                 raise IBError(
                     req_id, IBErrorCode.REQ_TIMEOUT.value,
@@ -295,7 +303,8 @@ class IBClient(EClient):
                     ).astimezone(next_end_time.tzinfo)
 
                     print(
-                        f"{len(all_ticks)} ticks fetched; Last tick time - "
+                        f"{len(all_ticks)} ticks fetched ({len(ticks)} new "
+                        "ticks); Next end time - "
                         f"{next_end_time.strftime(Const.TIME_FMT.value)}"
                     )
                 else:
@@ -316,25 +325,24 @@ class IBClient(EClient):
                 else:
                     next_end_time = next_end_time - delta
 
+                print(
+                    f"{len(all_ticks)} ticks fetched (0 new tick); Next end"
+                    f"time - {next_end_time.strftime(Const.TIME_FMT.value)}"
+                )
+
             if next_end_time.timestamp() <= real_start_time.timestamp():
-                if len(all_ticks) > 0:
-                    # All tick data within the specificed range has been
-                    # fetched from IB. Finish the while loop.
-                    finished = True
-                    break
-                else:
-                    raise IBError(
-                        req_id, IBErrorCode.RES_NO_CONTENT.value,
-                        "[Abnormal] Request completed without issue but "
-                        "results from IB contains no historical ticks data"
-                    )
+                # All tick data within the specificed range has been
+                # fetched from IB. Finish the while loop.
+                finished = True
+
+                break
 
             # Resets the queue for next historical ticks request
             f_queue.reset()
 
         all_ticks.reverse()
 
-        return (all_ticks, True)
+        return (all_ticks, finished)
 
     # Private functions
     def __check_error(self):

@@ -352,8 +352,6 @@ class IBClient(EClient):
         while self.__wrapper.has_err():
             err: IBError = self.__wrapper.get_err()
 
-            print(f"{datetime.now()}: {err}")
-
             if err.rid == -1:
                 # -1 means a notification not error
                 continue

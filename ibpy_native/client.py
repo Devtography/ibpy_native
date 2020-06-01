@@ -313,7 +313,7 @@ class IBClient(EClient):
                 # Checks if it's in the middle of the data fetching loop
                 if len(all_ticks) > 0:
                     print("Request timeout while fetching the remaining ticks: "
-                          f"returning {str(len(all_ticks))} ticks fetched")
+                          f"returning {len(all_ticks)} ticks fetched")
 
                     # Breaks the while loop to return already fetched data
                     # instead of having the pervious time used for fetching
@@ -326,6 +326,12 @@ class IBClient(EClient):
                 )
 
             if len(result) == 0:
+                if len(all_ticks) > 0:
+                    print("Request failed while fetching the remaining ticks: "
+                          f"returning {len(all_ticks)} ticks fetched")
+
+                    break
+
                 raise IBError(
                     req_id, IBErrorCode.RES_NO_CONTENT.value,
                     "Failed to get historical ticks data"
@@ -334,6 +340,13 @@ class IBClient(EClient):
             if len(result) != 2:
                 # The result should be a list that contains 2 items:
                 # [ticks: ListOfHistoricalTick(BidAsk/Last), done: bool]
+                if len(all_ticks) > 0:
+                    print("Abnormal result received while fetching the "
+                          f"remaining ticks: returning {len(all_ticks)} ticks "
+                          "fetched")
+
+                    break
+
                 raise IBError(
                     req_id, IBErrorCode.RES_UNEXPECTED.value,
                     "[Abnormal] Incorrect number of items received: "

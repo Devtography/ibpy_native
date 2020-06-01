@@ -233,7 +233,6 @@ class IBClient(EClient):
                 request(s);
                 - incorrect number of items (!= 2) found in the result received
                 from IB with no tick fetched in pervious request(s).
-
         """
         # Pre-process & error checking
         if show not in {'MIDPOINT', 'BID_ASK', 'TRADES'}:

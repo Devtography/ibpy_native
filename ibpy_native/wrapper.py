@@ -13,7 +13,7 @@ from .error import IBError, IBErrorCode
 class IBWrapper(EWrapper):
     """
     The wrapper deals with the action coming back from the IB gateway or
-    TWS instance
+    TWS instance.
     """
 
     __req_queue = {}
@@ -25,7 +25,15 @@ class IBWrapper(EWrapper):
 
     def get_request_queue(self, req_id: int) -> queue.Queue:
         """
-        Initialise queue or returned the existing queue with ID `req_id`.
+        Initialise queue or returns the existing queue with ID `req_id`.
+
+        Args:
+            req_id (int): Request ID (ticker ID in IB API) to associate to the
+                queue.
+
+        Returns:
+            queue.Queue: The newly initialised queue or the already existed
+                queue associated to the `req_id`.
         """
         self.__init_req_queue(req_id)
 
@@ -43,13 +51,17 @@ class IBWrapper(EWrapper):
         Check if there's any error in the error queue.
 
         Returns:
-            The boolean indicates if the error queue contains any error or not.
+            bool: Indicates if the error queue contains any error or not.
         """
         return not self.__err_queue.empty()
 
     def get_err(self, timeout=10) -> Optional[IBError]:
         """
         Get the error from error queue.
+
+        Args:
+            timeout (int, optional): Second(s) to wait for the get request.
+                Defaults to 10.
 
         Returns:
             `IBError` if there's any in the error queue;

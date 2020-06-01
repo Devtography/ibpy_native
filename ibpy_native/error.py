@@ -2,6 +2,7 @@
 Code implementation of error related stuffs.
 """
 import enum
+from typing import Any
 
 class IBErrorCode(enum.IntEnum):
     """
@@ -21,10 +22,12 @@ class IBError(Exception):
     Error object to handle the error retruns from IB
     """
 
-    def __init__(self, rid: int, err_code: int, err_str: str):
+    def __init__(self, rid: int, err_code: int, err_str: str,
+                 err_extra: Any = None):
         self.rid = rid
         self.err_code = err_code
         self.err_str = err_str
+        self.err_extra = err_extra
 
         super().__init__(err_str)
 

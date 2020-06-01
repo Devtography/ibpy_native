@@ -45,10 +45,13 @@ class IBBridge:
         Set the timezone for the bridge to match the IB Gateway/TWS timezone
         specified at login.
 
-        Default timezone `America/New_York` will be used if this function has
-        never been called.
+        Note:
+            Default timezone `America/New_York` will be used if this function
+            has never been called.
 
-        * Value of `tz` should be returned from `pytz.timezone(zone: str)`
+        Args:
+            tz (tzinfo): Timezone. Recommend to set this value via
+                `pytz.timezone(zone: str)`.
         """
         IBClient.TZ = tz
 
@@ -81,7 +84,19 @@ class IBBridge:
     def get_us_stock_contract(self, symbol: str,
                               timeout: int = IBClient.REQ_TIMEOUT) -> Contract:
         """
-        Resolve the IB US stock contract
+        Resolve the IB US stock contract.
+
+        Args:
+            symbol (str): Symbol of the target instrument.
+            timeout (int, optional): Second(s) to wait for the request. Defaults
+                to 10.
+
+        Returns:
+            Contract: Corresponding `Contract` object returned from IB.
+
+        Raises:
+            IBError: If there is connection issue, or it failed to get
+                additional contract details for the specified symbol.
         """
 
         contract = Contract()
@@ -106,9 +121,21 @@ class IBBridge:
         """
         Search the US future contract from IB.
 
-        Ramarks:
-          - The value of `contract_month` should be in format of `YYYYMM`. The
-          current on going contract will be returned if it's left as `None`.
+        Args:
+            symbol (str): Symbol of the target instrument.
+            contract_month (str, optional): Contract month for the target future
+                contract in format - "YYYYMM". Defaults to None.
+            timeout (int, optional): Second(s) to wait for the request. Defaults
+                to 10.
+
+        Returns:
+            Contract: Corresponding `Contract` object returned from IB. The
+                current on going contract will be returned if `contract_month`
+                is left as `None`.
+
+        Raises:
+            IBError: If there is connection related issue, or it failed to get
+                additional contract details for the specified symbol.
         """
         include_expired = False
 
@@ -144,7 +171,24 @@ class IBBridge:
             timeout: int = IBClient.REQ_TIMEOUT
         ) -> datetime:
         """
-        Returns the earliest data point of specified contract
+        Returns the earliest data point of specified contract.
+
+        Args:
+            contract (Contract): `Contract` object with sufficient info to
+                identify the instrument.
+            data_type (Literal['BID_ASK', 'TRADES'], optional):
+                Type of data for earliest data point. Defaults to 'TRADES'.
+            timeout (int, optional): Second(s) to wait for the request. Defaults
+                to 10.
+
+        Returns:
+            datetime: The earliest data point for the specified contract in the
+                timezone of whatever timezone set for this `IBBridge`.
+
+        Raises:
+            ValueError: If `data_type` is not 'BID_ASK' nor 'TRADES'.
+            IBError: If there is either connection related issue, request
+                timeout, IB returns 0 or multiple results.
         """
         if data_type not in {'BID_ASK', 'TRADES'}:
             raise ValueError(
@@ -155,7 +199,7 @@ class IBBridge:
         try:
             result = self.__client.resolve_head_timestamp(
                 req_id=self.__gen_req_id(), contract=contract,
-                show=data_type if data_type is 'TRADES' else 'BID',
+                show=data_type if data_type == 'TRADES' else 'BID',
                 timeout=timeout
             )
         except (ValueError, IBError) as err:
@@ -167,14 +211,52 @@ class IBBridge:
 
     def get_historical_ticks(
             self, contract: Contract,
-            start: Optional[datetime] = None,
-            end: datetime = datetime.now(),
+            start: datetime = None, end: datetime = datetime.now(),
             data_type: Literal['MIDPOINT', 'BID_ASK', 'TRADES'] = 'TRADES',
             attempts: int = 1, timeout: int = IBClient.REQ_TIMEOUT
         ) -> IBTicksResult:
         """
         Retrieve historical ticks data for specificed instrument/contract
-        from IB
+        from IB.
+
+        Note:
+            Multiple attempts is recommended for requesting long period of
+            data as the request may timeout due to IB delays the responds to
+            protect their service over a long session.
+            Longer timeout value is also recommended for the same reason. Around
+            30 to 100 seconds should be reasonable.
+
+        Args:
+            contract (Contract): `Contract` object with sufficient info to
+                identify the instrument.
+            start (datetime, optional): The time for the earliest tick data to
+                be included. Defaults to None.
+            end (datetime, optional): The time for the latest tick data to be
+                included. Defaults to now.
+            data_type (Literal['MIDPOINT', 'BID_ASK', 'TRADES'], optional):
+                Type of data for the ticks. Defaults to 'TRADES'.
+            attempts (int, optional): Attemp(s) to try requesting the historical
+                ticks. Passing -1 into this argument will let the function
+                retries for infinity times until all available ticks are received. Defaults to 1.
+            timeout (int, optional): Second(s) to wait for each historical ticks
+                API request to IB server. Defaults to 10.
+
+        Returns:
+            IBTicksResult: Ticks returned from IB and a boolean to indicate if
+                the returning object contains all available ticks.
+
+        Raises:
+            ValueError: If
+                - argument `start` or `end` contains the timezone info;
+                - `data_type` is not 'MIDPOINT', 'BID_ASK' or 'TRADES';
+                - timestamp of `start` is earlier than the earliest available
+                datapoint.
+                - timestamp of `end` is earlier than `start` or earliest
+                available datapoint;
+                - value of `attempts` < 1 and != -1.
+            IBError: If there is any issue raised from the request function
+                while excuteing the task, with `attempts` reduced to 0 and no
+                tick fetched successfully in pervious attempt(s).
         """
         all_ticks = []
         next_end_time = IBClient.TZ.localize(end)

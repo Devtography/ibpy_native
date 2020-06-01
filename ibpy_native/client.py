@@ -26,9 +26,14 @@ class Const(enum.Enum):
 class IBClient(EClient):
     """
     The client calls the native methods from IBWrapper instead of
-    overriding native methods
-    """
+    overriding native methods.
 
+    Attributes:
+        TZ: Class level timezone for all datetime related object. Timezone
+            should be aligned with the timezone specified in TWS/IB Gateway
+            at login. Defaults to 'America/New_York'.
+        REQ_TIMEOUT (int): Constant uses as a default timeout value.
+    """
     # Static variable to define the timezone
     TZ = pytz.timezone('America/New_York')
 
@@ -43,8 +48,24 @@ class IBClient(EClient):
             self, req_id: int, contract: Contract, timeout: int = REQ_TIMEOUT
         ) -> Contract:
         """
-        From a partially formed contract, returns a fully fledged version
-        :returns fully resolved IB contract
+        From a partially formed contract, returns a fully fledged version.
+
+        Args:
+            req_id (int): Request ID (ticker ID in IB API).
+            contract (Contract): `Contract` object with partially completed info
+                - e.g. symbol, currency, etc...
+            timeout (int, optional): Second(s) to wait for the request. Defaults
+                to 10.
+
+        Returns:
+            Contract: Fully resolved IB contract.
+
+        Raises:
+            IBError: If
+                - queue associated with `req_id` is being used by other tasks;
+                - there's any error returned from IB;
+                - request timeout;
+                - no item found in received result.
         """
 
         # Make place to store the data that will be returned
@@ -94,7 +115,25 @@ class IBClient(EClient):
         """
         Fetch the earliest available data point for a given instrument from IB.
 
-        :returns unix timestamp of the earliest available data point
+        Args:
+            req_id (int): Request ID (ticker ID in IB API).
+            contract (Contract): `Contract` object with sufficient info to
+                identify the instrument.
+            show (Literal['BID', 'ASK', 'TRADES'], optional):
+                Type of data for head timestamp. Defaults to 'TRADES'.
+            timeout (int, optional): Second(s) to wait for the request. Defaults
+                to 10.
+
+        Returns:
+            int: Unix timestamp of the earliest available datapoint.
+
+        Raises:
+            IBError: If
+                - queue associated with `req_id` is being used by other tasks;
+                - there's any error returned from IB;
+                - request timeout;
+                - no element found in received result;
+                - multiple elements found in received result.
         """
         if show not in {'BID', 'ASK', 'TRADES'}:
             raise ValueError(
@@ -164,8 +203,37 @@ class IBClient(EClient):
         """
         Fetch the historical ticks data for a given instrument from IB.
 
-        :returns the ticks data (fetched recursively to get around IB 1000
-        ticks limit)
+        Args:
+            req_id (int): Request ID (ticker ID in IB API).
+            contract (Contract): `Contract` object with sufficient info to
+                identify the instrument.
+            start (datetime): The time for the earliest tick data to be
+                included.
+            end (datetime, optional): The time for the latest tick data to be
+                included. Defaults to now.
+            show (Literal['MIDPOINT', 'BID_ASK', 'TRADES'], optional):
+                Type of data requested. Defaults to 'TRADES'.
+            timeout (int, optional): Second(s) to wait for each historical ticks
+                API request to IB server. Defaults to 10.
+
+        Returns:
+            Ticks data (fetched recursively to get around IB 1000 ticks limit)
+
+        Raises:
+            ValueError: If
+                - `show` is not 'MIDPOINT', 'BIDASK' or 'TRADES';
+                - `tzinfo` of `start` & `end` do not align;
+                - Value of start` > `end`.
+            IBError: If
+                - queue associated with `req_id` is being used by other tasks;
+                - there's any error returned from IB before any tick data is
+                fetched successfully;
+                - request timeout with no tick fetched in pervious request(s);
+                - no result received from IB with no tick fetched in pervious
+                request(s);
+                - incorrect number of items (!= 2) found in the result received
+                from IB with no tick fetched in pervious request(s).
+
         """
         # Pre-process & error checking
         if show not in {'MIDPOINT', 'BID_ASK', 'TRADES'}:

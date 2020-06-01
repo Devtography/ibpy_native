@@ -176,6 +176,9 @@ class IBBridge:
         Retrieve historical ticks data for specificed instrument/contract
         from IB
         """
+        all_ticks = []
+        next_end_time = IBClient.TZ.localize(end)
+
         # Error checking
         if end.tzinfo is not None or (
                 start is not None
@@ -224,15 +227,18 @@ class IBBridge:
         else:
             start = head_timestamp
 
+        if next_end_time.timestamp() < head_timestamp.timestamp():
+            raise ValueError(
+                "Specificed end time is earlier than the earliest available "
+                f"datapoint - {head_timestamp.strftime(Const.TIME_FMT.value)}"
+            )
+
         if attempts < 1 and attempts != -1:
             raise ValueError(
                 "Value of argument `attempts` must be positive integer or -1"
             )
 
         # Process the request
-        next_end_time = IBClient.TZ.localize(end)
-        all_ticks = []
-
         while attempts > 0 or attempts == -1:
             attempts = attempts - 1 if attempts != -1 else attempts
 

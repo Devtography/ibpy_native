@@ -287,12 +287,6 @@ class IBBridge:
         except (ValueError, IBError) as err:
             raise err
 
-        if end.timestamp() < head_timestamp.timestamp():
-            raise ValueError(
-                "Specificed end time is earlier than the earliest available "
-                f"datapoint - {head_timestamp.strftime(Const.TIME_FMT.value)}"
-            )
-
         if start is not None:
             if start.timestamp() < head_timestamp.timestamp():
                 raise ValueError(
@@ -351,11 +345,14 @@ class IBBridge:
             except IBError as err:
                 if err.err_code == IBErrorCode.DUPLICATE_TICKER_ID:
                     # Restore the attempts count for error `Duplicate ticker ID`
-                    # as it shouldn't happen with the newly generated random
-                    # number as ID, but sometimes IB just cannot release the
-                    # ID used as soon as it has responded the request and throws
+                    # as it seems like sometimes IB cannot release the ID used
+                    # as soon as it has responded the request while the
+                    # reverse historical ticks request approaching the start
+                    # time with all available ticks fetched and throws
                     # the duplicate ticker ID error.
                     attempts = attempts + 1 if attempts != -1 else attempts
+
+                    next_end_time: datetime = err.err_extra
 
                     continue
 

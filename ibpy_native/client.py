@@ -238,7 +238,8 @@ class IBClient(EClient):
 
                     break
 
-                raise err
+                raise IBError(err.rid, err.err_code, err.err_str,
+                              err_extra=next_end_time)
 
             if f_queue.get_status() == Status.TIMEOUT:
                 # Checks if it's in the middle of the data fetching loop

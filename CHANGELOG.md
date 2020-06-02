@@ -6,6 +6,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.4] - 2020-06-01
+`v0.1.4` is a hotfix release addressing the issue of various errors which will 
+be raised while fetching the historical ticks.
+
+### Added
+- Command option `--timeout` to script `cmd/fetch_us_historical_ticks.py`.
+- Docstring to files in `/ibpy_native`.
+- `.pylintrc` file to control the Pylint behaviours.
+
+### Changed
+- The parameter `attempts` of `IBBridge.get_historical_ticks` now accepts value
+`-1` to loop the IB API `reqHistoricalTicks` until all available ticks for the
+specified period are fetched.
+
+### Removed
+- `README` section `Known issues` as the only issue documented there has been
+fixed.
+
+### Fixed
+- Issue of `IBBridge.get_historical_ticks` will raise the error `code: 200 - No
+security definition has been found for the request` in the middle of ticks
+fetching.
+- Issue of `IBBridge.get_historical_ticks` cannot finish fetching all available
+ticks of a future contract as IB keeps returning "Duplicate ticker ID" when
+fetching near the earliest available data point.
+- Incorrect time comparison between native datetime object `end` with aware
+datetime object `head_timestamp` in `IBBridge.get_historical_ticks`.
+
 ## [v0.1.3] - 2020-05-20
 `v0.1.3` is a minor release includes a script to fetch historical ticks of 
 US contracts for quick use.
@@ -56,7 +84,8 @@ returns with `finished` mark as `True` unexpectedly while IB returns less than
 1000 records but there're more historical ticks those should be fetched 
 in next request.
 
-[Unreleased]: https://github.com/Devtography/ibpy_native/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/Devtography/ibpy_native/compare/v0.1.4...HEAD
+[v0.1.4]: https://github.com/Devtography/ibpy_native/compare/v0.1.4...v0.1.3 
 [v0.1.3]: https://github.com/Devtography/ibpy_native/compare/v0.1.3...v0.1.2
 [v0.1.2]: https://github.com/Devtography/ibpy_native/compare/v0.1.2...v0.1.1
 [v0.1.1]: https://github.com/Devtography/ibpy_native/compare/v0.1.0...v0.1.1

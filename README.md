@@ -67,13 +67,6 @@ Other options for the scripts can be found by using the `-h` or `--help` flags.
 Python 3.7.7)
 - _Included IB API version - `9.79.01`_
 
-## Known issues
-- Function `IBBridge.get_historical_ticks` may raise an error with error code 
-`200` - `No security definition has been found for the request` if the 
-connection between IB and the TWS/IB Gateway instance has been dropped 
-unexpectedly while requesting the data. It doesn't matter if the connection is 
-restored shortly after the disconnection.
-
 ## Development status (a.k.a. Words from developers)
 Although the project is under the stage of active development, up until now
 (ver. 0.1.1) it focuses on retrieving historical ticks for stock & future

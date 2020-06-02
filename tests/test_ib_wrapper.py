@@ -1,3 +1,10 @@
+"""
+Unit tests for module `ibpy_native.wrapper`.
+"""
+import enum
+import threading
+import unittest
+
 from ibpy_native import client, wrapper
 from ibpy_native.finishable_queue import FinishableQueue, Status
 from ibapi.contract import Contract
@@ -5,16 +12,18 @@ from ibapi.wrapper import (
     ListOfHistoricalTick, ListOfHistoricalTickBidAsk, ListOfHistoricalTickLast
 )
 
-import enum
-import threading
-import unittest
-
 class Const(enum.Enum):
+    """
+    Predefined constants for `TestIBWrapper`.
+    """
     RID_RESOLVE_CONTRACT = 43
     RID_FETCH_HISTORICAL_TICKS = 18001
     QUEUE_MAX_WAIT_SEC = 10
 
 class TestIBWrapper(unittest.TestCase):
+    """
+    Unit tests for class `IBWrapper`.
+    """
     __contract = Contract()
     __contract.secType = "STK"
     __contract.symbol = "AAPL"
@@ -22,24 +31,27 @@ class TestIBWrapper(unittest.TestCase):
     __contract.currency = "USD"
 
     @classmethod
-    def setUpClass(self):
-        self.wrapper = wrapper.IBWrapper()
-        self.client = client.IBClient(self.wrapper)
+    def setUpClass(cls):
+        cls.wrapper = wrapper.IBWrapper()
+        cls.client = client.IBClient(cls.wrapper)
 
-        self.client.connect('127.0.0.1', 4002, 1001)
+        cls.client.connect('127.0.0.1', 4002, 1001)
 
-        thread = threading.Thread(target=self.client.run)
+        thread = threading.Thread(target=cls.client.run)
         thread.start()
 
-        setattr(self.client, "_thread", thread)
+        setattr(cls.client, "_thread", thread)
 
-        self.resolved_contract = self.client.resolve_contract(
-            Const.RID_RESOLVE_CONTRACT.value, self.__contract
+        cls.resolved_contract = cls.client.resolve_contract(
+            Const.RID_RESOLVE_CONTRACT.value, cls.__contract
         )
 
-        print(self.resolved_contract)
+        print(cls.resolved_contract)
 
     def test_historical_ticks(self):
+        """
+        Test overridden function `historicalTicks`.
+        """
         end_time = "20200327 16:30:00"
 
         queue = self.wrapper.get_request_queue(
@@ -61,8 +73,11 @@ class TestIBWrapper(unittest.TestCase):
         self.assertIsInstance(result[0], ListOfHistoricalTick)
 
     def test_historical_ticks_bid_ask(self):
+        """
+        Test overridden function `historicalTicksBidAsk`.
+        """
         end_time = "20200327 16:30:00"
-        
+
         queue = self.wrapper.get_request_queue(
             Const.RID_FETCH_HISTORICAL_TICKS.value
         )
@@ -82,6 +97,9 @@ class TestIBWrapper(unittest.TestCase):
         self.assertIsInstance(result[0], ListOfHistoricalTickBidAsk)
 
     def test_historical_ticks_last(self):
+        """
+        Test overridden function `historicalTicksLast`.
+        """
         end_time = "20200327 16:30:00"
 
         queue = self.wrapper.get_request_queue(
@@ -103,5 +121,5 @@ class TestIBWrapper(unittest.TestCase):
         self.assertIsInstance(result[0], ListOfHistoricalTickLast)
 
     @classmethod
-    def tearDownClass(self):
-        self.client.disconnect()
+    def tearDownClass(cls):
+        cls.client.disconnect()

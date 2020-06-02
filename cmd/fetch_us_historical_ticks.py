@@ -91,6 +91,12 @@ class _FetchCmd:
             "(default: to latest available tick)"
         )
         parser.add_argument(
+            '--timeout', dest='timeout', default=120,
+            metavar='', type=int,
+            help="specifies the second(s) to wait for the request\n"
+            "(default: 120s)",
+        )
+        parser.add_argument(
             '-o', '--out', dest='out', metavar='',
             help="specifies the destination path & filename for the CSV file "
             "of tick data received\n"
@@ -222,7 +228,7 @@ class _FetchCmd:
 
         fetch_result = bridge.get_historical_ticks(
             contract=contract, start=start_time, end=end_time,
-            data_type=args.data_type, attempts=10, timeout=180
+            data_type=args.data_type, attempts=-1, timeout=args.timeout
         )
 
         if fetch_result['completed']:

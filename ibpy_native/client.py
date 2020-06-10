@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import List, Tuple, Union
 
 import pytz
-from typing_extensions import Literal
+from typing_extensions import Literal, TypedDict
 
 from ibapi.contract import Contract
 from ibapi.client import EClient
@@ -15,6 +15,13 @@ from ibapi.wrapper import (HistoricalTick, HistoricalTickBidAsk,
 from .wrapper import IBWrapper
 from .error import IBError, IBErrorCode
 from .finishable_queue import FinishableQueue, Status
+
+class _ProcessHistoricalTicksResult(TypedDict):
+    """
+    Use for type hint the returns of `IBClient.fetch_historical_ticks`.
+    """
+    ticks: List[Union[HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast]]
+    next_end_time: datetime
 
 class Const(enum.Enum):
     """
@@ -189,16 +196,10 @@ class IBClient(EClient):
             start: datetime, end: datetime = datetime.now().astimezone(TZ),
             show: Literal['MIDPOINT', 'BID_ASK', 'TRADES'] = 'TRADES',
             timeout: int = REQ_TIMEOUT
-        ) -> Tuple[
-            List[
-                Union[
-                    HistoricalTick,
-                    HistoricalTickBidAsk,
-                    HistoricalTickLast
-                ]
-            ],
-            bool
-        ]:
+        ) -> Tuple[List[Union[HistoricalTick,
+                              HistoricalTickBidAsk,
+                              HistoricalTickLast]],
+                   bool]:
         # pylint: disable=unidiomatic-typecheck
         """
         Fetch the historical ticks data for a given instrument from IB.
@@ -253,11 +254,9 @@ class IBClient(EClient):
 
         # Time to fetch the ticks
         try:
-            queue = self.__wrapper.get_request_queue(req_id)
+            f_queue = FinishableQueue(self.__wrapper.get_request_queue(req_id))
         except IBError as err:
             raise err
-
-        f_queue = FinishableQueue(queue)
 
         all_ticks: list = []
 
@@ -303,6 +302,8 @@ class IBClient(EClient):
                         f_queue.reset()
                         continue
 
+                    # Encounters error. Returns ticks fetched in pervious
+                    # loop(s).
                     break
 
                 raise IBError(err.rid, err.err_code, err.err_str,
@@ -352,68 +353,24 @@ class IBClient(EClient):
                     f"{len(result)}"
                 )
 
-            ticks = result[0]
-
             # Process the data
-            if len(ticks) > 0:
-                # Exclude record(s) which are earlier than specified
-                # start time
-                exclude_to_idx = -1
+            processed_result = self.__process_historical_ticks(
+                ticks=result[0],
+                start_time=real_start_time,
+                end_time=next_end_time
+            )
+            all_ticks.extend(processed_result['ticks'])
+            next_end_time = processed_result['next_end_time']
 
-                for idx, tick in enumerate(ticks):
-                    if tick.time >= real_start_time.timestamp():
-                        exclude_to_idx = idx
-                        del idx, tick
-
-                        break
-
-                if exclude_to_idx > -1:
-                    if exclude_to_idx > 0:
-                        ticks = ticks[exclude_to_idx:]
-
-                    # Reverses the list of tick data as the data are fetched
-                    # reversely from end time. Thus, reverses the list `ticks`
-                    # to append the tick data to `all_ticks` more efficient.
-                    ticks.reverse()
-                    all_ticks.extend(ticks)
-
-                    # Updates the next end time to prepare to fetch more
-                    # data again from IB
-                    next_end_time = datetime.fromtimestamp(
-                        ticks[-1].time
-                    ).astimezone(next_end_time.tzinfo)
-
-                    print(
-                        f"{len(all_ticks)} ticks fetched ({len(ticks)} new "
-                        "ticks); Next end time - "
-                        f"{next_end_time.strftime(Const.TIME_FMT.value)}"
-                    )
-                else:
-                    # Ticks data received from IB but all records included in
-                    # response are earlier than the start time.
-                    next_end_time = real_start_time
-
-            if len(ticks) == 0:
-                # Floor the `next_end_time` to pervious 30 minutes point
-                # to avoid IB cutting off the data at the date start point for
-                # the instrument.
-                # e.g.
-                delta = timedelta(minutes=next_end_time.minute % 30,
-                                  seconds=next_end_time.second)
-
-                if delta.total_seconds() == 0:
-                    next_end_time = next_end_time - timedelta(minutes=30)
-                else:
-                    next_end_time = next_end_time - delta
-
-                print(
-                    f"{len(all_ticks)} ticks fetched (0 new tick); Next end"
-                    f"time - {next_end_time.strftime(Const.TIME_FMT.value)}"
-                )
+            print(
+                f"{len(all_ticks)} ticks fetched ("
+                f"{len(processed_result['ticks'])} new ticks); Next end time - "
+                f"{next_end_time.strftime(Const.TIME_FMT.value)}"
+            )
 
             if next_end_time.timestamp() <= real_start_time.timestamp():
                 # All tick data within the specificed range has been
-                # fetched from IB. Finish the while loop.
+                # fetched from IB. Finishes the while loop.
                 finished = True
 
                 break
@@ -438,3 +395,61 @@ class IBClient(EClient):
                 continue
 
             raise err
+
+    def __process_historical_ticks(
+            self, ticks: List[Union[HistoricalTick,
+                                    HistoricalTickBidAsk,
+                                    HistoricalTickLast]],
+            start_time: datetime, end_time: datetime
+    ) -> _ProcessHistoricalTicksResult:
+        """
+        Processes the tick data returned from IB in function
+        `fetch_historical_ticks`.
+        """
+        if len(ticks) > 0:
+            # Exclude record(s) which are earlier than specified start time.
+            exclude_to_idx = -1
+
+            for idx, tick in enumerate(ticks):
+                if tick.time >= start_time.timestamp():
+                    exclude_to_idx = idx
+                    del idx, tick
+
+                    break
+
+            if exclude_to_idx > -1:
+                if exclude_to_idx > 0:
+                    ticks = ticks[exclude_to_idx:]
+
+                # Reverses the list of tick data as the data are fetched
+                # reversely from end time. Thus, reverses the list `ticks`
+                # to append the tick data to `all_ticks` more efficient.
+                ticks.reverse()
+
+                # Updates the next end time to prepare to fetch more
+                # data again from IB
+                end_time = datetime.fromtimestamp(
+                    ticks[-1].time
+                ).astimezone(end_time.tzinfo)
+            else:
+                # Ticks data received from IB but all records included in
+                # response are earlier than the start time.
+                ticks = []
+                end_time = start_time
+
+        if len(ticks) == 0:
+            # Floor the `end_time` to pervious 30 minutes point to avoid IB
+            # cutting off the data at the date start point for the instrument.
+            # e.g.
+            delta = timedelta(minutes=end_time.minute % 30,
+                              seconds=end_time.second)
+
+            if delta.total_seconds() == 0:
+                end_time = end_time - timedelta(minutes=30)
+            else:
+                end_time = end_time - delta
+
+        return {
+            'ticks': ticks,
+            'next_end_time': end_time,
+        }

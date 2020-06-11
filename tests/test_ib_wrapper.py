@@ -12,7 +12,7 @@ from ibapi.wrapper import (
     ListOfHistoricalTick, ListOfHistoricalTickBidAsk, ListOfHistoricalTickLast
 )
 
-class Const(enum.Enum):
+class Const(enum.IntEnum):
     """
     Predefined constants for `TestIBWrapper`.
     """
@@ -55,7 +55,7 @@ class TestIBWrapper(unittest.TestCase):
         end_time = "20200327 16:30:00"
 
         queue = self.wrapper.get_request_queue(
-            Const.RID_FETCH_HISTORICAL_TICKS.value
+            Const.RID_FETCH_HISTORICAL_TICKS
         )
 
         f_queue = FinishableQueue(queue)
@@ -65,7 +65,7 @@ class TestIBWrapper(unittest.TestCase):
             "", end_time, 1000, "MIDPOINT", 1, False, []
         )
 
-        result = f_queue.get(timeout=Const.QUEUE_MAX_WAIT_SEC.value)
+        result = f_queue.get(timeout=Const.QUEUE_MAX_WAIT_SEC)
 
         self.assertFalse(self.wrapper.has_err())
         self.assertNotEqual(f_queue.get_status(), Status.TIMEOUT)
@@ -79,7 +79,7 @@ class TestIBWrapper(unittest.TestCase):
         end_time = "20200327 16:30:00"
 
         queue = self.wrapper.get_request_queue(
-            Const.RID_FETCH_HISTORICAL_TICKS.value
+            Const.RID_FETCH_HISTORICAL_TICKS
         )
 
         f_queue = FinishableQueue(queue)
@@ -89,7 +89,7 @@ class TestIBWrapper(unittest.TestCase):
             "", end_time, 1000, "BID_ASK", 1, False, []
         )
 
-        result = f_queue.get(timeout=Const.QUEUE_MAX_WAIT_SEC.value)
+        result = f_queue.get(timeout=Const.QUEUE_MAX_WAIT_SEC)
 
         self.assertFalse(self.wrapper.has_err())
         self.assertNotEqual(f_queue.get_status(), Status.TIMEOUT)
@@ -103,7 +103,7 @@ class TestIBWrapper(unittest.TestCase):
         end_time = "20200327 16:30:00"
 
         queue = self.wrapper.get_request_queue(
-            Const.RID_FETCH_HISTORICAL_TICKS.value
+            Const.RID_FETCH_HISTORICAL_TICKS
         )
 
         f_queue = FinishableQueue(queue)
@@ -113,7 +113,7 @@ class TestIBWrapper(unittest.TestCase):
             "", end_time, 1000, "TRADES", 1, False, []
         )
 
-        result = f_queue.get(timeout=Const.QUEUE_MAX_WAIT_SEC.value)
+        result = f_queue.get(timeout=Const.QUEUE_MAX_WAIT_SEC)
 
         self.assertFalse(self.wrapper.has_err())
         self.assertNotEqual(f_queue.get_status(), Status.TIMEOUT)

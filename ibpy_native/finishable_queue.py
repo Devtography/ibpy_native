@@ -5,7 +5,7 @@ import enum
 import queue
 
 # Queue status
-class Status(enum.Enum):
+class Status(enum.IntEnum):
     """
     Status codes for `FinishableQueue`
     """

@@ -4,6 +4,8 @@ Code implementation for custom `FinishableQueue`
 import enum
 import queue
 
+from typing import Iterator, Any
+
 # Queue status
 class Status(enum.IntEnum):
     """
@@ -55,6 +57,25 @@ class FinishableQueue():
                 self.__status = Status.TIMEOUT
 
         return contents_of_queue
+
+    def stream(self) -> Iterator[Any]:
+        """
+        Yields the elements in queue as soon as an element has been put into
+        the queue.
+
+        Notes:
+            This function will not timeout like the `get(timeout: int)`
+            function. Instead, it waits forever until the finish signal is
+            received before it breaks the internal loop.
+        """
+        while not self.__finished():
+            current_element = self.__queue.get()
+
+            if (current_element is Status.FINISHED
+                    or current_element is Status.ERROR):
+                self.__status = current_element
+            else:
+                yield current_element
 
     def get_status(self) -> Status:
         """

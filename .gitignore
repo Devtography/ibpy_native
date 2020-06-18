@@ -143,3 +143,6 @@ cython_debug/
 
 # Not ignore IBAPI
 !lib/ib/
+
+# System files
+.DS_Store

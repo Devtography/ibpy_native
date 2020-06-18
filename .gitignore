@@ -141,6 +141,9 @@ cython_debug/
 # VSCode settings
 .vscode
 
+# Vim files
+*.swp
+
 # Not ignore IBAPI
 !lib/ib/
 

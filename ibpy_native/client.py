@@ -201,6 +201,7 @@ class IBClient(EClient):
                               HistoricalTickLast]],
                    bool]:
         # pylint: disable=unidiomatic-typecheck
+        # pylint: disable=too-many-statements
         """
         Fetch the historical ticks data for a given instrument from IB.
 

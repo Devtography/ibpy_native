@@ -141,7 +141,7 @@ class TestIBWrapper(unittest.TestCase):
         self.client.reqTickByTickData(
             reqId=Const.RID_REQ_TICK_BY_TICK_DATA.value,
             contract=self.resolved_contract,
-            tickType='Last',
+            tickType='AllLast',
             numberOfTicks=0,
             ignoreSize=True
         )
@@ -151,6 +151,26 @@ class TestIBWrapper(unittest.TestCase):
             break
 
         self.client.cancelTickByTickData(Const.RID_REQ_TICK_BY_TICK_DATA.value)
+
+    def test_tick_by_tick_last(self):
+        """
+        Test overridden function `tickByTickAllLast` with tick type `Last`.
+        """
+        f_queue = FinishableQueue(self.wrapper.get_request_queue(
+            Const.RID_REQ_TICK_BY_TICK_DATA
+        ))
+
+        self.client.reqTickByTickData(
+            reqId=Const.RID_REQ_TICK_BY_TICK_DATA.value,
+            contract=self.resolved_contract,
+            tickType='Last',
+            numberOfTicks=0,
+            ignoreSize=True
+        )
+
+        for tick in f_queue.stream():
+            self.assertIsInstance(tick, HistoricalTickLast)
+            break
 
     def test_tick_by_tick_bid_ask(self):
         """

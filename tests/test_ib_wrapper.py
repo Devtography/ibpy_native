@@ -20,7 +20,10 @@ class Const(enum.IntEnum):
     """
     RID_RESOLVE_CONTRACT = 43
     RID_FETCH_HISTORICAL_TICKS = 18001
-    RID_REQ_TICK_BY_TICK_DATA = 19001
+    RID_REQ_TICK_BY_TICK_DATA_ALL_LAST = 19001
+    RID_REQ_TICK_BY_TICK_DATA_LAST = 19002
+    RID_REQ_TICK_BY_TICK_DATA_MIDPOINT = 19003
+    RID_REQ_TICK_BY_TICK_DATA_BIDASK = 19004
     QUEUE_MAX_WAIT_SEC = 10
 
 class TestIBWrapper(unittest.TestCase):
@@ -135,11 +138,11 @@ class TestIBWrapper(unittest.TestCase):
         Test overridden function `tickByTickAllLast`.
         """
         f_queue = FinishableQueue(self.wrapper.get_request_queue(
-            Const.RID_REQ_TICK_BY_TICK_DATA
+            Const.RID_REQ_TICK_BY_TICK_DATA_ALL_LAST
         ))
 
         self.client.reqTickByTickData(
-            reqId=Const.RID_REQ_TICK_BY_TICK_DATA.value,
+            reqId=Const.RID_REQ_TICK_BY_TICK_DATA_ALL_LAST.value,
             contract=self.resolved_contract,
             tickType='AllLast',
             numberOfTicks=0,
@@ -150,18 +153,20 @@ class TestIBWrapper(unittest.TestCase):
             self.assertIsInstance(tick, HistoricalTickLast)
             break
 
-        self.client.cancelTickByTickData(Const.RID_REQ_TICK_BY_TICK_DATA.value)
+        self.client.cancelTickByTickData(
+            Const.RID_REQ_TICK_BY_TICK_DATA_ALL_LAST.value
+        )
 
     def test_tick_by_tick_last(self):
         """
         Test overridden function `tickByTickAllLast` with tick type `Last`.
         """
         f_queue = FinishableQueue(self.wrapper.get_request_queue(
-            Const.RID_REQ_TICK_BY_TICK_DATA
+            Const.RID_REQ_TICK_BY_TICK_DATA_LAST
         ))
 
         self.client.reqTickByTickData(
-            reqId=Const.RID_REQ_TICK_BY_TICK_DATA.value,
+            reqId=Const.RID_REQ_TICK_BY_TICK_DATA_LAST.value,
             contract=self.resolved_contract,
             tickType='Last',
             numberOfTicks=0,
@@ -172,16 +177,20 @@ class TestIBWrapper(unittest.TestCase):
             self.assertIsInstance(tick, HistoricalTickLast)
             break
 
+        self.client.cancelTickByTickData(
+            Const.RID_REQ_TICK_BY_TICK_DATA_LAST.value
+        )
+
     def test_tick_by_tick_bid_ask(self):
         """
         Test overridden function `tickByTickBidAsk`.
         """
         f_queue = FinishableQueue(self.wrapper.get_request_queue(
-            Const.RID_REQ_TICK_BY_TICK_DATA
+            Const.RID_REQ_TICK_BY_TICK_DATA_BIDASK
         ))
 
         self.client.reqTickByTickData(
-            reqId=Const.RID_REQ_TICK_BY_TICK_DATA.value,
+            reqId=Const.RID_REQ_TICK_BY_TICK_DATA_BIDASK.value,
             contract=self.resolved_contract,
             tickType='BidAsk',
             numberOfTicks=0,
@@ -192,20 +201,22 @@ class TestIBWrapper(unittest.TestCase):
             self.assertIsInstance(tick, HistoricalTickBidAsk)
             break
 
-        self.client.cancelTickByTickData(Const.RID_REQ_TICK_BY_TICK_DATA.value)
+        self.client.cancelTickByTickData(
+            Const.RID_REQ_TICK_BY_TICK_DATA_BIDASK.value
+        )
 
     def test_tick_by_tick_mid_point(self):
         """
         Test overridden function `tickByTickMidPoint`.
         """
         queue = self.wrapper.get_request_queue(
-            Const.RID_REQ_TICK_BY_TICK_DATA
+            Const.RID_REQ_TICK_BY_TICK_DATA_MIDPOINT
         )
 
         f_queue = FinishableQueue(queue)
 
         self.client.reqTickByTickData(
-            reqId=Const.RID_REQ_TICK_BY_TICK_DATA.value,
+            reqId=Const.RID_REQ_TICK_BY_TICK_DATA_MIDPOINT.value,
             contract=self.resolved_contract,
             tickType='MidPoint',
             numberOfTicks=0,
@@ -216,7 +227,9 @@ class TestIBWrapper(unittest.TestCase):
             self.assertIsInstance(tick, HistoricalTick)
             break
 
-        self.client.cancelTickByTickData(Const.RID_REQ_TICK_BY_TICK_DATA)
+        self.client.cancelTickByTickData(
+            Const.RID_REQ_TICK_BY_TICK_DATA_MIDPOINT
+        )
 
     @classmethod
     def tearDownClass(cls):

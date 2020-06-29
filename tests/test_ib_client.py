@@ -1,6 +1,7 @@
 """
 Unit tests for module `ibpy_native.client`.
 """
+import os
 import enum
 import unittest
 import threading
@@ -42,7 +43,11 @@ class TestIBClient(unittest.TestCase):
         cls.wrapper = IBWrapper()
         cls.client = IBClient(cls.wrapper)
 
-        cls.client.connect('127.0.0.1', 4002, 1001)
+        cls.client.connect(
+            os.getenv('IB_HOST', '127.0.0.1'),
+            int(os.getenv('IB_PORT', '4002')),
+            1001
+        )
 
         thread = threading.Thread(target=cls.client.run)
         thread.start()

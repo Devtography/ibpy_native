@@ -1,6 +1,7 @@
 """
 Unit tests for module `ibpy_native.bridge`.
 """
+import os
 import unittest
 from datetime import datetime
 
@@ -9,7 +10,8 @@ from ibpy_native import IBBridge
 from ibpy_native.client import IBClient
 from ibapi.wrapper import Contract
 
-TEST_PORT = 4002
+TEST_HOST = os.getenv('IB_HOST', '127.0.0.1')
+TEST_PORT = int(os.getenv('IB_PORT', '4002'))
 TEST_ID = 1001
 
 class TestIBBridgeConn(unittest.TestCase):
@@ -21,7 +23,9 @@ class TestIBBridgeConn(unittest.TestCase):
         """
         Test initialise `IBBridge` with `auto_conn=True`.
         """
-        bridge = IBBridge(port=TEST_PORT, client_id=TEST_ID)
+        bridge = IBBridge(
+            host=TEST_HOST, port=TEST_PORT, client_id=TEST_ID
+        )
 
         self.assertTrue(bridge.is_connected())
 
@@ -31,7 +35,9 @@ class TestIBBridgeConn(unittest.TestCase):
         """
         Test initialise `IBBridge` with `auto_conn=False`.
         """
-        bridge = IBBridge(port=TEST_PORT, client_id=TEST_ID, auto_conn=False)
+        bridge = IBBridge(
+            host=TEST_HOST, port=TEST_PORT, client_id=TEST_ID, auto_conn=False
+        )
         bridge.connect()
 
         self.assertTrue(bridge.is_connected())
@@ -42,7 +48,9 @@ class TestIBBridgeConn(unittest.TestCase):
         """
         Test function `disconnect` without an established connection.
         """
-        bridge = IBBridge(port=TEST_PORT, client_id=TEST_ID, auto_conn=False)
+        bridge = IBBridge(
+            host=TEST_HOST, port=TEST_PORT, client_id=TEST_ID, auto_conn=False
+        )
         bridge.disconnect()
 
         self.assertFalse(bridge.is_connected())
@@ -54,7 +62,9 @@ class TestIBBridge(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls._bridge = IBBridge(port=TEST_PORT, client_id=TEST_ID)
+        cls._bridge = IBBridge(
+            host=TEST_HOST, port=TEST_PORT, client_id=TEST_ID
+        )
 
     def test_set_timezone(self):
         """

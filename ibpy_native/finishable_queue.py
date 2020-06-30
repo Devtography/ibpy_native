@@ -74,8 +74,8 @@ class FinishableQueue():
             if (current_element is Status.FINISHED
                     or current_element is Status.ERROR):
                 self.__status = current_element
-            else:
-                yield current_element
+
+            yield current_element
 
     def get_status(self) -> Status:
         """

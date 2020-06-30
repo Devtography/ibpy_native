@@ -13,6 +13,7 @@ from ibapi.wrapper import (
     HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast,
     ListOfHistoricalTick, ListOfHistoricalTickBidAsk, ListOfHistoricalTickLast
 )
+from tests.utils import async_test
 
 class Const(enum.IntEnum):
     """
@@ -133,13 +134,16 @@ class TestIBWrapper(unittest.TestCase):
         self.assertEqual(len(result), 2)
         self.assertIsInstance(result[0], ListOfHistoricalTickLast)
 
-    def test_tick_by_tick_all_last(self):
+    @async_test
+    async def test_tick_by_tick_all_last(self):
         """
         Test overridden function `tickByTickAllLast`.
         """
-        f_queue = FinishableQueue(self.wrapper.get_request_queue(
+        queue = self.wrapper.get_request_queue(
             Const.RID_REQ_TICK_BY_TICK_DATA_ALL_LAST
-        ))
+        )
+
+        f_queue = FinishableQueue(queue)
 
         self.client.reqTickByTickData(
             reqId=Const.RID_REQ_TICK_BY_TICK_DATA_ALL_LAST.value,
@@ -149,21 +153,27 @@ class TestIBWrapper(unittest.TestCase):
             ignoreSize=True
         )
 
-        for tick in f_queue.stream():
-            self.assertIsInstance(tick, HistoricalTickLast)
-            break
+        async for ele in f_queue.stream():
+            self.assertIsInstance(ele, (HistoricalTickLast, Status))
+            self.assertIsNot(ele, Status.ERROR)
 
-        self.client.cancelTickByTickData(
-            Const.RID_REQ_TICK_BY_TICK_DATA_ALL_LAST.value
-        )
+            if ele is not Status.FINISHED:
+                self.client.cancelTickByTickData(
+                    Const.RID_REQ_TICK_BY_TICK_DATA_ALL_LAST.value
+                )
 
-    def test_tick_by_tick_last(self):
+                queue.put(Status.FINISHED)
+
+    @async_test
+    async def test_tick_by_tick_last(self):
         """
         Test overridden function `tickByTickAllLast` with tick type `Last`.
         """
-        f_queue = FinishableQueue(self.wrapper.get_request_queue(
+        queue = self.wrapper.get_request_queue(
             Const.RID_REQ_TICK_BY_TICK_DATA_LAST
-        ))
+        )
+
+        f_queue = FinishableQueue(queue)
 
         self.client.reqTickByTickData(
             reqId=Const.RID_REQ_TICK_BY_TICK_DATA_LAST.value,
@@ -173,21 +183,28 @@ class TestIBWrapper(unittest.TestCase):
             ignoreSize=True
         )
 
-        for tick in f_queue.stream():
-            self.assertIsInstance(tick, HistoricalTickLast)
-            break
+        async for ele in f_queue.stream():
+            self.assertIsInstance(ele, (HistoricalTickLast, Status))
+            self.assertIsNot(ele, Status.ERROR)
 
-        self.client.cancelTickByTickData(
-            Const.RID_REQ_TICK_BY_TICK_DATA_LAST.value
-        )
+            if ele is not Status.FINISHED:
+                self.client.cancelTickByTickData(
+                    Const.RID_REQ_TICK_BY_TICK_DATA_LAST.value
+                )
 
-    def test_tick_by_tick_bid_ask(self):
+                queue.put(Status.FINISHED)
+
+
+    @async_test
+    async def test_tick_by_tick_bid_ask(self):
         """
         Test overridden function `tickByTickBidAsk`.
         """
-        f_queue = FinishableQueue(self.wrapper.get_request_queue(
+        queue = self.wrapper.get_request_queue(
             Const.RID_REQ_TICK_BY_TICK_DATA_BIDASK
-        ))
+        )
+
+        f_queue = FinishableQueue(queue)
 
         self.client.reqTickByTickData(
             reqId=Const.RID_REQ_TICK_BY_TICK_DATA_BIDASK.value,
@@ -197,15 +214,19 @@ class TestIBWrapper(unittest.TestCase):
             ignoreSize=True
         )
 
-        for tick in f_queue.stream():
-            self.assertIsInstance(tick, HistoricalTickBidAsk)
-            break
+        async for ele in f_queue.stream():
+            self.assertIsInstance(ele, (HistoricalTickBidAsk, Status))
+            self.assertIsNot(ele, Status.ERROR)
 
-        self.client.cancelTickByTickData(
-            Const.RID_REQ_TICK_BY_TICK_DATA_BIDASK.value
-        )
+            if ele is not Status.FINISHED:
+                self.client.cancelTickByTickData(
+                    Const.RID_REQ_TICK_BY_TICK_DATA_BIDASK.value
+                )
 
-    def test_tick_by_tick_mid_point(self):
+                queue.put(Status.FINISHED)
+
+    @async_test
+    async def test_tick_by_tick_mid_point(self):
         """
         Test overridden function `tickByTickMidPoint`.
         """
@@ -223,13 +244,16 @@ class TestIBWrapper(unittest.TestCase):
             ignoreSize=True
         )
 
-        for tick in f_queue.stream():
-            self.assertIsInstance(tick, HistoricalTick)
-            break
+        async for ele in f_queue.stream():
+            self.assertIsInstance(ele, (HistoricalTick, Status))
+            self.assertIsNot(ele, Status.ERROR)
 
-        self.client.cancelTickByTickData(
-            Const.RID_REQ_TICK_BY_TICK_DATA_MIDPOINT
-        )
+            if ele is not Status.FINISHED:
+                self.client.cancelTickByTickData(
+                    Const.RID_REQ_TICK_BY_TICK_DATA_MIDPOINT
+                )
+
+                queue.put(Status.FINISHED)
 
     @classmethod
     def tearDownClass(cls):

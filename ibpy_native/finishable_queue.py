@@ -58,7 +58,7 @@ class FinishableQueue():
 
         return contents_of_queue
 
-    def stream(self) -> Iterator[Any]:
+    async def stream(self) -> Iterator[Any]:
         """
         Yields the elements in queue as soon as an element has been put into
         the queue.

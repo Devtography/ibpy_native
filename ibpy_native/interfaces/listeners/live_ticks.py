@@ -23,6 +23,13 @@ class LiveTicksListener(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
+    def on_finish(self, req_id: int):
+        """
+        Callback when `FINISHED` status is received.
+        """
+        return NotImplemented
+
+    @abc.abstractmethod
     def on_error(self, err: IBError):
         """
         Callback when encounters errors.

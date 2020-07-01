@@ -3,7 +3,7 @@ Code implementation for `EClient` related stuffs
 """
 import enum
 from datetime import datetime, timedelta
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import pytz
 from typing_extensions import Literal, TypedDict
@@ -15,6 +15,7 @@ from ibapi.wrapper import (HistoricalTick, HistoricalTickBidAsk,
 from .wrapper import IBWrapper
 from .error import IBError, IBErrorCode
 from .finishable_queue import FinishableQueue, Status
+from .interfaces.listeners.live_ticks import LiveTicksListener
 
 class _ProcessHistoricalTicksResult(TypedDict):
     """
@@ -40,12 +41,17 @@ class IBClient(EClient):
             should be aligned with the timezone specified in TWS/IB Gateway
             at login. Defaults to 'America/New_York'.
         REQ_TIMEOUT (int): Constant uses as a default timeout value.
+        live_ticks_listener (LiveTicksListener): Listener for "Tick-by-Tick
+            Data" related functions.
     """
     # Static variable to define the timezone
     TZ = pytz.timezone('America/New_York')
 
     # Default timeout time in second for requests
     REQ_TIMEOUT = 10
+
+    # Listeners
+    live_ticks_listener: Optional[LiveTicksListener] = None
 
     def __init__(self, wrapper: IBWrapper):
         self.__wrapper = wrapper
@@ -382,6 +388,67 @@ class IBClient(EClient):
         all_ticks.reverse()
 
         return (all_ticks, finished)
+
+    # Stream live tick data
+    async def stream_tick_data(
+            self, req_id: int, contract: Contract,
+            tick_type: Literal['Last', 'AllLast', 'BidAsk', 'MidPoint'] = 'Last'
+        ):
+        """
+        Request to stream live tick data.
+
+        Args:
+            req_id (int): Request ID (ticker ID in IB API).
+            contract (Contract): `Contract` object with partially completed info
+                - e.g. symbol, currency, etc...
+            tick_type (Literal['Last', 'AllLast', 'BidAsk', 'MidPoint'],
+                optional): Type of tick to be requested. Defaults to 'Last'.
+
+        Note:
+            The value of `tick_type` is case sensitive - it must be `"BidAsk"`,
+            `"Last"`, `"AllLast"`, `"MidPoint"`. `"AllLast"` has additional
+            trade types such as combos, derivatives, and average price trades
+            which are not included in `"Last"`.
+            Also, this function depends on `live_ticks_listener` to return
+            live ticks received. The listener should be set explicitly.
+        """
+        # Error checking
+        if tick_type not in {'Last', 'AllLast', 'BidAsk', 'MidPoint'}:
+            raise ValueError(
+                "Value of argument `tick_type` can only be either 'Last', "
+                "'AllLast', 'BidAsk', or 'MidPoint'"
+            )
+
+        if self.live_ticks_listener is None:
+            raise TypeError("`live_ticks_listener` cannot be `None`")
+
+        try:
+            f_queue = FinishableQueue(self.__wrapper.get_request_queue(req_id))
+        except IBError as err:
+            raise err
+
+        print(f"Streaming live ticks [{tick_type}] for the given instrument "
+              "instrument from IB...")
+
+        self.reqTickByTickData(
+            reqId=req_id, contract=contract, tickType=tick_type,
+            numberOfTicks=0, ignoreSize=True
+        )
+
+        async for elem in f_queue.stream():
+            if isinstance(
+                    elem,
+                    (HistoricalTick,
+                     HistoricalTickLast,
+                     HistoricalTickBidAsk)
+                ):
+                self.live_ticks_listener.on_tick_receive(
+                    req_id=req_id, tick=elem
+                )
+            elif isinstance(elem, IBError):
+                self.live_ticks_listener.on_err(err=elem)
+            elif elem is Status.FINISHED:
+                self.live_ticks_listener.on_finish(req_id=req_id)
 
     # Private functions
     def __check_error(self):

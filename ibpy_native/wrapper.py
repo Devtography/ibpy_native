@@ -6,6 +6,7 @@ from typing import List, Optional, Union
 
 from ibapi.wrapper import (EWrapper, HistoricalTick, HistoricalTickBidAsk,
                            HistoricalTickLast)
+from ibpy_native.interfaces.listeners import NotificationListener
 
 from .finishable_queue import Status
 from .error import IBError, IBErrorCode
@@ -18,8 +19,9 @@ class IBWrapper(EWrapper):
 
     __req_queue = {}
 
-    def __init__(self):
-        self.__err_queue = queue.Queue()
+    def __init__(self, listener: Optional[NotificationListener] = None):
+        self.__err_queue: queue.Queue = queue.Queue()
+        self.__listener: Optional[NotificationListener] = listener
 
         super().__init__()
 
@@ -46,6 +48,14 @@ class IBWrapper(EWrapper):
         return self.__req_queue[req_id]
 
     # Error handling
+    def set_on_notify_listener(self, listener: NotificationListener):
+        """Setter for optional `NotificationListener`.
+
+        Args:
+            listener (NotificationListener): Listener for IB notifications.
+        """
+        self.__listener = listener
+
     def has_err(self) -> bool:
         """
         Check if there's any error in the error queue.
@@ -84,6 +94,9 @@ class IBWrapper(EWrapper):
         # -1 indicates a notification and not true error condition
         if reqId is not -1:
             self.__req_queue[reqId].put(Status.ERROR)
+        else:
+            if self.__listener is not None:
+                self.__listener.on_notify(msg_code=errorCode, msg=errorString)
 
     # Get contract details
     def contractDetails(self, reqId, contractDetails):

@@ -10,6 +10,7 @@ from typing_extensions import Literal, TypedDict
 
 from ibapi.wrapper import (Contract, HistoricalTick, HistoricalTickBidAsk,
                            HistoricalTickLast)
+from ibpy_native.interfaces.listeners import NotificationListener
 from .client import IBClient, Const
 from .error import IBError, IBErrorCode
 from .wrapper import IBWrapper
@@ -27,17 +28,19 @@ class IBBridge:
     """
 
     def __init__(self, host='127.0.0.1', port=4001,
-                 client_id=1, auto_conn=True):
+                 client_id=1, auto_conn=True,
+                 notification_listener: Optional[NotificationListener] = None):
         self.__host = host
         self.__port = port
         self.__client_id = client_id
 
-        self.__wrapper = IBWrapper()
+        self.__wrapper = IBWrapper(listener=notification_listener)
         self.__client = IBClient(self.__wrapper)
 
         if auto_conn:
             self.connect()
 
+    # Setters
     @staticmethod
     def set_timezone(tz: tzinfo):
         # pylint: disable=invalid-name
@@ -55,7 +58,15 @@ class IBBridge:
         """
         IBClient.TZ = tz
 
+    def set_on_notify_listener(self, listener: NotificationListener):
+        """Setter for optional `NotificationListener`.
 
+        Args:
+            listener (NotificationListener): Listener for IB notifications.
+        """
+        self.__wrapper.set_on_notify_listener(listener=listener)
+
+    # Connections
     def is_connected(self) -> bool:
         """
         Check if the bridge is connected to a running & logged in TWS/IB
@@ -81,6 +92,7 @@ class IBBridge:
         """
         self.__client.disconnect()
 
+    # Interacts with IB APIs
     def get_us_stock_contract(self, symbol: str,
                               timeout: int = IBClient.REQ_TIMEOUT) -> Contract:
         """

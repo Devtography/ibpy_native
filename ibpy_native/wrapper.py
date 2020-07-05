@@ -4,6 +4,8 @@ code implementation of IB API resposes handling.
 import queue
 from typing import List, Optional, Union
 
+from deprecated.sphinx import deprecated
+
 from ibapi.wrapper import (EWrapper, HistoricalTick, HistoricalTickBidAsk,
                            HistoricalTickLast)
 from ibpy_native.interfaces.listeners import NotificationListener
@@ -56,18 +58,22 @@ class IBWrapper(EWrapper):
         """
         self.__listener = listener
 
+    @deprecated(version='0.2.0',
+                reason="Function deprecated. Corresponding listener should be "
+                       "used instead to monitor errors")
     def has_err(self) -> bool:
-        """
-        Check if there's any error in the error queue.
+        """Check if there's any error in the error queue.
 
         Returns:
             bool: Indicates if the error queue contains any error or not.
         """
         return not self.__err_queue.empty()
 
+    @deprecated(version='0.2.0',
+                reason="Function deprecated. Corresponding listener should be "
+                       "used instead to monitor errors")
     def get_err(self, timeout=10) -> Optional[IBError]:
-        """
-        Get the error from error queue.
+        """Get the error from error queue.
 
         Args:
             timeout (int, optional): Second(s) to wait for the get request.
@@ -87,13 +93,15 @@ class IBWrapper(EWrapper):
 
     def error(self, reqId, errorCode, errorString):
         # override method
+        # This section should be changed prior to version 1.0.0 to optimze
+        # memory usage.
         err = IBError(reqId, errorCode, errorString)
 
         self.__err_queue.put(err)
 
         # -1 indicates a notification and not true error condition
         if reqId is not -1:
-            self.__req_queue[reqId].put(Status.ERROR)
+            self.__req_queue[reqId].put(err)
         else:
             if self.__listener is not None:
                 self.__listener.on_notify(msg_code=errorCode, msg=errorString)

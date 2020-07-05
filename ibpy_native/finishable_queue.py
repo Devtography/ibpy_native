@@ -60,8 +60,7 @@ class FinishableQueue():
         return contents_of_queue
 
     async def stream(self) -> Iterator[Any]:
-        """
-        Yields the elements in queue as soon as an element has been put into
+        """Yields the elements in queue as soon as an element has been put into
         the queue.
 
         Notes:
@@ -72,9 +71,10 @@ class FinishableQueue():
         while not self.__finished():
             current_element = self.__queue.get()
 
-            if (current_element is Status.FINISHED
-                    or current_element is Status.ERROR):
+            if current_element is Status.FINISHED:
                 self.__status = current_element
+            elif isinstance(current_element, BaseException):
+                self.__status = Status.ERROR
 
             yield current_element
 

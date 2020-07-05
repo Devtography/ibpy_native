@@ -7,6 +7,7 @@ from datetime import datetime
 import pytz
 from ibpy_native import IBBridge
 from ibpy_native.client import IBClient
+from ibpy_native.interfaces.listeners import NotificationListener
 from ibapi.wrapper import Contract
 
 TEST_PORT = 4002
@@ -67,6 +68,29 @@ class TestIBBridge(unittest.TestCase):
         # Reset timezone to New York
         IBBridge.set_timezone(pytz.timezone('America/New_York'))
         self.assertEqual(IBClient.TZ, pytz.timezone('America/New_York'))
+
+    def test_set_on_notify_listener(self):
+        """Test notification listener supports
+        """
+        # pylint: disable=protected-access
+        class MockListener(NotificationListener):
+            """Mock notification listener
+            """
+            triggered = False
+
+            def on_notify(self, msg_code: int, msg: str):
+                """Mock callback implementation
+                """
+                print(f"{msg_code} - {msg}")
+
+                self.triggered = True
+
+        mock_listener = MockListener()
+
+        self._bridge.set_on_notify_listener(mock_listener)
+        self._bridge._IBBridge__wrapper.error(
+            reqId=-1, errorCode=1100, errorString="MOCK MSG"
+        )
 
     def test_get_us_stock_contract(self):
         """

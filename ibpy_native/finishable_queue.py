@@ -46,11 +46,11 @@ class FinishableQueue():
 
                 if current_element is Status.FINISHED:
                     self.__status = Status.FINISHED
-                elif current_element is Status.ERROR:
-                    self.__status = Status.ERROR
                 else:
+                    if isinstance(current_element, BaseException):
+                        self.__status = Status.ERROR
+
                     contents_of_queue.append(current_element)
-                    # then keep going and try and get more data
 
             except queue.Empty:
                 self.__status = Status.TIMEOUT

@@ -8,6 +8,7 @@ import unittest
 
 from ibpy_native import client, wrapper
 from ibpy_native.finishable_queue import FinishableQueue, Status
+from ibpy_native.interfaces.listeners import NotificationListener
 from ibapi.contract import Contract
 from ibapi.wrapper import (
     HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast,
@@ -61,6 +62,28 @@ class TestIBWrapper(unittest.TestCase):
         )
 
         print(cls.resolved_contract)
+
+    def test_notification_listener(self):
+        """Test notification listener approach
+        """
+        class MockListener(NotificationListener):
+            """Mock notification listener
+            """
+            triggered = False
+
+            def on_notify(self, msg_code: int, msg: str):
+                """Mock callback implementation
+                """
+                print(f"{msg_code} - {msg}")
+
+                self.triggered = True
+
+        mock_listener = MockListener()
+
+        self.wrapper.set_on_notify_listener(listener=mock_listener)
+        self.wrapper.error(reqId=-1, errorCode=1100, errorString="MOCK MSG")
+
+        self.assertTrue(mock_listener.triggered)
 
     def test_historical_ticks(self):
         """

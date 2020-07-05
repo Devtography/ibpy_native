@@ -7,7 +7,7 @@ import queue
 from typing import Iterator, Any
 
 # Queue status
-class Status(enum.IntEnum):
+class Status(enum.Enum):
     """
     Status codes for `FinishableQueue`
     """
@@ -46,12 +46,13 @@ class FinishableQueue():
             try:
                 current_element = self.__queue.get(timeout=timeout)
 
-                if (current_element is Status.FINISHED
-                        or current_element is Status.ERROR):
-                    self.__status = current_element
+                if current_element is Status.FINISHED:
+                    self.__status = Status.FINISHED
                 else:
+                    if isinstance(current_element, BaseException):
+                        self.__status = Status.ERROR
+
                     contents_of_queue.append(current_element)
-                    # then keep going and try and get more data
 
             except queue.Empty:
                 self.__status = Status.TIMEOUT

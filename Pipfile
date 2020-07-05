@@ -14,6 +14,7 @@ twine = "*"
 pytz = "*"
 typing-extensions = "*"
 pandas = "*"
+deprecated = "*"
 
 [requires]
 python_version = "3.7"

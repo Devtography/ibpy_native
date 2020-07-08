@@ -1,6 +1,5 @@
-"""
-Code implementation for custom `FinishableQueue`
-"""
+"""Code implementation for custom `FinishableQueue`."""
+import asyncio
 import enum
 import queue
 
@@ -17,8 +16,7 @@ class Status(enum.Enum):
     TIMEOUT = 408
 
 class FinishableQueue():
-    """
-    This class takes a built-in `Queue` object to handle the async tasks by
+    """This class takes a built-in `Queue` object to handle the async tasks by
     managing its' status based on elements retrieve from the `Queue` object.
 
     Args:
@@ -30,8 +28,7 @@ class FinishableQueue():
         self.__status = Status.STARTED
 
     def get(self, timeout: int) -> list:
-        """
-        Returns a list of queue elements once timeout is finished, or a
+        """Returns a list of queue elements once timeout is finished, or a
         FINISHED flag is received in the queue.
 
         Args:
@@ -68,8 +65,12 @@ class FinishableQueue():
             function. Instead, it waits forever until the finish signal is
             received before it breaks the internal loop.
         """
+        loop = asyncio.get_event_loop()
+
         while not self.__finished():
-            current_element = self.__queue.get()
+            current_element = await loop.run_in_executor(
+                None, self.__queue.get
+            )
 
             if current_element is Status.FINISHED:
                 self.__status = current_element

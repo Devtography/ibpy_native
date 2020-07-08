@@ -3,7 +3,7 @@ Code implementation for `EClient` related stuffs
 """
 import enum
 from datetime import datetime, timedelta
-from typing import List, Optional, Tuple, Union
+from typing import List, Tuple, Union
 
 import pytz
 from typing_extensions import Literal, TypedDict
@@ -41,17 +41,12 @@ class IBClient(EClient):
             should be aligned with the timezone specified in TWS/IB Gateway
             at login. Defaults to 'America/New_York'.
         REQ_TIMEOUT (int): Constant uses as a default timeout value.
-        live_ticks_listener (LiveTicksListener): Listener for "Tick-by-Tick
-            Data" related functions.
     """
     # Static variable to define the timezone
     TZ = pytz.timezone('America/New_York')
 
     # Default timeout time in second for requests
     REQ_TIMEOUT = 10
-
-    # Listeners
-    live_ticks_listener: Optional[LiveTicksListener] = None
 
     def __init__(self, wrapper: IBWrapper):
         self.__wrapper = wrapper
@@ -390,19 +385,24 @@ class IBClient(EClient):
         return (all_ticks, finished)
 
     # Stream live tick data
-    async def stream_tick_data(
-            self, req_id: int, contract: Contract,
+    async def stream_live_ticks(
+            self, req_id: int, contract: Contract, listener: LiveTicksListener,
             tick_type: Literal['Last', 'AllLast', 'BidAsk', 'MidPoint'] = 'Last'
         ):
-        """
-        Request to stream live tick data.
+        """Request to stream live tick data.
 
         Args:
             req_id (int): Request ID (ticker ID in IB API).
             contract (Contract): `Contract` object with partially completed info
                 - e.g. symbol, currency, etc...
+            listener (LiveTicksListener): Callback listener for receiving ticks,
+                finish signal, and error from IB API.
             tick_type (Literal['Last', 'AllLast', 'BidAsk', 'MidPoint'],
                 optional): Type of tick to be requested. Defaults to 'Last'.
+
+        Raises:
+            IBError: If
+                - queue associated with `req_id` is being used by other tasks;
 
         Note:
             The value of `tick_type` is case sensitive - it must be `"BidAsk"`,
@@ -418,9 +418,6 @@ class IBClient(EClient):
                 "Value of argument `tick_type` can only be either 'Last', "
                 "'AllLast', 'BidAsk', or 'MidPoint'"
             )
-
-        if self.live_ticks_listener is None:
-            raise TypeError("`live_ticks_listener` cannot be `None`")
 
         try:
             f_queue = FinishableQueue(self.__wrapper.get_request_queue(req_id))
@@ -442,13 +439,11 @@ class IBClient(EClient):
                      HistoricalTickLast,
                      HistoricalTickBidAsk)
                 ):
-                self.live_ticks_listener.on_tick_receive(
-                    req_id=req_id, tick=elem
-                )
+                listener.on_tick_receive(req_id=req_id, tick=elem)
             elif isinstance(elem, IBError):
-                self.live_ticks_listener.on_err(err=elem)
+                listener.on_err(err=elem)
             elif elem is Status.FINISHED:
-                self.live_ticks_listener.on_finish(req_id=req_id)
+                listener.on_finish(req_id=req_id)
 
     # Private functions
     def __check_error(self):

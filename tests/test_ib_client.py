@@ -23,6 +23,25 @@ from ibapi.wrapper import (
 )
 from tests.utils import async_test
 
+class _MockLiveTicksListener(LiveTicksListener):
+    """Mock live ticks listener for unit test."""
+    ticks: List[Union[
+        HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast
+    ]] = []
+    finished: bool = False
+
+    def on_tick_receive(self, req_id: int, tick: Union[
+            HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast
+        ]):
+        print(tick)
+        self.ticks.append(tick)
+
+    def on_finish(self, req_id: int):
+        self.finished = True
+
+    def on_err(self, err: IBError):
+        raise err
+
 class Const(enum.IntEnum):
     """
     Predefined request IDs for tests in `TestIBClient`.
@@ -33,6 +52,7 @@ class Const(enum.IntEnum):
     RID_FETCH_HISTORICAL_TICKS = 18001
     RID_FETCH_HISTORICAL_TICKS_ERR = 18002
     RID_STREAM_LIVE_TICKS = 19001
+    RID_CANCEL_LIVE_TICKS_STREAM = 19002
 
 class TestIBClient(unittest.TestCase):
     """
@@ -190,31 +210,11 @@ class TestIBClient(unittest.TestCase):
     @async_test
     async def test_stream_live_ticks(self):
         """Test function `stream_live_ticks`."""
-        class Listener(LiveTicksListener):
-            """Mock listener for unit test."""
-            ticks: List[Union[
-                HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast
-            ]] = []
-            finished: bool = False
-
-            def on_tick_receive(self, req_id: int, tick: Union[
-                    HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast
-                ]):
-                self.ticks.append(tick)
-
-            def on_finish(self, req_id: int):
-                self.finished = True
-
-            def on_err(self, err: IBError):
-                raise err
-
         async def cancel_req():
             await asyncio.sleep(3)
             self.client.cancelTickByTickData(
                 reqId=Const.RID_STREAM_LIVE_TICKS.value
             )
-
-            self.client.cancelTickByTickData(reqId=19002)
 
             queue = self.wrapper.get_request_queue(
                 req_id=Const.RID_STREAM_LIVE_TICKS
@@ -225,7 +225,7 @@ class TestIBClient(unittest.TestCase):
             req_id=Const.RID_RESOLVE_CONTRACT.value, contract=self.__contract
         )
 
-        listener = Listener()
+        listener = _MockLiveTicksListener()
 
         stream = asyncio.create_task(
             self.client.stream_live_ticks(
@@ -248,6 +248,43 @@ class TestIBClient(unittest.TestCase):
             raise err
 
         self.assertGreater(len(listener.ticks), 0)
+        self.assertTrue(listener.finished)
+
+    @async_test
+    async def test_cancel_live_ticks_stream(self):
+        """Test function `cancel_live_ticks_stream`."""
+        async def cancel_req():
+            await asyncio.sleep(3)
+            self.client.cancel_live_ticks_stream(
+                req_id=Const.RID_CANCEL_LIVE_TICKS_STREAM.value
+            )
+
+        resolved_contract = self.client.resolve_contract(
+            req_id=Const.RID_RESOLVE_CONTRACT.value, contract=self.__contract
+        )
+
+        listener = _MockLiveTicksListener()
+
+        stream = asyncio.create_task(
+            self.client.stream_live_ticks(
+                req_id=Const.RID_CANCEL_LIVE_TICKS_STREAM.value,
+                contract=resolved_contract,
+                listener=listener,
+                tick_type='BidAsk'
+            )
+        )
+        cancel = asyncio.create_task(cancel_req())
+
+        try:
+            await stream
+            await cancel
+        except IBError as err:
+            tasks = asyncio.all_tasks()
+            for task in tasks:
+                task.cancel()
+
+            raise err
+
         self.assertTrue(listener.finished)
 
     @classmethod

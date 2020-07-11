@@ -445,6 +445,15 @@ class IBClient(EClient):
             elif elem is Status.FINISHED:
                 listener.on_finish(req_id=req_id)
 
+    def cancel_live_ticks_stream(self, req_id: int):
+        """Stop the live tick data stream that's currently streaming.
+
+        Args:
+            req_id (int): Request ID (ticker ID in IB API).
+        """
+        self.cancelTickByTickData(reqId=req_id)
+        self.__wrapper.get_request_queue(req_id=req_id).put(Status.FINISHED)
+
     # Private functions
     def __check_error(self):
         """

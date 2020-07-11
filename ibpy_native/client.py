@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from typing import List, Tuple, Union
 
 import pytz
+from deprecated.sphinx import deprecated
 from typing_extensions import Literal, TypedDict
 
 from ibapi.contract import Contract
@@ -455,6 +456,9 @@ class IBClient(EClient):
         self.__wrapper.get_request_queue(req_id=req_id).put(Status.FINISHED)
 
     # Private functions
+    @deprecated(version='0.2.0',
+                reason="Function deprecated. Corresponding listener should be "
+                       "used instead to monitor errors.")
     def __check_error(self):
         """
         Check if the error queue in wrapper contains any error returned from IB

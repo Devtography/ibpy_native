@@ -1,15 +1,23 @@
-"""
-Unit tests for module `ibpy_native.bridge`.
-"""
+"""Unit tests for module `ibpy_native.bridge`."""
+import asyncio
 import os
 import unittest
 from datetime import datetime
+from typing import List, Union
 
 import pytz
+import ibpy_native.datatype as dt
 from ibpy_native import IBBridge
+from ibpy_native.error import IBError
 from ibpy_native.client import IBClient
-from ibpy_native.interfaces.listeners import NotificationListener
-from ibapi.wrapper import Contract
+from ibpy_native.interfaces.listeners import (
+    NotificationListener, LiveTicksListener
+)
+from ibapi.contract import Contract
+from ibapi.wrapper import (
+    HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast
+)
+from tests.utils import async_test
 
 TEST_HOST = os.getenv('IB_HOST', '127.0.0.1')
 TEST_PORT = int(os.getenv('IB_PORT', '4002'))
@@ -186,6 +194,51 @@ class TestIBBridge(unittest.TestCase):
             self._bridge.get_historical_ticks(
                 contract, attempts=0
             )
+
+    @async_test
+    async def test_stream_live_ticks(self):
+        """Test function `stream_live_ticks`."""
+        # pylint: disable=protected-access
+        class MockListener(LiveTicksListener):
+            """Mock notification listener"""
+            ticks: List[Union[
+                HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast
+            ]] = []
+            finished: bool = False
+
+            def on_tick_receive(self, req_id: int, tick: Union[
+                    HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast
+                ]):
+                print(tick)
+                self.ticks.append(tick)
+
+            def on_finish(self, req_id: int):
+                self.finished = True
+
+            def on_err(self, err: IBError):
+                raise err
+
+        client: IBClient = self._bridge._IBBridge__client
+        listener = MockListener()
+
+        contract = Contract()
+        contract.secType = 'CASH'
+        contract.symbol = 'EUR'
+        contract.exchange = 'IDEALPRO'
+        contract.currency = 'GBP'
+
+        resolved = client.resolve_contract(
+            req_id=1, contract=contract
+        )
+
+        req_id = await self._bridge.stream_live_ticks(
+            contract=resolved, listener=listener, tick_type=dt.LiveTicks.BID_ASK
+        )
+        self.assertIsNotNone(req_id)
+
+        await asyncio.sleep(2)
+        client.cancel_live_ticks_stream(req_id=req_id)
+        await asyncio.sleep(0.5)
 
     @classmethod
     def tearDownClass(cls):

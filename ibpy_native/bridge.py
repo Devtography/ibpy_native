@@ -1,6 +1,7 @@
 """
 Code implementation of public interface to bridge between the package & IB API
 """
+import asyncio
 import random
 import threading
 from datetime import datetime, tzinfo
@@ -8,9 +9,13 @@ from typing import Optional, Union
 
 from typing_extensions import Literal, TypedDict
 
+import ibpy_native.datatype as dt
+
 from ibapi.wrapper import (Contract, HistoricalTick, HistoricalTickBidAsk,
                            HistoricalTickLast)
-from ibpy_native.interfaces.listeners import NotificationListener
+from ibpy_native.interfaces.listeners import (
+    NotificationListener, LiveTicksListener
+)
 from .client import IBClient, Const
 from .error import IBError, IBErrorCode
 from .wrapper import IBWrapper
@@ -388,6 +393,42 @@ class IBBridge:
             'ticks': all_ticks,
             'completed': False
         }
+
+    async def stream_live_ticks(
+            self, contract: Contract, listener: LiveTicksListener,
+            tick_type: Optional[dt.LiveTicks] = dt.LiveTicks.LAST
+        ) -> int:
+        """Request to stream live tick data.
+
+        Args:
+            contract (:obj: `Contract`): `Contract` object with sufficient info
+                to identify the instrument.
+            listener (:obj: `LiveTicksListener`): Callback listener for
+                receiving ticks, finish signale, and error from IB API.
+            tick_type (:obj: `TickType`, optional): Type of ticks to be
+                requested. Defaults to `TickType.LAST`.
+
+        Returns:
+            int: Request identifier. This will be needed to stop the stream
+                started by this function.
+        """
+        while True:
+            # To ensure the `req_id` is useable.
+            try:
+                req_id = self.__gen_req_id()
+                _ = self.__wrapper.get_request_queue(req_id=req_id)
+            except IBError:
+                continue
+            break
+
+        asyncio.create_task(
+            self.__client.stream_live_ticks(
+                req_id=req_id, contract=contract, listener=listener,
+                tick_type=tick_type.value
+            )
+        )
+
+        return req_id
 
     def __gen_req_id(self) -> int:
         """

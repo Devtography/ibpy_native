@@ -7,7 +7,7 @@ from typing import List, Optional, Union
 from deprecated.sphinx import deprecated
 
 from ibapi.wrapper import (EWrapper, HistoricalTick, HistoricalTickBidAsk,
-                           HistoricalTickLast)
+                           HistoricalTickLast, TickAttribBidAsk, TickAttribLast)
 from ibpy_native.interfaces.listeners import NotificationListener
 
 from .finishable_queue import Status
@@ -146,6 +146,46 @@ class IBWrapper(EWrapper):
         # override method
         self.__handle_historical_ticks_results(reqId, ticks, done)
 
+    # Stream live tick data
+    def tickByTickAllLast(
+            self, reqId: int, tickType: int, time: int, price: float,
+            size: int, tickAttribLast: TickAttribLast, exchange: str,
+            specialConditions: str
+    ):
+        # override method
+        record = HistoricalTickLast()
+        record.time = time
+        record.price = price
+        record.size = size
+        record.tickAttribLast = tickAttribLast
+        record.exchange = exchange
+        record.specialConditions = specialConditions
+
+        self.__handle_live_ticks(req_id=reqId, tick=record)
+
+    def tickByTickBidAsk(
+            self, reqId: int, time: int, bidPrice: float, askPrice: float,
+            bidSize: int, askSize: int, tickAttribBidAsk: TickAttribBidAsk
+    ):
+        # override method
+        record = HistoricalTickBidAsk()
+        record.time = time
+        record.priceBid = bidPrice
+        record.sizeBid = bidSize
+        record.priceAsk = askPrice
+        record.sizeAsk = askSize
+        record.tickAttribBidAsk = tickAttribBidAsk
+
+        self.__handle_live_ticks(req_id=reqId, tick=record)
+
+    def tickByTickMidPoint(self, reqId: int, time: int, midPoint: float):
+        # override method
+        record = HistoricalTick()
+        record.time = time
+        record.price = midPoint
+
+        self.__handle_live_ticks(req_id=reqId, tick=record)
+
     ## Private functions
     def __init_req_queue(self, req_id: int):
         """
@@ -163,7 +203,7 @@ class IBWrapper(EWrapper):
                 List[HistoricalTickLast]
             ],
             done: bool
-        ):
+    ):
         """
         Handles results return from functions `historicalTicks`,
         `historicalTicksBidAsk`, and `historicalTicksLast` by putting the
@@ -174,3 +214,19 @@ class IBWrapper(EWrapper):
         self.__req_queue[req_id].put(ticks)
         self.__req_queue[req_id].put(done)
         self.__req_queue[req_id].put(Status.FINISHED)
+
+    def __handle_live_ticks(
+            self, req_id: int,
+            tick: Union[
+                HistoricalTick,
+                HistoricalTickBidAsk,
+                HistoricalTickLast
+            ]
+    ):
+        """
+        Handles live ticks passed to functions `tickByTickAllLast`,
+        `tickByTickBidAsk`, and `tickByTickMidPoint` by putting the ticks
+        received into corresponding queue.
+        """
+        self.__init_req_queue(req_id)
+        self.__req_queue[req_id].put(tick)

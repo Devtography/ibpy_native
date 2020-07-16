@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from typing import List, Tuple, Union
 
 import pytz
+from deprecated.sphinx import deprecated
 from typing_extensions import Literal, TypedDict
 
 from ibapi.contract import Contract
@@ -15,6 +16,7 @@ from ibapi.wrapper import (HistoricalTick, HistoricalTickBidAsk,
 from .wrapper import IBWrapper
 from .error import IBError, IBErrorCode
 from .finishable_queue import FinishableQueue, Status
+from .interfaces.listeners.live_ticks import LiveTicksListener
 
 class _ProcessHistoricalTicksResult(TypedDict):
     """
@@ -201,6 +203,7 @@ class IBClient(EClient):
                               HistoricalTickLast]],
                    bool]:
         # pylint: disable=unidiomatic-typecheck
+        # pylint: disable=too-many-statements
         """
         Fetch the historical ticks data for a given instrument from IB.
 
@@ -382,7 +385,80 @@ class IBClient(EClient):
 
         return (all_ticks, finished)
 
+    # Stream live tick data
+    async def stream_live_ticks(
+            self, req_id: int, contract: Contract, listener: LiveTicksListener,
+            tick_type: Literal['Last', 'AllLast', 'BidAsk', 'MidPoint'] = 'Last'
+        ):
+        """Request to stream live tick data.
+
+        Args:
+            req_id (int): Request ID (ticker ID in IB API).
+            contract (Contract): `Contract` object with partially completed info
+                - e.g. symbol, currency, etc...
+            listener (LiveTicksListener): Callback listener for receiving ticks,
+                finish signal, and error from IB API.
+            tick_type (Literal['Last', 'AllLast', 'BidAsk', 'MidPoint'],
+                optional): Type of tick to be requested. Defaults to 'Last'.
+
+        Raises:
+            IBError: If
+                - queue associated with `req_id` is being used by other tasks;
+
+        Note:
+            The value of `tick_type` is case sensitive - it must be `"BidAsk"`,
+            `"Last"`, `"AllLast"`, `"MidPoint"`. `"AllLast"` has additional
+            trade types such as combos, derivatives, and average price trades
+            which are not included in `"Last"`.
+            Also, this function depends on `live_ticks_listener` to return
+            live ticks received. The listener should be set explicitly.
+        """
+        # Error checking
+        if tick_type not in {'Last', 'AllLast', 'BidAsk', 'MidPoint'}:
+            raise ValueError(
+                "Value of argument `tick_type` can only be either 'Last', "
+                "'AllLast', 'BidAsk', or 'MidPoint'"
+            )
+
+        try:
+            f_queue = FinishableQueue(self.__wrapper.get_request_queue(req_id))
+        except IBError as err:
+            raise err
+
+        print(f"Streaming live ticks [{tick_type}] for the given instrument "
+              "instrument from IB...")
+
+        self.reqTickByTickData(
+            reqId=req_id, contract=contract, tickType=tick_type,
+            numberOfTicks=0, ignoreSize=True
+        )
+
+        async for elem in f_queue.stream():
+            if isinstance(
+                    elem,
+                    (HistoricalTick,
+                     HistoricalTickLast,
+                     HistoricalTickBidAsk)
+                ):
+                listener.on_tick_receive(req_id=req_id, tick=elem)
+            elif isinstance(elem, IBError):
+                listener.on_err(err=elem)
+            elif elem is Status.FINISHED:
+                listener.on_finish(req_id=req_id)
+
+    def cancel_live_ticks_stream(self, req_id: int):
+        """Stop the live tick data stream that's currently streaming.
+
+        Args:
+            req_id (int): Request ID (ticker ID in IB API).
+        """
+        self.cancelTickByTickData(reqId=req_id)
+        self.__wrapper.get_request_queue(req_id=req_id).put(Status.FINISHED)
+
     # Private functions
+    @deprecated(version='0.2.0',
+                reason="Function deprecated. Corresponding listener should be "
+                       "used instead to monitor errors.")
     def __check_error(self):
         """
         Check if the error queue in wrapper contains any error returned from IB

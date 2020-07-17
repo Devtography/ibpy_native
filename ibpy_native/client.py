@@ -11,10 +11,10 @@ from ibapi.contract import Contract
 from ibapi.client import EClient
 from ibapi.wrapper import (HistoricalTick, HistoricalTickBidAsk,
                            HistoricalTickLast)
-from .wrapper import IBWrapper
-from .error import IBError, IBErrorCode
-from .finishable_queue import FinishableQueue, Status
-from .interfaces.listeners.live_ticks import LiveTicksListener
+from ibpy_native.error import IBError, IBErrorCode
+from ibpy_native.finishable_queue import FinishableQueue, Status
+from ibpy_native.interfaces.listeners import LiveTicksListener
+from ibpy_native.wrapper import IBWrapper
 
 class _ProcessHistoricalTicksResult(TypedDict):
     """Use for type hint the returns of `IBClient.fetch_historical_ticks`."""
@@ -22,9 +22,7 @@ class _ProcessHistoricalTicksResult(TypedDict):
     next_end_time: datetime
 
 class Const(enum.Enum):
-    """
-    Constants used in `IBClient`
-    """
+    """Constants used in `IBClient`."""
     TIME_FMT = '%Y%m%d %H:%M:%S' # IB time format
     MSG_TIMEOUT = "Exceed maximum wait for wrapper to confirm finished"
 

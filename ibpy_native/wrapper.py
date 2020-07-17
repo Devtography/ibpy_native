@@ -6,10 +6,9 @@ from deprecated.sphinx import deprecated
 
 from ibapi.wrapper import (EWrapper, HistoricalTick, HistoricalTickBidAsk,
                            HistoricalTickLast, TickAttribBidAsk, TickAttribLast)
+from ibpy_native.error import IBError, IBErrorCode
+from ibpy_native.finishable_queue import Status
 from ibpy_native.interfaces.listeners import NotificationListener
-
-from .finishable_queue import Status
-from .error import IBError, IBErrorCode
 
 class IBWrapper(EWrapper):
     """The wrapper deals with the action coming back from the IB gateway or

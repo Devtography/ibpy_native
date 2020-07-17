@@ -13,12 +13,12 @@ import ibpy_native.datatype as dt
 
 from ibapi.wrapper import (Contract, HistoricalTick, HistoricalTickBidAsk,
                            HistoricalTickLast)
+from ibpy_native.client import IBClient, Const
+from ibpy_native.error import IBError, IBErrorCode
 from ibpy_native.interfaces.listeners import (
     NotificationListener, LiveTicksListener
 )
-from .client import IBClient, Const
-from .error import IBError, IBErrorCode
-from .wrapper import IBWrapper
+from ibpy_native.wrapper import IBWrapper
 
 class IBTicksResult(TypedDict):
     """Use for type hint the returns of `IBBridge.get_historical_ticks`"""

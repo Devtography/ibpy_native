@@ -5,25 +5,19 @@ import asyncio
 import random
 import threading
 from datetime import datetime, tzinfo
-from typing import Optional, Union
+from typing import Optional
 
-from typing_extensions import Literal, TypedDict
+from typing_extensions import Literal
 
 import ibpy_native.datatype as dt
 
-from ibapi.wrapper import (Contract, HistoricalTick, HistoricalTickBidAsk,
-                           HistoricalTickLast)
+from ibapi.wrapper import Contract
 from ibpy_native.client import IBClient, Const
 from ibpy_native.error import IBError, IBErrorCode
 from ibpy_native.interfaces.listeners import (
     NotificationListener, LiveTicksListener
 )
 from ibpy_native.wrapper import IBWrapper
-
-class IBTicksResult(TypedDict):
-    """Use for type hint the returns of `IBBridge.get_historical_ticks`"""
-    ticks: Union[HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast]
-    completed: bool
 
 class IBBridge:
     """Public class to bridge between `ibpy-native` & IB API"""
@@ -221,7 +215,7 @@ class IBBridge:
             start: datetime = None, end: datetime = datetime.now(),
             data_type: Literal['MIDPOINT', 'BID_ASK', 'TRADES'] = 'TRADES',
             attempts: int = 1, timeout: int = IBClient.REQ_TIMEOUT
-        ) -> IBTicksResult:
+        ) -> dt.HistoricalTicksResult:
         """Retrieve historical ticks data for specificed instrument/contract
         from IB.
 

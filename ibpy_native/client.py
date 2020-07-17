@@ -12,8 +12,8 @@ from ibapi.client import EClient
 from ibapi.wrapper import (HistoricalTick, HistoricalTickBidAsk,
                            HistoricalTickLast)
 from ibpy_native.error import IBError, IBErrorCode
-from ibpy_native.finishable_queue import FinishableQueue, Status
 from ibpy_native.interfaces.listeners import LiveTicksListener
+from ibpy_native.utils import finishable_queue as fq
 from ibpy_native.wrapper import IBWrapper
 
 class _ProcessHistoricalTicksResult(TypedDict):
@@ -75,7 +75,7 @@ class IBClient(EClient):
         except IBError as err:
             raise err
 
-        f_queue = FinishableQueue(queue)
+        f_queue = fq.FinishableQueue(queue)
 
         print("Getting full contract details from IB...")
 
@@ -89,7 +89,7 @@ class IBClient(EClient):
         except IBError as err:
             raise err
 
-        if f_queue.get_status() == Status.TIMEOUT:
+        if f_queue.get_status() == fq.Status.TIMEOUT:
             raise IBError(
                 req_id, IBErrorCode.REQ_TIMEOUT.value,
                 Const.MSG_TIMEOUT.value
@@ -147,7 +147,7 @@ class IBClient(EClient):
         except IBError as err:
             raise err
 
-        f_queue = FinishableQueue(queue)
+        f_queue = fq.FinishableQueue(queue)
 
         print("Getting earliest available data point for the given "
               "instrument from IB... ")
@@ -165,7 +165,7 @@ class IBClient(EClient):
         except IBError as err:
             raise err
 
-        if f_queue.get_status() == Status.TIMEOUT:
+        if f_queue.get_status() == fq.Status.TIMEOUT:
             raise IBError(
                 req_id, IBErrorCode.REQ_TIMEOUT.value,
                 Const.MSG_TIMEOUT.value
@@ -248,7 +248,7 @@ class IBClient(EClient):
 
         # Time to fetch the ticks
         try:
-            f_queue = FinishableQueue(self.__wrapper.get_request_queue(req_id))
+            f_queue = fq.FinishableQueue(self.__wrapper.get_request_queue(req_id))
         except IBError as err:
             raise err
 
@@ -303,7 +303,7 @@ class IBClient(EClient):
                 raise IBError(err.rid, err.err_code, err.err_str,
                               err_extra=next_end_time)
 
-            if f_queue.get_status() == Status.TIMEOUT:
+            if f_queue.get_status() == fq.Status.TIMEOUT:
                 # Checks if it's in the middle of the data fetching loop
                 if len(all_ticks) > 0:
                     print("Request timeout while fetching the remaining ticks: "
@@ -412,7 +412,9 @@ class IBClient(EClient):
             )
 
         try:
-            f_queue = FinishableQueue(self.__wrapper.get_request_queue(req_id))
+            f_queue = fq.FinishableQueue(
+                self.__wrapper.get_request_queue(req_id)
+            )
         except IBError as err:
             raise err
 
@@ -434,7 +436,7 @@ class IBClient(EClient):
                 listener.on_tick_receive(req_id=req_id, tick=elem)
             elif isinstance(elem, IBError):
                 listener.on_err(err=elem)
-            elif elem is Status.FINISHED:
+            elif elem is fq.Status.FINISHED:
                 listener.on_finish(req_id=req_id)
 
     def cancel_live_ticks_stream(self, req_id: int):
@@ -444,7 +446,7 @@ class IBClient(EClient):
             req_id (int): Request ID (ticker ID in IB API).
         """
         self.cancelTickByTickData(reqId=req_id)
-        self.__wrapper.get_request_queue(req_id=req_id).put(Status.FINISHED)
+        self.__wrapper.get_request_queue(req_id=req_id).put(fq.Status.FINISHED)
 
     # Private functions
     @deprecated(version='0.2.0',

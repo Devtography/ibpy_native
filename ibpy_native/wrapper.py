@@ -7,8 +7,8 @@ from deprecated.sphinx import deprecated
 from ibapi.wrapper import (EWrapper, HistoricalTick, HistoricalTickBidAsk,
                            HistoricalTickLast, TickAttribBidAsk, TickAttribLast)
 from ibpy_native.error import IBError, IBErrorCode
-from ibpy_native.finishable_queue import Status
 from ibpy_native.interfaces.listeners import NotificationListener
+from ibpy_native.utils import finishable_queue as fq
 
 class IBWrapper(EWrapper):
     """The wrapper deals with the action coming back from the IB gateway or
@@ -112,7 +112,7 @@ class IBWrapper(EWrapper):
         # override method
         self.__init_req_queue(reqId)
 
-        self.__req_queue[reqId].put(Status.FINISHED)
+        self.__req_queue[reqId].put(fq.Status.FINISHED)
 
     # Get earliest data point for a given instrument and data
     def headTimestamp(self, reqId: int, headTimestamp: str):
@@ -120,7 +120,7 @@ class IBWrapper(EWrapper):
         self.__init_req_queue(reqId)
 
         self.__req_queue[reqId].put(headTimestamp)
-        self.__req_queue[reqId].put(Status.FINISHED)
+        self.__req_queue[reqId].put(fq.Status.FINISHED)
 
     # Fetch historical ticks data
     def historicalTicks(
@@ -205,7 +205,7 @@ class IBWrapper(EWrapper):
 
         self.__req_queue[req_id].put(ticks)
         self.__req_queue[req_id].put(done)
-        self.__req_queue[req_id].put(Status.FINISHED)
+        self.__req_queue[req_id].put(fq.Status.FINISHED)
 
     def __handle_live_ticks(
             self, req_id: int,

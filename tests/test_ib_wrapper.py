@@ -5,8 +5,8 @@ import threading
 import unittest
 
 from ibpy_native import client, wrapper
-from ibpy_native.finishable_queue import FinishableQueue, Status
 from ibpy_native.interfaces.listeners import NotificationListener
+from ibpy_native.utils import finishable_queue as fq
 from ibapi.contract import Contract
 from ibapi.wrapper import (
     HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast,
@@ -88,7 +88,7 @@ class TestIBWrapper(unittest.TestCase):
             Const.RID_FETCH_HISTORICAL_TICKS
         )
 
-        f_queue = FinishableQueue(queue)
+        f_queue = fq.FinishableQueue(queue)
 
         self.client.reqHistoricalTicks(
             Const.RID_FETCH_HISTORICAL_TICKS.value, self.resolved_contract,
@@ -98,7 +98,7 @@ class TestIBWrapper(unittest.TestCase):
         result = f_queue.get(timeout=Const.QUEUE_MAX_WAIT_SEC)
 
         self.assertFalse(self.wrapper.has_err())
-        self.assertNotEqual(f_queue.get_status(), Status.TIMEOUT)
+        self.assertNotEqual(f_queue.get_status(), fq.Status.TIMEOUT)
         self.assertEqual(len(result), 2)
         self.assertIsInstance(result[0], ListOfHistoricalTick)
 
@@ -110,7 +110,7 @@ class TestIBWrapper(unittest.TestCase):
             Const.RID_FETCH_HISTORICAL_TICKS
         )
 
-        f_queue = FinishableQueue(queue)
+        f_queue = fq.FinishableQueue(queue)
 
         self.client.reqHistoricalTicks(
             Const.RID_FETCH_HISTORICAL_TICKS.value, self.resolved_contract,
@@ -120,7 +120,7 @@ class TestIBWrapper(unittest.TestCase):
         result = f_queue.get(timeout=Const.QUEUE_MAX_WAIT_SEC)
 
         self.assertFalse(self.wrapper.has_err())
-        self.assertNotEqual(f_queue.get_status(), Status.TIMEOUT)
+        self.assertNotEqual(f_queue.get_status(), fq.Status.TIMEOUT)
         self.assertEqual(len(result), 2)
         self.assertIsInstance(result[0], ListOfHistoricalTickBidAsk)
 
@@ -132,7 +132,7 @@ class TestIBWrapper(unittest.TestCase):
             Const.RID_FETCH_HISTORICAL_TICKS
         )
 
-        f_queue = FinishableQueue(queue)
+        f_queue = fq.FinishableQueue(queue)
 
         self.client.reqHistoricalTicks(
             Const.RID_FETCH_HISTORICAL_TICKS.value, self.resolved_contract,
@@ -142,7 +142,7 @@ class TestIBWrapper(unittest.TestCase):
         result = f_queue.get(timeout=Const.QUEUE_MAX_WAIT_SEC)
 
         self.assertFalse(self.wrapper.has_err())
-        self.assertNotEqual(f_queue.get_status(), Status.TIMEOUT)
+        self.assertNotEqual(f_queue.get_status(), fq.Status.TIMEOUT)
         self.assertEqual(len(result), 2)
         self.assertIsInstance(result[0], ListOfHistoricalTickLast)
 
@@ -153,7 +153,7 @@ class TestIBWrapper(unittest.TestCase):
             Const.RID_REQ_TICK_BY_TICK_DATA_ALL_LAST
         )
 
-        f_queue = FinishableQueue(queue)
+        f_queue = fq.FinishableQueue(queue)
 
         self.client.reqTickByTickData(
             reqId=Const.RID_REQ_TICK_BY_TICK_DATA_ALL_LAST.value,
@@ -164,15 +164,15 @@ class TestIBWrapper(unittest.TestCase):
         )
 
         async for ele in f_queue.stream():
-            self.assertIsInstance(ele, (HistoricalTickLast, Status))
-            self.assertIsNot(ele, Status.ERROR)
+            self.assertIsInstance(ele, (HistoricalTickLast, fq.Status))
+            self.assertIsNot(ele, fq.Status.ERROR)
 
-            if ele is not Status.FINISHED:
+            if ele is not fq.Status.FINISHED:
                 self.client.cancelTickByTickData(
                     Const.RID_REQ_TICK_BY_TICK_DATA_ALL_LAST.value
                 )
 
-                queue.put(Status.FINISHED)
+                queue.put(fq.Status.FINISHED)
 
     @async_test
     async def test_tick_by_tick_last(self):
@@ -182,7 +182,7 @@ class TestIBWrapper(unittest.TestCase):
             Const.RID_REQ_TICK_BY_TICK_DATA_LAST
         )
 
-        f_queue = FinishableQueue(queue)
+        f_queue = fq.FinishableQueue(queue)
 
         self.client.reqTickByTickData(
             reqId=Const.RID_REQ_TICK_BY_TICK_DATA_LAST.value,
@@ -193,15 +193,15 @@ class TestIBWrapper(unittest.TestCase):
         )
 
         async for ele in f_queue.stream():
-            self.assertIsInstance(ele, (HistoricalTickLast, Status))
-            self.assertIsNot(ele, Status.ERROR)
+            self.assertIsInstance(ele, (HistoricalTickLast, fq.Status))
+            self.assertIsNot(ele, fq.Status.ERROR)
 
-            if ele is not Status.FINISHED:
+            if ele is not fq.Status.FINISHED:
                 self.client.cancelTickByTickData(
                     Const.RID_REQ_TICK_BY_TICK_DATA_LAST.value
                 )
 
-                queue.put(Status.FINISHED)
+                queue.put(fq.Status.FINISHED)
 
 
     @async_test
@@ -211,7 +211,7 @@ class TestIBWrapper(unittest.TestCase):
             Const.RID_REQ_TICK_BY_TICK_DATA_BIDASK
         )
 
-        f_queue = FinishableQueue(queue)
+        f_queue = fq.FinishableQueue(queue)
 
         self.client.reqTickByTickData(
             reqId=Const.RID_REQ_TICK_BY_TICK_DATA_BIDASK.value,
@@ -222,15 +222,15 @@ class TestIBWrapper(unittest.TestCase):
         )
 
         async for ele in f_queue.stream():
-            self.assertIsInstance(ele, (HistoricalTickBidAsk, Status))
-            self.assertIsNot(ele, Status.ERROR)
+            self.assertIsInstance(ele, (HistoricalTickBidAsk, fq.Status))
+            self.assertIsNot(ele, fq.Status.ERROR)
 
-            if ele is not Status.FINISHED:
+            if ele is not fq.Status.FINISHED:
                 self.client.cancelTickByTickData(
                     Const.RID_REQ_TICK_BY_TICK_DATA_BIDASK.value
                 )
 
-                queue.put(Status.FINISHED)
+                queue.put(fq.Status.FINISHED)
 
     @async_test
     async def test_tick_by_tick_mid_point(self):
@@ -239,7 +239,7 @@ class TestIBWrapper(unittest.TestCase):
             Const.RID_REQ_TICK_BY_TICK_DATA_MIDPOINT
         )
 
-        f_queue = FinishableQueue(queue)
+        f_queue = fq.FinishableQueue(queue)
 
         self.client.reqTickByTickData(
             reqId=Const.RID_REQ_TICK_BY_TICK_DATA_MIDPOINT.value,
@@ -250,15 +250,15 @@ class TestIBWrapper(unittest.TestCase):
         )
 
         async for ele in f_queue.stream():
-            self.assertIsInstance(ele, (HistoricalTick, Status))
-            self.assertIsNot(ele, Status.ERROR)
+            self.assertIsInstance(ele, (HistoricalTick, fq.Status))
+            self.assertIsNot(ele, fq.Status.ERROR)
 
-            if ele is not Status.FINISHED:
+            if ele is not fq.Status.FINISHED:
                 self.client.cancelTickByTickData(
                     Const.RID_REQ_TICK_BY_TICK_DATA_MIDPOINT
                 )
 
-                queue.put(Status.FINISHED)
+                queue.put(fq.Status.FINISHED)
 
     @classmethod
     def tearDownClass(cls):

@@ -13,9 +13,9 @@ import pytz
 from ibpy_native.wrapper import IBWrapper
 from ibpy_native.client import IBClient
 from ibpy_native.error import IBError
-from ibpy_native.finishable_queue import Status
 from ibpy_native.interfaces.listeners import LiveTicksListener
 from ibapi.contract import Contract
+from ibpy_native.utils import finishable_queue as fq
 from ibapi.wrapper import (
     HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast
 )
@@ -207,7 +207,7 @@ class TestIBClient(unittest.TestCase):
             queue = self.wrapper.get_request_queue(
                 req_id=Const.RID_STREAM_LIVE_TICKS
             )
-            queue.put(Status.FINISHED)
+            queue.put(fq.Status.FINISHED)
 
         resolved_contract = self.client.resolve_contract(
             req_id=Const.RID_RESOLVE_CONTRACT.value, contract=self.__contract

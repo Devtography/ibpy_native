@@ -6,13 +6,13 @@ from datetime import datetime
 from typing import List, Union
 
 import pytz
-import ibpy_native.datatype as dt
 from ibpy_native import IBBridge
 from ibpy_native.error import IBError
 from ibpy_native.client import IBClient
 from ibpy_native.interfaces.listeners import (
     NotificationListener, LiveTicksListener
 )
+from ibpy_native.utils import datatype as dt
 from ibapi.contract import Contract
 from ibapi.wrapper import (
     HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast

@@ -9,14 +9,13 @@ from typing import Optional
 
 from typing_extensions import Literal
 
-import ibpy_native.datatype as dt
-
 from ibapi.wrapper import Contract
 from ibpy_native.client import IBClient, Const
 from ibpy_native.error import IBError, IBErrorCode
 from ibpy_native.interfaces.listeners import (
     NotificationListener, LiveTicksListener
 )
+from ibpy_native.utils import datatype as dt
 from ibpy_native.wrapper import IBWrapper
 
 class IBBridge:

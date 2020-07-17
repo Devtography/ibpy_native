@@ -1,6 +1,4 @@
-"""
-Unit tests for module `ibpy_native.wrapper`.
-"""
+"""Unit tests for module `ibpy_native.wrapper`."""
 import os
 import enum
 import threading
@@ -17,9 +15,7 @@ from ibapi.wrapper import (
 from tests.utils import async_test
 
 class Const(enum.IntEnum):
-    """
-    Predefined constants for `TestIBWrapper`.
-    """
+    """Predefined constants for `TestIBWrapper`."""
     RID_RESOLVE_CONTRACT = 43
     RID_FETCH_HISTORICAL_TICKS = 18001
     RID_REQ_TICK_BY_TICK_DATA_ALL_LAST = 19001
@@ -29,9 +25,7 @@ class Const(enum.IntEnum):
     QUEUE_MAX_WAIT_SEC = 10
 
 class TestIBWrapper(unittest.TestCase):
-    """
-    Unit tests for class `IBWrapper`.
-    """
+    """Unit tests for class `IBWrapper`."""
     __contract = Contract()
     # __contract.secType = 'STK'
     # __contract.symbol = 'AAPL'
@@ -64,8 +58,7 @@ class TestIBWrapper(unittest.TestCase):
         print(cls.resolved_contract)
 
     def test_notification_listener(self):
-        """Test notification listener approach
-        """
+        """Test notification listener approach."""
         class MockListener(NotificationListener):
             """Mock notification listener
             """
@@ -110,9 +103,7 @@ class TestIBWrapper(unittest.TestCase):
         self.assertIsInstance(result[0], ListOfHistoricalTick)
 
     def test_historical_ticks_bid_ask(self):
-        """
-        Test overridden function `historicalTicksBidAsk`.
-        """
+        """Test overridden function `historicalTicksBidAsk`."""
         end_time = "20200327 16:30:00"
 
         queue = self.wrapper.get_request_queue(
@@ -134,9 +125,7 @@ class TestIBWrapper(unittest.TestCase):
         self.assertIsInstance(result[0], ListOfHistoricalTickBidAsk)
 
     def test_historical_ticks_last(self):
-        """
-        Test overridden function `historicalTicksLast`.
-        """
+        """Test overridden function `historicalTicksLast`."""
         end_time = "20200327 16:30:00"
 
         queue = self.wrapper.get_request_queue(
@@ -159,9 +148,7 @@ class TestIBWrapper(unittest.TestCase):
 
     @async_test
     async def test_tick_by_tick_all_last(self):
-        """
-        Test overridden function `tickByTickAllLast`.
-        """
+        """Test overridden function `tickByTickAllLast`."""
         queue = self.wrapper.get_request_queue(
             Const.RID_REQ_TICK_BY_TICK_DATA_ALL_LAST
         )
@@ -189,8 +176,7 @@ class TestIBWrapper(unittest.TestCase):
 
     @async_test
     async def test_tick_by_tick_last(self):
-        """
-        Test overridden function `tickByTickAllLast` with tick type `Last`.
+        """Test overridden function `tickByTickAllLast` with tick type `Last`.
         """
         queue = self.wrapper.get_request_queue(
             Const.RID_REQ_TICK_BY_TICK_DATA_LAST
@@ -220,9 +206,7 @@ class TestIBWrapper(unittest.TestCase):
 
     @async_test
     async def test_tick_by_tick_bid_ask(self):
-        """
-        Test overridden function `tickByTickBidAsk`.
-        """
+        """Test overridden function `tickByTickBidAsk`."""
         queue = self.wrapper.get_request_queue(
             Const.RID_REQ_TICK_BY_TICK_DATA_BIDASK
         )
@@ -250,9 +234,7 @@ class TestIBWrapper(unittest.TestCase):
 
     @async_test
     async def test_tick_by_tick_mid_point(self):
-        """
-        Test overridden function `tickByTickMidPoint`.
-        """
+        """Test overridden function `tickByTickMidPoint`."""
         queue = self.wrapper.get_request_queue(
             Const.RID_REQ_TICK_BY_TICK_DATA_MIDPOINT
         )

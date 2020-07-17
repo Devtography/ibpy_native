@@ -24,14 +24,10 @@ TEST_PORT = int(os.getenv('IB_PORT', '4002'))
 TEST_ID = 1001
 
 class TestIBBridgeConn(unittest.TestCase):
-    """
-    Test cases for connection related functions in `IBBridge`
-    """
+    """Test cases for connection related functions in `IBBridge`."""
 
     def test_init_auto_connect(self):
-        """
-        Test initialise `IBBridge` with `auto_conn=True`.
-        """
+        """Test initialise `IBBridge` with `auto_conn=True`."""
         bridge = IBBridge(
             host=TEST_HOST, port=TEST_PORT, client_id=TEST_ID
         )
@@ -41,9 +37,7 @@ class TestIBBridgeConn(unittest.TestCase):
         bridge.disconnect()
 
     def test_init_manual_connect(self):
-        """
-        Test initialise `IBBridge` with `auto_conn=False`.
-        """
+        """Test initialise `IBBridge` with `auto_conn=False`."""
         bridge = IBBridge(
             host=TEST_HOST, port=TEST_PORT, client_id=TEST_ID, auto_conn=False
         )
@@ -54,9 +48,7 @@ class TestIBBridgeConn(unittest.TestCase):
         bridge.disconnect()
 
     def test_disconnect_without_connection(self):
-        """
-        Test function `disconnect` without an established connection.
-        """
+        """Test function `disconnect` without an established connection."""
         bridge = IBBridge(
             host=TEST_HOST, port=TEST_PORT, client_id=TEST_ID, auto_conn=False
         )
@@ -65,9 +57,7 @@ class TestIBBridgeConn(unittest.TestCase):
         self.assertFalse(bridge.is_connected())
 
 class TestIBBridge(unittest.TestCase):
-    """
-    Unit tests for class `IBBridge`.
-    """
+    """Unit tests for class `IBBridge`."""
 
     @classmethod
     def setUpClass(cls):
@@ -76,9 +66,7 @@ class TestIBBridge(unittest.TestCase):
         )
 
     def test_set_timezone(self):
-        """
-        Test function `set_timezone`.
-        """
+        """Test function `set_timezone`."""
         IBBridge.set_timezone(pytz.timezone('Asia/Hong_Kong'))
 
         self.assertEqual(IBClient.TZ, pytz.timezone('Asia/Hong_Kong'))
@@ -88,17 +76,14 @@ class TestIBBridge(unittest.TestCase):
         self.assertEqual(IBClient.TZ, pytz.timezone('America/New_York'))
 
     def test_set_on_notify_listener(self):
-        """Test notification listener supports
-        """
+        """Test notification listener supports."""
         # pylint: disable=protected-access
         class MockListener(NotificationListener):
-            """Mock notification listener
-            """
+            """Mock notification listener"""
             triggered = False
 
             def on_notify(self, msg_code: int, msg: str):
-                """Mock callback implementation
-                """
+                """Mock callback implementation"""
                 print(f"{msg_code} - {msg}")
 
                 self.triggered = True
@@ -111,17 +96,13 @@ class TestIBBridge(unittest.TestCase):
         )
 
     def test_get_us_stock_contract(self):
-        """
-        Test function `get_us_stock_contract`.
-        """
+        """Test function `get_us_stock_contract`."""
         contract = self._bridge.get_us_stock_contract('AAPL')
 
         self.assertIsInstance(contract, Contract)
 
     def test_get_us_future_contract(self):
-        """
-        Test function `get_us_future_contract`.
-        """
+        """Test function `get_us_future_contract`."""
         contract = self._bridge.get_us_future_contract('MYM')
         self.assertIsInstance(contract, Contract)
 
@@ -129,9 +110,7 @@ class TestIBBridge(unittest.TestCase):
             self._bridge.get_us_future_contract('MYM', 'abcd')
 
     def test_get_earliest_data_point(self):
-        """
-        Test function `get_earliest_data_point`.
-        """
+        """Test function `get_earliest_data_point`."""
         contract = self._bridge.get_us_stock_contract('AAPL')
 
         head_trade = self._bridge.get_earliest_data_point(contract)
@@ -141,9 +120,7 @@ class TestIBBridge(unittest.TestCase):
         self.assertEqual(datetime(2004, 1, 23, 9, 30), head_bid_ask)
 
     def test_get_historical_ticks(self):
-        """
-        Test function `get_historical_ticks`.
-        """
+        """Test function `get_historical_ticks`."""
         contract = self._bridge.get_us_future_contract('mym', '202003')
 
         result = self._bridge.get_historical_ticks(
@@ -157,9 +134,7 @@ class TestIBBridge(unittest.TestCase):
         self.assertTrue(result['completed'])
 
     def test_get_historical_ticks_err(self):
-        """
-        Test function `get_historical_ticks` for the error cases.
-        """
+        """Test function `get_historical_ticks` for the error cases."""
         contract = self._bridge.get_us_stock_contract('AAPL')
 
         # start/end should not contains timezone info

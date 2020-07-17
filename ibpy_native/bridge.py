@@ -1,5 +1,5 @@
-"""
-Code implementation of public interface to bridge between the package & IB API
+"""Code implementation of public interface to bridge between the package &
+IB API.
 """
 import asyncio
 import random
@@ -21,16 +21,12 @@ from .error import IBError, IBErrorCode
 from .wrapper import IBWrapper
 
 class IBTicksResult(TypedDict):
-    """
-    Use for type hint the returns of `IBBridge.get_historical_ticks`
-    """
+    """Use for type hint the returns of `IBBridge.get_historical_ticks`"""
     ticks: Union[HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast]
     completed: bool
 
 class IBBridge:
-    """
-    Public class to bridge between `ibpy-native` & IB API
-    """
+    """Public class to bridge between `ibpy-native` & IB API"""
 
     def __init__(self, host='127.0.0.1', port=4001,
                  client_id=1, auto_conn=True,
@@ -49,8 +45,7 @@ class IBBridge:
     @staticmethod
     def set_timezone(tz: tzinfo):
         # pylint: disable=invalid-name
-        """
-        Set the timezone for the bridge to match the IB Gateway/TWS timezone
+        """Set the timezone for the bridge to match the IB Gateway/TWS timezone
         specified at login.
 
         Note:
@@ -73,15 +68,13 @@ class IBBridge:
 
     # Connections
     def is_connected(self) -> bool:
-        """
-        Check if the bridge is connected to a running & logged in TWS/IB
+        """Check if the bridge is connected to a running & logged in TWS/IB
         Gateway instance.
         """
         return self.__client.isConnected()
 
     def connect(self):
-        """
-        Connect the bridge to a running & logged in TWS/IB Gateway instance.
+        """Connect the bridge to a running & logged in TWS/IB Gateway instance.
         """
         if not self.is_connected():
             self.__client.connect(self.__host, self.__port, self.__client_id)
@@ -92,16 +85,15 @@ class IBBridge:
             setattr(self.__client, "_thread", thread)
 
     def disconnect(self):
-        """
-        Disconnect the bridge from the connected TWS/IB Gateway instance.
+        """Disconnect the bridge from the connected TWS/IB Gateway instance.
         """
         self.__client.disconnect()
 
-    # Interacts with IB APIs
+    ## Interacts with IB APIs
+    # Contracts
     def get_us_stock_contract(self, symbol: str,
                               timeout: int = IBClient.REQ_TIMEOUT) -> Contract:
-        """
-        Resolve the IB US stock contract.
+        """Resolve the IB US stock contract.
 
         Args:
             symbol (str): Symbol of the target instrument.
@@ -135,8 +127,7 @@ class IBBridge:
             self, symbol: str, contract_month: Optional[str] = None,
             timeout: int = IBClient.REQ_TIMEOUT
         ) -> Contract:
-        """
-        Search the US future contract from IB.
+        """Search the US future contract from IB.
 
         Args:
             symbol (str): Symbol of the target instrument.
@@ -187,8 +178,7 @@ class IBBridge:
             data_type: Literal['BID_ASK', 'TRADES'] = 'TRADES',
             timeout: int = IBClient.REQ_TIMEOUT
         ) -> datetime:
-        """
-        Returns the earliest data point of specified contract.
+        """Returns the earliest data point of specified contract.
 
         Args:
             contract (Contract): `Contract` object with sufficient info to
@@ -232,8 +222,7 @@ class IBBridge:
             data_type: Literal['MIDPOINT', 'BID_ASK', 'TRADES'] = 'TRADES',
             attempts: int = 1, timeout: int = IBClient.REQ_TIMEOUT
         ) -> IBTicksResult:
-        """
-        Retrieve historical ticks data for specificed instrument/contract
+        """Retrieve historical ticks data for specificed instrument/contract
         from IB.
 
         Note:
@@ -431,8 +420,7 @@ class IBBridge:
         return req_id
 
     def __gen_req_id(self) -> int:
-        """
-        Returns a random integer from 1 to 999999 as internal req_id for
-        IB API requests
+        """Returns a random integer from 1 to 999999 as internal req_id for
+        IB API requests.
         """
         return random.randint(1, 999999)

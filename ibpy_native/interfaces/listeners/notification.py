@@ -1,5 +1,4 @@
-"""Listener interfaces for IB notification
-"""
+"""Listener interfaces for IB notification"""
 
 import abc
 

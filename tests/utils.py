@@ -1,13 +1,9 @@
-"""
-Untilities for making unittests easier to write.
-"""
+"""Utilities for making unittests easier to write."""
 import asyncio
 
 def async_test(fn):
     # pylint: disable=invalid-name
-    """
-    Decorator for testing the async functions.
-    """
+    """Decorator for testing the async functions."""
     def wrapper(*args, **kwargs):
         loop = asyncio.new_event_loop()
 

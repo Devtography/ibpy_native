@@ -1,13 +1,9 @@
-"""
-Code implementation of error related stuffs.
-"""
+"""Code implementation of error related stuffs."""
 import enum
 from typing import Any
 
 class IBErrorCode(enum.IntEnum):
-    """
-    Error codes
-    """
+    """Error codes."""
     # Error codes defined by IB
     DUPLICATE_TICKER_ID = 102
     INVALID_CONTRACT = 200
@@ -19,9 +15,7 @@ class IBErrorCode(enum.IntEnum):
     MISSING_REQUIRED = 50404
 
 class IBError(Exception):
-    """
-    Error object to handle the error retruns from IB
-    """
+    """Error object to handle the error retruns from IB."""
 
     def __init__(self, rid: int, err_code: int, err_str: str,
                  err_extra: Any = None):

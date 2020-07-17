@@ -1,6 +1,4 @@
-"""
-Script to fetch historical tick data from IB.
-"""
+"""Script to fetch historical tick data from IB."""
 import argparse
 import time
 import sys
@@ -17,18 +15,14 @@ class _FetchCmd:
     # pylint: disable=protected-access
     @classmethod
     def invoke(cls):
-        """
-        Invokes the command actions
-        """
+        """Invokes the command actions."""
         cmd = cls.build_cmd()
         args = cmd.parse_args()
         args.func(args)
 
     @classmethod
     def build_cmd(cls) -> argparse.ArgumentParser:
-        """
-        Build the command line interface for historical ticks fetcher
-        """
+        """Build the command line interface for historical ticks fetcher."""
 
         # Create the top level parser
         parser = argparse.ArgumentParser(
@@ -107,9 +101,7 @@ class _FetchCmd:
     # Sub-command builders
     @classmethod
     def _stk_cmd(cls, parent: argparse._SubParsersAction):
-        """
-        Create the parser for the "stk" command
-        """
+        """Create the parser for the "stk" command."""
         parser: argparse.ArgumentParser = parent.add_parser(
             'stk', aliases=['stock'], help=""
         )
@@ -119,9 +111,7 @@ class _FetchCmd:
 
     @classmethod
     def _fut_cmd(cls, parent: argparse._SubParsersAction):
-        """
-        Create the parser for the "fut" command
-        """
+        """Create the parser for the "fut" command."""
         parser: argparse.ArgumentParser = parent.add_parser(
             'fut', aliases=['futures'], help=""
         )

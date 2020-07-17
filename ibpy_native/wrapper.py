@@ -1,6 +1,4 @@
-"""
-code implementation of IB API resposes handling.
-"""
+"""Code implementation of IB API resposes handling."""
 import queue
 from typing import List, Optional, Union
 
@@ -14,8 +12,7 @@ from .finishable_queue import Status
 from .error import IBError, IBErrorCode
 
 class IBWrapper(EWrapper):
-    """
-    The wrapper deals with the action coming back from the IB gateway or
+    """The wrapper deals with the action coming back from the IB gateway or
     TWS instance.
     """
 
@@ -28,8 +25,7 @@ class IBWrapper(EWrapper):
         super().__init__()
 
     def get_request_queue(self, req_id: int) -> queue.Queue:
-        """
-        Initialise queue or returns the existing queue with ID `req_id`.
+        """Initialise queue or returns the existing queue with ID `req_id`.
 
         Args:
             req_id (int): Request ID (ticker ID in IB API) to associate to the
@@ -188,9 +184,7 @@ class IBWrapper(EWrapper):
 
     ## Private functions
     def __init_req_queue(self, req_id: int):
-        """
-        Initial a new queue if there's no queue at `__req_queue[req_id]`
-        """
+        """Initial a new queue if there's no queue at `__req_queue[req_id]`"""
         if req_id not in self.__req_queue.keys():
             self.__req_queue[req_id] = queue.Queue()
 
@@ -204,8 +198,7 @@ class IBWrapper(EWrapper):
             ],
             done: bool
     ):
-        """
-        Handles results return from functions `historicalTicks`,
+        """Handles results return from functions `historicalTicks`,
         `historicalTicksBidAsk`, and `historicalTicksLast` by putting the
         results into corresponding queue & marks the queue as finished.
         """
@@ -223,8 +216,7 @@ class IBWrapper(EWrapper):
                 HistoricalTickLast
             ]
     ):
-        """
-        Handles live ticks passed to functions `tickByTickAllLast`,
+        """Handles live ticks passed to functions `tickByTickAllLast`,
         `tickByTickBidAsk`, and `tickByTickMidPoint` by putting the ticks
         received into corresponding queue.
         """

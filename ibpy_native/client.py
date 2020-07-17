@@ -1,6 +1,4 @@
-"""
-Code implementation for `EClient` related stuffs
-"""
+"""Code implementation for `EClient` related stuffs"""
 import enum
 from datetime import datetime, timedelta
 from typing import List, Tuple, Union
@@ -19,9 +17,7 @@ from .finishable_queue import FinishableQueue, Status
 from .interfaces.listeners.live_ticks import LiveTicksListener
 
 class _ProcessHistoricalTicksResult(TypedDict):
-    """
-    Use for type hint the returns of `IBClient.fetch_historical_ticks`.
-    """
+    """Use for type hint the returns of `IBClient.fetch_historical_ticks`."""
     ticks: List[Union[HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast]]
     next_end_time: datetime
 
@@ -33,8 +29,7 @@ class Const(enum.Enum):
     MSG_TIMEOUT = "Exceed maximum wait for wrapper to confirm finished"
 
 class IBClient(EClient):
-    """
-    The client calls the native methods from IBWrapper instead of
+    """The client calls the native methods from IBWrapper instead of
     overriding native methods.
 
     Attributes:
@@ -56,8 +51,7 @@ class IBClient(EClient):
     def resolve_contract(
             self, req_id: int, contract: Contract, timeout: int = REQ_TIMEOUT
         ) -> Contract:
-        """
-        From a partially formed contract, returns a fully fledged version.
+        """From a partially formed contract, returns a fully fledged version.
 
         Args:
             req_id (int): Request ID (ticker ID in IB API).
@@ -121,8 +115,8 @@ class IBClient(EClient):
             show: Literal['BID', 'ASK', 'TRADES'] = 'TRADES',
             timeout: int = REQ_TIMEOUT
         ) -> int:
-        """
-        Fetch the earliest available data point for a given instrument from IB.
+        """Fetch the earliest available data point for a given instrument
+        from IB.
 
         Args:
             req_id (int): Request ID (ticker ID in IB API).
@@ -204,8 +198,7 @@ class IBClient(EClient):
                    bool]:
         # pylint: disable=unidiomatic-typecheck
         # pylint: disable=too-many-statements
-        """
-        Fetch the historical ticks data for a given instrument from IB.
+        """Fetch the historical ticks data for a given instrument from IB.
 
         Args:
             req_id (int): Request ID (ticker ID in IB API).
@@ -460,8 +453,8 @@ class IBClient(EClient):
                 reason="Function deprecated. Corresponding listener should be "
                        "used instead to monitor errors.")
     def __check_error(self):
-        """
-        Check if the error queue in wrapper contains any error returned from IB
+        """Check if the error queue in wrapper contains any error returned
+        from IB
         """
         while self.__wrapper.has_err():
             err: IBError = self.__wrapper.get_err()
@@ -478,8 +471,7 @@ class IBClient(EClient):
                                     HistoricalTickLast]],
             start_time: datetime, end_time: datetime
     ) -> _ProcessHistoricalTicksResult:
-        """
-        Processes the tick data returned from IB in function
+        """Processes the tick data returned from IB in function
         `fetch_historical_ticks`.
         """
         if len(ticks) > 0:

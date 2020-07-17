@@ -7,9 +7,7 @@ from typing import Iterator, Any
 
 # Queue status
 class Status(enum.Enum):
-    """
-    Status codes for `FinishableQueue`
-    """
+    """Status codes for `FinishableQueue`"""
     STARTED = 103
     ERROR = 500
     FINISHED = 200
@@ -80,8 +78,7 @@ class FinishableQueue():
             yield current_element
 
     def get_status(self) -> Status:
-        """
-        Get status of the finishable queue.
+        """Get status of the finishable queue.
 
         Returns:
             Status: Enum `Status` represents either the queue has been started,
@@ -90,8 +87,7 @@ class FinishableQueue():
         return self.__status
 
     def reset(self):
-        """
-        Reset the status to `STARTED` for reusing the queue if the
+        """Reset the status to `STARTED` for reusing the queue if the
         status is marked as either `TIMEOUT` or `FINISHED`
         """
         if self.__finished():

@@ -1,6 +1,4 @@
-"""
-Unit tests for module `ibpy_native.client`.
-"""
+"""Unit tests for module `ibpy_native.client`."""
 import asyncio
 import enum
 import os
@@ -43,9 +41,7 @@ class _MockLiveTicksListener(LiveTicksListener):
         raise err
 
 class Const(enum.IntEnum):
-    """
-    Predefined request IDs for tests in `TestIBClient`.
-    """
+    """Predefined request IDs for tests in `TestIBClient`."""
     RID_RESOLVE_CONTRACT = 43
     RID_RESOLVE_HEAD_TIMESTAMP = 14001
     RID_RESOLVE_HEAD_TIMESTAMP_EPOCH = 14002
@@ -55,9 +51,7 @@ class Const(enum.IntEnum):
     RID_CANCEL_LIVE_TICKS_STREAM = 19002
 
 class TestIBClient(unittest.TestCase):
-    """
-    Unit tests for class `IBClient`.
-    """
+    """Unit tests for class `IBClient`."""
     __contract = Contract()
     __contract.secType = 'CASH'
     __contract.symbol = 'EUR'
@@ -100,9 +94,7 @@ class TestIBClient(unittest.TestCase):
         print(resolved_contract)
 
     def test_resolve_head_timestamp(self):
-        """
-        Test function `resolve_head_timestamp`.
-        """
+        """Test function `resolve_head_timestamp`."""
         resolved_contract = self.client.resolve_contract(
             Const.RID_RESOLVE_CONTRACT.value, self.__contract
         )
@@ -119,9 +111,7 @@ class TestIBClient(unittest.TestCase):
         self.assertIsInstance(head_timestamp, int)
 
     def test_fetch_historical_ticks(self):
-        """
-        Test function `fetch_historical_ticks`.
-        """
+        """Test function `fetch_historical_ticks`."""
         timeout = 60
 
         resolved_contract = self.client.resolve_contract(
@@ -177,9 +167,7 @@ class TestIBClient(unittest.TestCase):
         self.assertIsInstance(data[0][0], HistoricalTickLast)
 
     def test_fetch_historical_ticks_err(self):
-        """
-        Test function `fetch_historical_ticks` for the error cases.
-        """
+        """Test function `fetch_historical_ticks` for the error cases."""
         resolved_contract = self.client.resolve_contract(
             Const.RID_RESOLVE_CONTRACT.value, self.__contract
         )

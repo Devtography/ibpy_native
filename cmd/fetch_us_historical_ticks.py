@@ -7,8 +7,9 @@ from pathlib import Path
 
 import pandas as pd
 from ibpy_native import IBBridge
-from ibpy_native.client import Const, IBClient
+from ibpy_native.client import IBClient
 from ibpy_native.error import IBError
+from ibpy_native.utils import const
 from ibapi.wrapper import Contract
 
 class _FetchCmd:
@@ -198,9 +199,9 @@ class _FetchCmd:
         end_time: datetime = datetime.now()
 
         if args.ft:
-            start_time = datetime.strptime(args.ft, Const.TIME_FMT.value)
+            start_time = datetime.strptime(args.ft, const.IB.TIME_FMT)
         if args.to:
-            end_time = datetime.strptime(args.to, Const.TIME_FMT.value)
+            end_time = datetime.strptime(args.to, const.IB.TIME_FMT)
 
         if contract.lastTradeDateOrContractMonth != '':
             last_trade_time = datetime.strptime(

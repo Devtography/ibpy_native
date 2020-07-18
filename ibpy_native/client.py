@@ -1,5 +1,4 @@
 """Code implementation for `EClient` related stuffs"""
-import enum
 from datetime import datetime, timedelta
 from typing import List, Tuple, Union
 
@@ -13,18 +12,13 @@ from ibapi.wrapper import (HistoricalTick, HistoricalTickBidAsk,
                            HistoricalTickLast)
 from ibpy_native.error import IBError, IBErrorCode
 from ibpy_native.interfaces.listeners import LiveTicksListener
-from ibpy_native.utils import finishable_queue as fq
+from ibpy_native.utils import const, finishable_queue as fq
 from ibpy_native.wrapper import IBWrapper
 
 class _ProcessHistoricalTicksResult(TypedDict):
     """Use for type hint the returns of `IBClient.fetch_historical_ticks`."""
     ticks: List[Union[HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast]]
     next_end_time: datetime
-
-class Const(enum.Enum):
-    """Constants used in `IBClient`."""
-    TIME_FMT = '%Y%m%d %H:%M:%S' # IB time format
-    MSG_TIMEOUT = "Exceed maximum wait for wrapper to confirm finished"
 
 class IBClient(EClient):
     """The client calls the native methods from IBWrapper instead of
@@ -92,7 +86,7 @@ class IBClient(EClient):
         if f_queue.get_status() == fq.Status.TIMEOUT:
             raise IBError(
                 req_id, IBErrorCode.REQ_TIMEOUT.value,
-                Const.MSG_TIMEOUT.value
+                const.IB.MSG_TIMEOUT
             )
 
         if len(contract_details) == 0:
@@ -168,7 +162,7 @@ class IBClient(EClient):
         if f_queue.get_status() == fq.Status.TIMEOUT:
             raise IBError(
                 req_id, IBErrorCode.REQ_TIMEOUT.value,
-                Const.MSG_TIMEOUT.value
+                const.IB.MSG_TIMEOUT
             )
 
         if len(head_timestamp) == 0:
@@ -270,7 +264,7 @@ class IBClient(EClient):
         while not finished:
             self.reqHistoricalTicks(
                 req_id, contract, "",
-                next_end_time.strftime(Const.TIME_FMT.value),
+                next_end_time.strftime(const.IB.TIME_FMT),
                 1000, show, 0, False, []
             )
 
@@ -316,7 +310,7 @@ class IBClient(EClient):
 
                 raise IBError(
                     req_id, IBErrorCode.REQ_TIMEOUT.value,
-                    Const.MSG_TIMEOUT.value
+                    const.IB.MSG_TIMEOUT
                 )
 
             if len(result) == 0:
@@ -359,7 +353,7 @@ class IBClient(EClient):
             print(
                 f"{len(all_ticks)} ticks fetched ("
                 f"{len(processed_result['ticks'])} new ticks); Next end time - "
-                f"{next_end_time.strftime(Const.TIME_FMT.value)}"
+                f"{next_end_time.strftime(const.IB.TIME_FMT)}"
             )
 
             if next_end_time.timestamp() <= real_start_time.timestamp():

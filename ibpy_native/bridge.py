@@ -10,12 +10,12 @@ from typing import Optional
 from typing_extensions import Literal
 
 from ibapi.wrapper import Contract
-from ibpy_native.client import IBClient, Const
+from ibpy_native.client import IBClient
 from ibpy_native.error import IBError, IBErrorCode
 from ibpy_native.interfaces.listeners import (
     NotificationListener, LiveTicksListener
 )
-from ibpy_native.utils import datatype as dt
+from ibpy_native.utils import const, datatype as dt
 from ibpy_native.wrapper import IBWrapper
 
 class IBBridge:
@@ -291,7 +291,7 @@ class IBBridge:
                 raise ValueError(
                     "Specificed start time is earlier than the earliest "
                     "available datapoint - "
-                    + head_timestamp.strftime(Const.TIME_FMT.value)
+                    + head_timestamp.strftime(const.IB.TIME_FMT)
                 )
             if end.timestamp() < start.timestamp():
                 raise ValueError(
@@ -305,7 +305,7 @@ class IBBridge:
         if next_end_time.timestamp() < head_timestamp.timestamp():
             raise ValueError(
                 "Specificed end time is earlier than the earliest available "
-                f"datapoint - {head_timestamp.strftime(Const.TIME_FMT.value)}"
+                f"datapoint - {head_timestamp.strftime(const.IB.TIME_FMT)}"
             )
 
         if attempts < 1 and attempts != -1:

@@ -4,8 +4,8 @@ import enum
 import threading
 import unittest
 
-from ibpy_native import client, wrapper
 from ibpy_native.interfaces.listeners import NotificationListener
+from ibpy_native.internal import client, wrapper
 from ibpy_native.utils import finishable_queue as fq
 from ibapi.contract import Contract
 from ibapi.wrapper import (

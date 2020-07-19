@@ -8,7 +8,7 @@ from typing import List, Union
 import pytz
 from ibpy_native import IBBridge
 from ibpy_native.error import IBError
-from ibpy_native.client import IBClient
+from ibpy_native.internal.client import IBClient
 from ibpy_native.interfaces.listeners import (
     NotificationListener, LiveTicksListener
 )

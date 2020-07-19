@@ -10,15 +10,15 @@ from typing import List, Union
 
 import pytz
 
-from ibpy_native.wrapper import IBWrapper
-from ibpy_native.client import IBClient
-from ibpy_native.error import IBError
-from ibpy_native.interfaces.listeners import LiveTicksListener
 from ibapi.contract import Contract
-from ibpy_native.utils import finishable_queue as fq
 from ibapi.wrapper import (
     HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast
 )
+from ibpy_native.error import IBError
+from ibpy_native.interfaces.listeners import LiveTicksListener
+from ibpy_native.internal.client import IBClient
+from ibpy_native.internal.wrapper import IBWrapper
+from ibpy_native.utils import finishable_queue as fq
 from tests.utils import async_test
 
 class _MockLiveTicksListener(LiveTicksListener):

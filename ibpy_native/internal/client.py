@@ -13,7 +13,7 @@ from ibapi.wrapper import (HistoricalTick, HistoricalTickBidAsk,
 from ibpy_native.error import IBError, IBErrorCode
 from ibpy_native.interfaces.listeners import LiveTicksListener
 from ibpy_native.utils import const, finishable_queue as fq
-from ibpy_native.wrapper import IBWrapper
+from ibpy_native.internal.wrapper import IBWrapper
 
 class _ProcessHistoricalTicksResult(TypedDict):
     """Use for type hint the returns of `IBClient.fetch_historical_ticks`."""

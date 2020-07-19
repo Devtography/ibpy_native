@@ -10,13 +10,13 @@ from typing import Optional
 from typing_extensions import Literal
 
 from ibapi.wrapper import Contract
-from ibpy_native.client import IBClient
 from ibpy_native.error import IBError, IBErrorCode
 from ibpy_native.interfaces.listeners import (
     NotificationListener, LiveTicksListener
 )
+from ibpy_native.internal.client import IBClient
+from ibpy_native.internal.wrapper import IBWrapper
 from ibpy_native.utils import const, datatype as dt
-from ibpy_native.wrapper import IBWrapper
 
 class IBBridge:
     """Public class to bridge between `ibpy-native` & IB API"""

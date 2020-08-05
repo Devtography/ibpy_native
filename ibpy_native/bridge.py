@@ -84,8 +84,9 @@ class IBBridge:
 
     ## Interacts with IB APIs
     # Contracts
-    def get_us_stock_contract(self, symbol: str,
-                              timeout: int = IBClient.REQ_TIMEOUT) -> Contract:
+    async def get_us_stock_contract(
+            self, symbol: str, timeout: int = IBClient.REQ_TIMEOUT
+        ) -> Contract:
         """Resolve the IB US stock contract.
 
         Args:
@@ -116,7 +117,7 @@ class IBBridge:
 
         return result
 
-    def get_us_future_contract(
+    async def get_us_future_contract(
             self, symbol: str, contract_month: Optional[str] = None,
             timeout: int = IBClient.REQ_TIMEOUT
         ) -> Contract:
@@ -166,7 +167,8 @@ class IBBridge:
 
         return result
 
-    def get_earliest_data_point(
+    # Historical data
+    async def get_earliest_data_point(
             self, contract: Contract,
             data_type: Literal['BID_ASK', 'TRADES'] = 'TRADES',
             timeout: int = IBClient.REQ_TIMEOUT
@@ -209,7 +211,7 @@ class IBBridge:
 
         return data_point.replace(tzinfo=None)
 
-    def get_historical_ticks(
+    async def get_historical_ticks(
             self, contract: Contract,
             start: datetime = None, end: datetime = datetime.now(),
             data_type: Literal['MIDPOINT', 'BID_ASK', 'TRADES'] = 'TRADES',
@@ -376,6 +378,7 @@ class IBBridge:
             'completed': False
         }
 
+    # Live data
     async def stream_live_ticks(
             self, contract: Contract, listener: LiveTicksListener,
             tick_type: Optional[dt.LiveTicks] = dt.LiveTicks.LAST

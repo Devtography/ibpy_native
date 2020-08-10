@@ -102,7 +102,7 @@ class TestIBWrapper(unittest.TestCase):
         result = await f_queue.get()
 
         self.assertFalse(self.wrapper.has_err())
-        self.assertNotEqual(f_queue.get_status(), fq.Status.TIMEOUT)
+        self.assertNotEqual(f_queue.status, fq.Status.TIMEOUT)
         self.assertEqual(len(result), 2)
         self.assertIsInstance(result[0], ListOfHistoricalTick)
 
@@ -125,7 +125,7 @@ class TestIBWrapper(unittest.TestCase):
         result = await f_queue.get()
 
         self.assertFalse(self.wrapper.has_err())
-        self.assertNotEqual(f_queue.get_status(), fq.Status.TIMEOUT)
+        self.assertNotEqual(f_queue.status, fq.Status.TIMEOUT)
         self.assertEqual(len(result), 2)
         self.assertIsInstance(result[0], ListOfHistoricalTickBidAsk)
 
@@ -148,7 +148,7 @@ class TestIBWrapper(unittest.TestCase):
         result = await f_queue.get()
 
         self.assertFalse(self.wrapper.has_err())
-        self.assertNotEqual(f_queue.get_status(), fq.Status.TIMEOUT)
+        self.assertNotEqual(f_queue.status, fq.Status.TIMEOUT)
         self.assertEqual(len(result), 2)
         self.assertIsInstance(result[0], ListOfHistoricalTickLast)
 

@@ -79,7 +79,7 @@ class IBClient(EClient):
         except IBError as err:
             raise err
 
-        if f_queue.get_status() == fq.Status.TIMEOUT:
+        if f_queue.status == fq.Status.TIMEOUT:
             raise IBError(
                 req_id, IBErrorCode.REQ_TIMEOUT.value,
                 const.IB.MSG_TIMEOUT
@@ -151,7 +151,7 @@ class IBClient(EClient):
         except IBError as err:
             raise err
 
-        if f_queue.get_status() == fq.Status.TIMEOUT:
+        if f_queue.status == fq.Status.TIMEOUT:
             raise IBError(
                 req_id, IBErrorCode.REQ_TIMEOUT.value,
                 const.IB.MSG_TIMEOUT
@@ -285,7 +285,7 @@ class IBClient(EClient):
                 raise IBError(err.rid, err.err_code, err.err_str,
                               err_extra=next_end_time)
 
-            if f_queue.get_status() == fq.Status.TIMEOUT:
+            if f_queue.status == fq.Status.TIMEOUT:
                 # Checks if it's in the middle of the data fetching loop
                 if len(all_ticks) > 0:
                     print("Request timeout while fetching the remaining ticks: "

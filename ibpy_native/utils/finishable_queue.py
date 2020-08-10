@@ -73,7 +73,8 @@ class FinishableQueue():
 
             yield current_element
 
-    def get_status(self) -> Status:
+    @property
+    def status(self) -> Status:
         """Get status of the finishable queue.
 
         Returns:

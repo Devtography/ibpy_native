@@ -79,12 +79,6 @@ class IBClient(EClient):
         except IBError as err:
             raise err
 
-        if f_queue.status == fq.Status.TIMEOUT:
-            raise IBError(
-                req_id, IBErrorCode.REQ_TIMEOUT.value,
-                const.IB.MSG_TIMEOUT
-            )
-
         if len(contract_details) == 0:
             raise IBError(
                 req_id, IBErrorCode.RES_NO_CONTENT.value,
@@ -151,12 +145,6 @@ class IBClient(EClient):
         except IBError as err:
             raise err
 
-        if f_queue.status == fq.Status.TIMEOUT:
-            raise IBError(
-                req_id, IBErrorCode.REQ_TIMEOUT.value,
-                const.IB.MSG_TIMEOUT
-            )
-
         if len(head_timestamp) == 0:
             raise IBError(
                 req_id, IBErrorCode.RES_NO_CONTENT.value,
@@ -180,7 +168,6 @@ class IBClient(EClient):
                               HistoricalTickLast]],
                    bool]:
         # pylint: disable=unidiomatic-typecheck
-        # pylint: disable=too-many-statements
         """Fetch the historical ticks data for a given instrument from IB.
 
         Args:
@@ -284,22 +271,6 @@ class IBClient(EClient):
 
                 raise IBError(err.rid, err.err_code, err.err_str,
                               err_extra=next_end_time)
-
-            if f_queue.status == fq.Status.TIMEOUT:
-                # Checks if it's in the middle of the data fetching loop
-                if len(all_ticks) > 0:
-                    print("Request timeout while fetching the remaining ticks: "
-                          f"returning {len(all_ticks)} ticks fetched")
-
-                    # Breaks the while loop to return already fetched data
-                    # instead of having the pervious time used for fetching
-                    # data all wasted
-                    break
-
-                raise IBError(
-                    req_id, IBErrorCode.REQ_TIMEOUT.value,
-                    const.IB.MSG_TIMEOUT
-                )
 
             if len(result) == 0:
                 if len(all_ticks) > 0:

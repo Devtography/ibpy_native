@@ -61,11 +61,9 @@ class IBClient(EClient):
 
         # Make place to store the data that will be returned
         try:
-            queue = self.__wrapper.get_request_queue(req_id)
+            f_queue = self.__wrapper.get_request_queue(req_id)
         except IBError as err:
             raise err
-
-        f_queue = fq.FinishableQueue(queue)
 
         print("Getting full contract details from IB...")
 
@@ -123,11 +121,9 @@ class IBClient(EClient):
             )
 
         try:
-            queue = self.__wrapper.get_request_queue(req_id)
+            f_queue = self.__wrapper.get_request_queue(req_id)
         except IBError as err:
             raise err
-
-        f_queue = fq.FinishableQueue(queue)
 
         print("Getting earliest available data point for the given "
               "instrument from IB... ")
@@ -217,7 +213,7 @@ class IBClient(EClient):
 
         # Time to fetch the ticks
         try:
-            f_queue = fq.FinishableQueue(self.__wrapper.get_request_queue(req_id))
+            f_queue = self.__wrapper.get_request_queue(req_id)
         except IBError as err:
             raise err
 
@@ -346,8 +342,8 @@ class IBClient(EClient):
                 optional): Type of tick to be requested. Defaults to 'Last'.
 
         Raises:
-            IBError: If
-                - queue associated with `req_id` is being used by other tasks;
+            IBError: If queue associated with `req_id` is being used by other
+                tasks.
 
         Note:
             The value of `tick_type` is case sensitive - it must be `"BidAsk"`,
@@ -365,9 +361,7 @@ class IBClient(EClient):
             )
 
         try:
-            f_queue = fq.FinishableQueue(
-                self.__wrapper.get_request_queue(req_id)
-            )
+            f_queue = self.__wrapper.get_request_queue(req_id)
         except IBError as err:
             raise err
 

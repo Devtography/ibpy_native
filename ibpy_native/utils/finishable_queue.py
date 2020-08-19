@@ -25,6 +25,39 @@ class FinishableQueue():
         self.__queue = queue_to_finish
         self.__status = Status.STARTED
 
+    @property
+    def status(self) -> Status:
+        """Get status of the finishable queue.
+
+        Returns:
+            Status: Enum `Status` represents either the queue has been started,
+                finished, timeout, or encountered error.
+        """
+        return self.__status
+
+    @property
+    def finished(self) -> bool:
+        """Indicates is the pervious task associated with this finishable queue
+        finished.
+
+        Returns:
+            bool: True is task last associated is finished, False otherwise.
+        """
+        return (self.__status is Status.TIMEOUT
+                or self.__status is Status.FINISHED
+                or self.__status is Status.ERROR)
+
+    def reset(self):
+        """Reset the status to `STARTED` for reusing the queue if the
+        status is marked as either `TIMEOUT` or `FINISHED`
+        """
+        if self.finished:
+            self.__status = Status.STARTED
+
+    def put(self, element: Any):
+        """Setter to put element to internal synchronised queue."""
+        self.__queue.put(element)
+
     async def get(self) -> list:
         """Returns a list of elements retrieved from queue once the FINISHED
         flag is received, or an exception is retrieved.
@@ -35,7 +68,7 @@ class FinishableQueue():
         contents_of_queue = []
         loop = asyncio.get_event_loop()
 
-        while not self.__finished():
+        while not self.finished:
             current_element = await loop.run_in_executor(
                 None, self.__queue.get
             )
@@ -61,7 +94,7 @@ class FinishableQueue():
         """
         loop = asyncio.get_event_loop()
 
-        while not self.__finished():
+        while not self.finished:
             current_element = await loop.run_in_executor(
                 None, self.__queue.get
             )
@@ -72,25 +105,3 @@ class FinishableQueue():
                 self.__status = Status.ERROR
 
             yield current_element
-
-    @property
-    def status(self) -> Status:
-        """Get status of the finishable queue.
-
-        Returns:
-            Status: Enum `Status` represents either the queue has been started,
-                finished, timeout, or encountered error.
-        """
-        return self.__status
-
-    def reset(self):
-        """Reset the status to `STARTED` for reusing the queue if the
-        status is marked as either `TIMEOUT` or `FINISHED`
-        """
-        if self.__finished():
-            self.__status = Status.STARTED
-
-    def __finished(self) -> bool:
-        return (self.__status is Status.TIMEOUT
-                or self.__status is Status.FINISHED
-                or self.__status is Status.ERROR)

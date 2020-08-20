@@ -393,7 +393,8 @@ class IBClient(EClient):
             req_id (int): Request ID (ticker ID in IB API).
         """
         self.cancelTickByTickData(reqId=req_id)
-        self.__wrapper.get_request_queue(req_id=req_id).put(fq.Status.FINISHED)
+        self.__wrapper.get_request_queue_no_throw(req_id=req_id)\
+            .put(fq.Status.FINISHED)
 
     # Private functions
     @deprecated(version='0.2.0',

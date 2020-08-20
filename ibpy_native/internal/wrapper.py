@@ -46,6 +46,21 @@ class IBWrapper(EWrapper):
 
         return self.__req_queue[req_id]
 
+    def get_request_queue_no_throw(self, req_id: int) -> \
+        Optional[fq.FinishableQueue]:
+        """Returns the existing queue with ID `req_id`.
+
+        Args:
+            req_id (int): Request ID (ticker ID in IB API) associated to the
+                queue.
+
+        Returns:
+            Optional[FinishableQueue]: The existing `FinishableQueue` associated
+                to the specified `req_id`. `None` if `req_id` doesn't match with
+                any existing `FinishableQueue` object.
+        """
+        return self.__req_queue[req_id] if req_id in self.__req_queue else None
+
     # Error handling
     def set_on_notify_listener(self, listener: NotificationListener):
         """Setter for optional `NotificationListener`.

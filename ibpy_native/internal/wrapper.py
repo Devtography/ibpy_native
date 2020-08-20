@@ -1,13 +1,14 @@
 """Code implementation of IB API resposes handling."""
 import queue
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from deprecated.sphinx import deprecated
 
 from ibapi.wrapper import (EWrapper, HistoricalTick, HistoricalTickBidAsk,
                            HistoricalTickLast, TickAttribBidAsk, TickAttribLast)
-from ibpy_native.error import IBError, IBErrorCode
 from ibpy_native.interfaces.listeners import NotificationListener
+
+from ibpy_native import error
 from ibpy_native.utils import finishable_queue as fq
 
 class IBWrapper(EWrapper):
@@ -15,7 +16,7 @@ class IBWrapper(EWrapper):
     TWS instance.
     """
 
-    __req_queue = {}
+    __req_queue: Dict[int, fq.FinishableQueue] = {}
 
     def __init__(self, listener: Optional[NotificationListener] = None):
         self.__err_queue: queue.Queue = queue.Queue()
@@ -23,7 +24,7 @@ class IBWrapper(EWrapper):
 
         super().__init__()
 
-    def get_request_queue(self, req_id: int) -> queue.Queue:
+    def get_request_queue(self, req_id: int) -> fq.FinishableQueue:
         """Initialise queue or returns the existing queue with ID `req_id`.
 
         Args:
@@ -31,16 +32,17 @@ class IBWrapper(EWrapper):
                 queue.
 
         Returns:
-            queue.Queue: The newly initialised queue or the already existed
+            FinishableQueue: The newly initialised queue or the already existed
                 queue associated to the `req_id`.
-        """
-        self.__init_req_queue(req_id)
 
-        if not self.__req_queue[req_id].empty():
-            raise IBError(
-                req_id, IBErrorCode.QUEUE_IN_USE.value,
-                f"Request queue with ID {str(req_id)} is currently in use"
-            )
+        Raises:
+            IBError: If `FinishableQueue` associated with `req_id` is being
+                used by other tasks.
+        """
+        try:
+            self.__init_req_queue(req_id)
+        except error.IBError as err:
+            raise err
 
         return self.__req_queue[req_id]
 
@@ -67,7 +69,7 @@ class IBWrapper(EWrapper):
     @deprecated(version='0.2.0',
                 reason="Function deprecated. Corresponding listener should be "
                        "used instead to monitor errors")
-    def get_err(self, timeout=10) -> Optional[IBError]:
+    def get_err(self, timeout=10) -> Optional[error.IBError]:
         """Get the error from error queue.
 
         Args:
@@ -88,9 +90,9 @@ class IBWrapper(EWrapper):
 
     def error(self, reqId, errorCode, errorString):
         # override method
-        # This section should be changed prior to version 1.0.0 to optimze
+        # This section should be changed prior to version 1.0.0 to optimise
         # memory usage.
-        err = IBError(reqId, errorCode, errorString)
+        err = error.IBError(reqId, errorCode, errorString)
 
         self.__err_queue.put(err)
 
@@ -104,21 +106,15 @@ class IBWrapper(EWrapper):
     # Get contract details
     def contractDetails(self, reqId, contractDetails):
         # override method
-        self.__init_req_queue(reqId)
-
         self.__req_queue[reqId].put(contractDetails)
 
     def contractDetailsEnd(self, reqId):
         # override method
-        self.__init_req_queue(reqId)
-
         self.__req_queue[reqId].put(fq.Status.FINISHED)
 
     # Get earliest data point for a given instrument and data
     def headTimestamp(self, reqId: int, headTimestamp: str):
         # override method
-        self.__init_req_queue(reqId)
-
         self.__req_queue[reqId].put(headTimestamp)
         self.__req_queue[reqId].put(fq.Status.FINISHED)
 
@@ -183,9 +179,25 @@ class IBWrapper(EWrapper):
 
     ## Private functions
     def __init_req_queue(self, req_id: int):
-        """Initial a new queue if there's no queue at `__req_queue[req_id]`"""
-        if req_id not in self.__req_queue.keys():
-            self.__req_queue[req_id] = queue.Queue()
+        """Initials a new `FinishableQueue` if there's no object at
+        `self.__req_queue[req_id]`; Resets the queue status to its' initial
+        status.
+
+        Raises:
+            IBError: If a `FinishableQueue` already exists at
+                `self.__req_queue[req_id]` and it's not finished.
+        """
+        if req_id in self.__req_queue:
+            if self.__req_queue[req_id].finished:
+                self.__req_queue[req_id].reset()
+            else:
+                raise error.IBError(
+                    rid=req_id, err_code=error.IBErrorCode.QUEUE_IN_USE,
+                    err_str=f"Requested queue with ID {str(req_id)} is"\
+                        "currently in use"
+                )
+        else:
+            self.__req_queue[req_id] = fq.FinishableQueue(queue.Queue())
 
     def __handle_historical_ticks_results(
             self,
@@ -201,8 +213,6 @@ class IBWrapper(EWrapper):
         `historicalTicksBidAsk`, and `historicalTicksLast` by putting the
         results into corresponding queue & marks the queue as finished.
         """
-        self.__init_req_queue(req_id)
-
         self.__req_queue[req_id].put(ticks)
         self.__req_queue[req_id].put(done)
         self.__req_queue[req_id].put(fq.Status.FINISHED)
@@ -219,5 +229,4 @@ class IBWrapper(EWrapper):
         `tickByTickBidAsk`, and `tickByTickMidPoint` by putting the ticks
         received into corresponding queue.
         """
-        self.__init_req_queue(req_id)
         self.__req_queue[req_id].put(tick)

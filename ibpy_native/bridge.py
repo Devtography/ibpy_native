@@ -84,14 +84,11 @@ class IBBridge:
 
     ## Interacts with IB APIs
     # Contracts
-    def get_us_stock_contract(self, symbol: str,
-                              timeout: int = IBClient.REQ_TIMEOUT) -> Contract:
+    async def get_us_stock_contract(self, symbol: str) -> Contract:
         """Resolve the IB US stock contract.
 
         Args:
             symbol (str): Symbol of the target instrument.
-            timeout (int, optional): Second(s) to wait for the request. Defaults
-                to 10.
 
         Returns:
             Contract: Corresponding `Contract` object returned from IB.
@@ -108,17 +105,16 @@ class IBBridge:
         contract.symbol = symbol
 
         try:
-            result = self.__client.resolve_contract(
-                self.__gen_req_id(), contract, timeout
+            result = await self.__client.resolve_contract(
+                self.__gen_req_id(), contract
             )
         except IBError as err:
             raise err
 
         return result
 
-    def get_us_future_contract(
-            self, symbol: str, contract_month: Optional[str] = None,
-            timeout: int = IBClient.REQ_TIMEOUT
+    async def get_us_future_contract(
+            self, symbol: str, contract_month: Optional[str] = None
         ) -> Contract:
         """Search the US future contract from IB.
 
@@ -126,8 +122,6 @@ class IBBridge:
             symbol (str): Symbol of the target instrument.
             contract_month (str, optional): Contract month for the target future
                 contract in format - "YYYYMM". Defaults to None.
-            timeout (int, optional): Second(s) to wait for the request. Defaults
-                to 10.
 
         Returns:
             Contract: Corresponding `Contract` object returned from IB. The
@@ -158,18 +152,18 @@ class IBBridge:
         contract.lastTradeDateOrContractMonth = contract_month
 
         try:
-            result = self.__client.resolve_contract(
-                self.__gen_req_id(), contract, timeout
+            result = await self.__client.resolve_contract(
+                self.__gen_req_id(), contract
             )
         except IBError as err:
             raise err
 
         return result
 
-    def get_earliest_data_point(
+    # Historical data
+    async def get_earliest_data_point(
             self, contract: Contract,
-            data_type: Literal['BID_ASK', 'TRADES'] = 'TRADES',
-            timeout: int = IBClient.REQ_TIMEOUT
+            data_type: Literal['BID_ASK', 'TRADES'] = 'TRADES'
         ) -> datetime:
         """Returns the earliest data point of specified contract.
 
@@ -178,8 +172,6 @@ class IBBridge:
                 identify the instrument.
             data_type (Literal['BID_ASK', 'TRADES'], optional):
                 Type of data for earliest data point. Defaults to 'TRADES'.
-            timeout (int, optional): Second(s) to wait for the request. Defaults
-                to 10.
 
         Returns:
             datetime: The earliest data point for the specified contract in the
@@ -187,8 +179,8 @@ class IBBridge:
 
         Raises:
             ValueError: If `data_type` is not 'BID_ASK' nor 'TRADES'.
-            IBError: If there is either connection related issue, request
-                timeout, IB returns 0 or multiple results.
+            IBError: If there is either connection related issue, IB returns 0
+            or multiple results.
         """
         if data_type not in {'BID_ASK', 'TRADES'}:
             raise ValueError(
@@ -197,10 +189,9 @@ class IBBridge:
             )
 
         try:
-            result = self.__client.resolve_head_timestamp(
+            result = await self.__client.resolve_head_timestamp(
                 req_id=self.__gen_req_id(), contract=contract,
-                show=data_type if data_type == 'TRADES' else 'BID',
-                timeout=timeout
+                show=data_type if data_type == 'TRADES' else 'BID'
             )
         except (ValueError, IBError) as err:
             raise err
@@ -209,11 +200,11 @@ class IBBridge:
 
         return data_point.replace(tzinfo=None)
 
-    def get_historical_ticks(
+    async def get_historical_ticks(
             self, contract: Contract,
             start: datetime = None, end: datetime = datetime.now(),
             data_type: Literal['MIDPOINT', 'BID_ASK', 'TRADES'] = 'TRADES',
-            attempts: int = 1, timeout: int = IBClient.REQ_TIMEOUT
+            attempts: int = 1
         ) -> dt.HistoricalTicksResult:
         """Retrieve historical ticks data for specificed instrument/contract
         from IB.
@@ -237,8 +228,6 @@ class IBBridge:
             attempts (int, optional): Attemp(s) to try requesting the historical
                 ticks. Passing -1 into this argument will let the function
                 retries for infinity times until all available ticks are received. Defaults to 1.
-            timeout (int, optional): Second(s) to wait for each historical ticks
-                API request to IB server. Defaults to 10.
 
         Returns:
             IBTicksResult: Ticks returned from IB and a boolean to indicate if
@@ -277,10 +266,9 @@ class IBBridge:
 
         try:
             head_timestamp = datetime.fromtimestamp(
-                self.__client.resolve_head_timestamp(
+                await self.__client.resolve_head_timestamp(
                     self.__gen_req_id(), contract,
-                    'TRADES' if data_type == 'TRADES' else 'BID',
-                    timeout
+                    'TRADES' if data_type == 'TRADES' else 'BID'
                 )
             ).astimezone(IBClient.TZ)
         except (ValueError, IBError) as err:
@@ -318,9 +306,9 @@ class IBBridge:
             attempts = attempts - 1 if attempts != -1 else attempts
 
             try:
-                ticks = self.__client.fetch_historical_ticks(
+                ticks = await self.__client.fetch_historical_ticks(
                     self.__gen_req_id(), contract,
-                    start, next_end_time, data_type, timeout
+                    start, next_end_time, data_type
                 )
 
                 #  `ticks[1]` is a boolean represents if the data are all
@@ -376,6 +364,7 @@ class IBBridge:
             'completed': False
         }
 
+    # Live data
     async def stream_live_ticks(
             self, contract: Contract, listener: LiveTicksListener,
             tick_type: Optional[dt.LiveTicks] = dt.LiveTicks.LAST

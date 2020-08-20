@@ -40,17 +40,14 @@ class IBClient(EClient):
         self.__wrapper = wrapper
         super().__init__(wrapper)
 
-    def resolve_contract(
-            self, req_id: int, contract: Contract, timeout: int = REQ_TIMEOUT
-        ) -> Contract:
+    async def resolve_contract(self, req_id: int,
+                               contract: Contract) -> Contract:
         """From a partially formed contract, returns a fully fledged version.
 
         Args:
             req_id (int): Request ID (ticker ID in IB API).
             contract (Contract): `Contract` object with partially completed info
                 - e.g. symbol, currency, etc...
-            timeout (int, optional): Second(s) to wait for the request. Defaults
-                to 10.
 
         Returns:
             Contract: Fully resolved IB contract.
@@ -59,35 +56,26 @@ class IBClient(EClient):
             IBError: If
                 - queue associated with `req_id` is being used by other tasks;
                 - there's any error returned from IB;
-                - request timeout;
                 - no item found in received result.
         """
 
         # Make place to store the data that will be returned
         try:
-            queue = self.__wrapper.get_request_queue(req_id)
+            f_queue = self.__wrapper.get_request_queue(req_id)
         except IBError as err:
             raise err
-
-        f_queue = fq.FinishableQueue(queue)
 
         print("Getting full contract details from IB...")
 
         self.reqContractDetails(req_id, contract)
 
-        # Run until we get a valid contract(s) or timeout
-        contract_details = f_queue.get(timeout=timeout)
+        # Run until we get a valid contract(s)
+        contract_details = await f_queue.get()
 
         try:
             self.__check_error()
         except IBError as err:
             raise err
-
-        if f_queue.get_status() == fq.Status.TIMEOUT:
-            raise IBError(
-                req_id, IBErrorCode.REQ_TIMEOUT.value,
-                const.IB.MSG_TIMEOUT
-            )
 
         if len(contract_details) == 0:
             raise IBError(
@@ -102,10 +90,9 @@ class IBClient(EClient):
 
         return resolved_contract
 
-    def resolve_head_timestamp(
+    async def resolve_head_timestamp(
             self, req_id: int, contract: Contract,
-            show: Literal['BID', 'ASK', 'TRADES'] = 'TRADES',
-            timeout: int = REQ_TIMEOUT
+            show: Literal['BID', 'ASK', 'TRADES'] = 'TRADES'
         ) -> int:
         """Fetch the earliest available data point for a given instrument
         from IB.
@@ -116,8 +103,6 @@ class IBClient(EClient):
                 identify the instrument.
             show (Literal['BID', 'ASK', 'TRADES'], optional):
                 Type of data for head timestamp. Defaults to 'TRADES'.
-            timeout (int, optional): Second(s) to wait for the request. Defaults
-                to 10.
 
         Returns:
             int: Unix timestamp of the earliest available datapoint.
@@ -126,7 +111,6 @@ class IBClient(EClient):
             IBError: If
                 - queue associated with `req_id` is being used by other tasks;
                 - there's any error returned from IB;
-                - request timeout;
                 - no element found in received result;
                 - multiple elements found in received result.
         """
@@ -137,18 +121,16 @@ class IBClient(EClient):
             )
 
         try:
-            queue = self.__wrapper.get_request_queue(req_id)
+            f_queue = self.__wrapper.get_request_queue(req_id)
         except IBError as err:
             raise err
-
-        f_queue = fq.FinishableQueue(queue)
 
         print("Getting earliest available data point for the given "
               "instrument from IB... ")
 
         self.reqHeadTimeStamp(req_id, contract, show, 0, 2)
 
-        head_timestamp = f_queue.get(timeout=timeout)
+        head_timestamp = await f_queue.get()
 
         # Cancel the head time stamp request to release the ID after the
         # request queue is finished/timeout
@@ -158,12 +140,6 @@ class IBClient(EClient):
             self.__check_error()
         except IBError as err:
             raise err
-
-        if f_queue.get_status() == fq.Status.TIMEOUT:
-            raise IBError(
-                req_id, IBErrorCode.REQ_TIMEOUT.value,
-                const.IB.MSG_TIMEOUT
-            )
 
         if len(head_timestamp) == 0:
             raise IBError(
@@ -179,17 +155,15 @@ class IBClient(EClient):
 
         return int(head_timestamp[0])
 
-    def fetch_historical_ticks(
+    async def fetch_historical_ticks(
             self, req_id: int, contract: Contract,
             start: datetime, end: datetime = datetime.now().astimezone(TZ),
-            show: Literal['MIDPOINT', 'BID_ASK', 'TRADES'] = 'TRADES',
-            timeout: int = REQ_TIMEOUT
+            show: Literal['MIDPOINT', 'BID_ASK', 'TRADES'] = 'TRADES'
         ) -> Tuple[List[Union[HistoricalTick,
                               HistoricalTickBidAsk,
                               HistoricalTickLast]],
                    bool]:
         # pylint: disable=unidiomatic-typecheck
-        # pylint: disable=too-many-statements
         """Fetch the historical ticks data for a given instrument from IB.
 
         Args:
@@ -202,8 +176,6 @@ class IBClient(EClient):
                 included. Defaults to now.
             show (Literal['MIDPOINT', 'BID_ASK', 'TRADES'], optional):
                 Type of data requested. Defaults to 'TRADES'.
-            timeout (int, optional): Second(s) to wait for each historical ticks
-                API request to IB server. Defaults to 10.
 
         Returns:
             Ticks data (fetched recursively to get around IB 1000 ticks limit)
@@ -217,7 +189,6 @@ class IBClient(EClient):
                 - queue associated with `req_id` is being used by other tasks;
                 - there's any error returned from IB before any tick data is
                 fetched successfully;
-                - request timeout with no tick fetched in pervious request(s);
                 - no result received from IB with no tick fetched in pervious
                 request(s);
                 - incorrect number of items (!= 2) found in the result received
@@ -242,7 +213,7 @@ class IBClient(EClient):
 
         # Time to fetch the ticks
         try:
-            f_queue = fq.FinishableQueue(self.__wrapper.get_request_queue(req_id))
+            f_queue = self.__wrapper.get_request_queue(req_id)
         except IBError as err:
             raise err
 
@@ -275,7 +246,7 @@ class IBClient(EClient):
                     HistoricalTickLast
                 ]],
                 bool
-            ] = f_queue.get(timeout=timeout)
+            ] = await f_queue.get()
 
             # Error checking
             try:
@@ -296,22 +267,6 @@ class IBClient(EClient):
 
                 raise IBError(err.rid, err.err_code, err.err_str,
                               err_extra=next_end_time)
-
-            if f_queue.get_status() == fq.Status.TIMEOUT:
-                # Checks if it's in the middle of the data fetching loop
-                if len(all_ticks) > 0:
-                    print("Request timeout while fetching the remaining ticks: "
-                          f"returning {len(all_ticks)} ticks fetched")
-
-                    # Breaks the while loop to return already fetched data
-                    # instead of having the pervious time used for fetching
-                    # data all wasted
-                    break
-
-                raise IBError(
-                    req_id, IBErrorCode.REQ_TIMEOUT.value,
-                    const.IB.MSG_TIMEOUT
-                )
 
             if len(result) == 0:
                 if len(all_ticks) > 0:
@@ -387,8 +342,8 @@ class IBClient(EClient):
                 optional): Type of tick to be requested. Defaults to 'Last'.
 
         Raises:
-            IBError: If
-                - queue associated with `req_id` is being used by other tasks;
+            IBError: If queue associated with `req_id` is being used by other
+                tasks.
 
         Note:
             The value of `tick_type` is case sensitive - it must be `"BidAsk"`,
@@ -406,9 +361,7 @@ class IBClient(EClient):
             )
 
         try:
-            f_queue = fq.FinishableQueue(
-                self.__wrapper.get_request_queue(req_id)
-            )
+            f_queue = self.__wrapper.get_request_queue(req_id)
         except IBError as err:
             raise err
 

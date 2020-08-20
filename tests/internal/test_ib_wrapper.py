@@ -1,4 +1,5 @@
 """Unit tests for module `ibpy_native.wrapper`."""
+import asyncio
 import os
 import enum
 import threading
@@ -51,8 +52,10 @@ class TestIBWrapper(unittest.TestCase):
 
         setattr(cls.client, "_thread", thread)
 
-        cls.resolved_contract = cls.client.resolve_contract(
-            Const.RID_RESOLVE_CONTRACT.value, cls.__contract
+        cls.resolved_contract = asyncio.run(
+            cls.client.resolve_contract(
+                Const.RID_RESOLVE_CONTRACT.value, cls.__contract
+            )
         )
 
         print(cls.resolved_contract)
@@ -78,7 +81,8 @@ class TestIBWrapper(unittest.TestCase):
 
         self.assertTrue(mock_listener.triggered)
 
-    def test_historical_ticks(self):
+    @async_test
+    async def test_historical_ticks(self):
         """
         Test overridden function `historicalTicks`.
         """
@@ -95,14 +99,14 @@ class TestIBWrapper(unittest.TestCase):
             "", end_time, 1000, "MIDPOINT", 1, False, []
         )
 
-        result = f_queue.get(timeout=Const.QUEUE_MAX_WAIT_SEC)
+        result = await f_queue.get()
 
         self.assertFalse(self.wrapper.has_err())
-        self.assertNotEqual(f_queue.get_status(), fq.Status.TIMEOUT)
         self.assertEqual(len(result), 2)
         self.assertIsInstance(result[0], ListOfHistoricalTick)
 
-    def test_historical_ticks_bid_ask(self):
+    @async_test
+    async def test_historical_ticks_bid_ask(self):
         """Test overridden function `historicalTicksBidAsk`."""
         end_time = "20200327 16:30:00"
 
@@ -117,14 +121,14 @@ class TestIBWrapper(unittest.TestCase):
             "", end_time, 1000, "BID_ASK", 1, False, []
         )
 
-        result = f_queue.get(timeout=Const.QUEUE_MAX_WAIT_SEC)
+        result = await f_queue.get()
 
         self.assertFalse(self.wrapper.has_err())
-        self.assertNotEqual(f_queue.get_status(), fq.Status.TIMEOUT)
         self.assertEqual(len(result), 2)
         self.assertIsInstance(result[0], ListOfHistoricalTickBidAsk)
 
-    def test_historical_ticks_last(self):
+    @async_test
+    async def test_historical_ticks_last(self):
         """Test overridden function `historicalTicksLast`."""
         end_time = "20200327 16:30:00"
 
@@ -139,10 +143,9 @@ class TestIBWrapper(unittest.TestCase):
             "", end_time, 1000, "TRADES", 1, False, []
         )
 
-        result = f_queue.get(timeout=Const.QUEUE_MAX_WAIT_SEC)
+        result = await f_queue.get()
 
         self.assertFalse(self.wrapper.has_err())
-        self.assertNotEqual(f_queue.get_status(), fq.Status.TIMEOUT)
         self.assertEqual(len(result), 2)
         self.assertIsInstance(result[0], ListOfHistoricalTickLast)
 

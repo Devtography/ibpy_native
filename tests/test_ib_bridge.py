@@ -132,8 +132,7 @@ class TestIBBridge(unittest.TestCase):
         result = await self._bridge.get_historical_ticks(
             contract,
             datetime(2020, 3, 16, 6, 30),
-            datetime(2020, 3, 16, 11, 0, 0),
-            timeout=120
+            datetime(2020, 3, 16, 11, 0, 0)
         )
 
         self.assertGreater(len(result['ticks']), 0)
@@ -211,7 +210,7 @@ class TestIBBridge(unittest.TestCase):
         contract.exchange = 'IDEALPRO'
         contract.currency = 'GBP'
 
-        resolved = client.resolve_contract(
+        resolved = await client.resolve_contract(
             req_id=1, contract=contract
         )
 

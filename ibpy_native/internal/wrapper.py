@@ -208,7 +208,7 @@ class IBWrapper(EWrapper):
             else:
                 raise error.IBError(
                     rid=req_id, err_code=error.IBErrorCode.QUEUE_IN_USE,
-                    err_str=f"Requested queue with ID {str(req_id)} is"\
+                    err_str=f"Requested queue with ID {str(req_id)} is "\
                         "currently in use"
                 )
         else:

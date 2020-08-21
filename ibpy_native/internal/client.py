@@ -135,30 +135,35 @@ class IBClient(EClient):
 
         self.reqHeadTimeStamp(req_id, contract, show, 0, 2)
 
-        head_timestamp = await f_queue.get()
+        res = await f_queue.get()
 
         # Cancel the head time stamp request to release the ID after the
-        # request queue is finished/timeout
+        # request queue is finished
         self.cancelHeadTimeStamp(req_id)
 
-        try:
-            self.__check_error()
-        except IBError as err:
-            raise err
+        if res:
+            if f_queue.status is fq.Status.ERROR:
+                if isinstance(res[-1], IBError):
+                    raise res[-1]
 
-        if len(head_timestamp) == 0:
-            raise IBError(
-                req_id, IBErrorCode.RES_NO_CONTENT.value,
-                "Failed to get the earliest available data point"
-            )
+                raise IBError(
+                    rid=req_id, err_code=IBErrorCode.UNKNOWN,
+                    err_str="Unknown error: Internal queue reported error "
+                    "status but there is no exception received"
+                )
 
-        if len(head_timestamp) > 1:
-            raise IBError(
-                req_id, IBErrorCode.RES_UNEXPECTED.value,
-                "[Abnormal] Multiple result received"
-            )
+            if len(res) > 1:
+                raise IBError(
+                    req_id, IBErrorCode.RES_UNEXPECTED.value,
+                    "[Abnormal] Multiple result received"
+                )
 
-        return int(head_timestamp[0])
+            return int(res[0])
+
+        raise IBError(
+            req_id, IBErrorCode.RES_NO_CONTENT.value,
+            "Failed to get the earliest available data point"
+        )
 
     async def fetch_historical_ticks(
             self, req_id: int, contract: Contract,

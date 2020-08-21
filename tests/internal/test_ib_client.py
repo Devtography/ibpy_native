@@ -49,6 +49,7 @@ class Const(enum.IntEnum):
     RID_FETCH_HISTORICAL_TICKS_ERR = 18002
     RID_STREAM_LIVE_TICKS = 19001
     RID_CANCEL_LIVE_TICKS_STREAM = 19002
+    RID_CANCEL_LIVE_TICKS_STREAM_ERR = 19003
 
 class TestIBClient(unittest.TestCase):
     """Unit tests for class `IBClient`."""
@@ -262,6 +263,16 @@ class TestIBClient(unittest.TestCase):
             raise err
 
         self.assertTrue(listener.finished)
+
+    @async_test
+    async def test_cancel_live_ticks_stream_err(self):
+        """Test function `cancel_live_ticks_stream` with request ID that has no
+        `FinishableQueue` associated with.
+        """
+        with self.assertRaises(IBError):
+            self.client.cancel_live_ticks_stream(
+                req_id=Const.RID_CANCEL_LIVE_TICKS_STREAM_ERR.value
+            )
 
     @classmethod
     def tearDownClass(cls):

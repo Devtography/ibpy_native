@@ -173,7 +173,6 @@ class IBClient(EClient):
                               HistoricalTickBidAsk,
                               HistoricalTickLast]],
                    bool]:
-        # pylint: disable=unidiomatic-typecheck
         """Fetch the historical ticks data for a given instrument from IB.
 
         Args:
@@ -211,7 +210,7 @@ class IBClient(EClient):
                 "'BID_ASK', or 'TRADES'"
             )
 
-        if type(start.tzinfo) != type(end.tzinfo):
+        if type(start.tzinfo) is not type(end.tzinfo):
             raise ValueError(
                 "Timezone of the start time and end time must be the same"
             )
@@ -249,7 +248,7 @@ class IBClient(EClient):
                 1000, show, 0, False, []
             )
 
-            result: List[
+            res: List[
                 List[Union[
                     HistoricalTick,
                     HistoricalTickBidAsk,
@@ -258,78 +257,84 @@ class IBClient(EClient):
                 bool
             ] = await f_queue.get()
 
-            # Error checking
-            try:
-                self.__check_error()
-            except IBError as err:
-                if len(all_ticks) > 0:
-                    if err.err_code == IBErrorCode.INVALID_CONTRACT:
-                        # Continue if IB returns error `No security definition
-                        # has been found for the request` as it's not possible
-                        # that ticks can be fetched on pervious attempts for an
-                        # invalid contract.
-                        f_queue.reset()
-                        continue
+            if res and f_queue.status is fq.Status.ERROR:
+                # Response received and internal queue reports error
+                if isinstance(res[-1], IBError):
+                    if all_ticks:
+                        if res[-1].err_code == IBErrorCode.INVALID_CONTRACT:
+                            # Continue if IB returns error `No security
+                            # definition has been found for the request` as
+                            # it's not possible that ticks can be fetched
+                            # on pervious attempts for an invalid contract.
+                            f_queue.reset()
+                            continue
 
-                    # Encounters error. Returns ticks fetched in pervious
-                    # loop(s).
+                        # Encounters error. Returns ticks fetched in
+                        # pervious loop(s).
+                        break
+
+                    res[-1].err_extra = next_end_time
+                    raise res[-1]
+
+                raise IBError(
+                    rid=req_id, err_code=IBErrorCode.UNKNOWN,
+                    err_str="Unknown error: Internal queue reported error "
+                    "status but there is no exception received",
+                    err_extra=next_end_time
+                )
+
+            if res:
+                if len(res) != 2:
+                    # The result should be a list that contains 2 items:
+                    # [ticks: ListOfHistoricalTick(BidAsk/Last), done: bool]
+                    if all_ticks:
+                        print("Abnormal result received while fetching the "
+                              f"remaining ticks: returning {len(all_ticks)} "
+                              "ticks fetched")
+                        break
+
+                    raise IBError(
+                        req_id, IBErrorCode.RES_UNEXPECTED.value,
+                        "[Abnormal] Incorrect number of items received: "
+                        f"{len(res)}"
+                    )
+
+                # Process the data
+                processed_result = self.__process_historical_ticks(
+                    ticks=res[0],
+                    start_time=real_start_time,
+                    end_time=next_end_time
+                )
+                all_ticks.extend(processed_result['ticks'])
+                next_end_time = processed_result['next_end_time']
+
+                print(
+                    f"{len(all_ticks)} ticks fetched ("
+                    f"{len(processed_result['ticks'])} new ticks); Next end "
+                    f"time - {next_end_time.strftime(const.IB.TIME_FMT)}"
+                )
+
+                if next_end_time.timestamp() <= real_start_time.timestamp():
+                    # All tick data within the specificed range has been
+                    # fetched from IB. Finishes the while loop.
+                    finished = True
+
                     break
 
-                raise IBError(err.rid, err.err_code, err.err_str,
-                              err_extra=next_end_time)
+                # Resets the queue for next historical ticks request
+                f_queue.reset()
 
-            if len(result) == 0:
-                if len(all_ticks) > 0:
+            else:
+                if all_ticks:
                     print("Request failed while fetching the remaining ticks: "
                           f"returning {len(all_ticks)} ticks fetched")
 
                     break
 
                 raise IBError(
-                    req_id, IBErrorCode.RES_NO_CONTENT.value,
-                    "Failed to get historical ticks data"
+                    rid=req_id, err_code=IBErrorCode.RES_NO_CONTENT,
+                    err_str="Failed to get historical ticks data"
                 )
-
-            if len(result) != 2:
-                # The result should be a list that contains 2 items:
-                # [ticks: ListOfHistoricalTick(BidAsk/Last), done: bool]
-                if len(all_ticks) > 0:
-                    print("Abnormal result received while fetching the "
-                          f"remaining ticks: returning {len(all_ticks)} ticks "
-                          "fetched")
-
-                    break
-
-                raise IBError(
-                    req_id, IBErrorCode.RES_UNEXPECTED.value,
-                    "[Abnormal] Incorrect number of items received: "
-                    f"{len(result)}"
-                )
-
-            # Process the data
-            processed_result = self.__process_historical_ticks(
-                ticks=result[0],
-                start_time=real_start_time,
-                end_time=next_end_time
-            )
-            all_ticks.extend(processed_result['ticks'])
-            next_end_time = processed_result['next_end_time']
-
-            print(
-                f"{len(all_ticks)} ticks fetched ("
-                f"{len(processed_result['ticks'])} new ticks); Next end time - "
-                f"{next_end_time.strftime(const.IB.TIME_FMT)}"
-            )
-
-            if next_end_time.timestamp() <= real_start_time.timestamp():
-                # All tick data within the specificed range has been
-                # fetched from IB. Finishes the while loop.
-                finished = True
-
-                break
-
-            # Resets the queue for next historical ticks request
-            f_queue.reset()
 
         all_ticks.reverse()
 

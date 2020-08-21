@@ -384,13 +384,12 @@ class IBBridge:
                 started by this function.
         """
         while True:
-            # To ensure the `req_id` is useable.
-            try:
-                req_id = self.__gen_req_id()
-                _ = self.__wrapper.get_request_queue(req_id=req_id)
-            except IBError:
-                continue
-            break
+            req_id = self.__gen_req_id()
+            validation = self.__wrapper\
+                .get_request_queue_no_throw(req_id=req_id)
+
+            if validation is None:
+                break
 
         asyncio.create_task(
             self.__client.stream_live_ticks(
@@ -400,6 +399,20 @@ class IBBridge:
         )
 
         return req_id
+
+    def stop_live_ticks_stream(self, stream_id: int):
+        """Stop the specificed live tick data stream that's currently streaming.
+
+        Args:
+            stream_id (int): Identifier for the stream.
+
+        Raises:
+            IBError: If the specificed identifier has no stream associated with.
+        """
+        try:
+            self.__client.cancel_live_ticks_stream(req_id=stream_id)
+        except IBError as err:
+            raise err
 
     def __gen_req_id(self) -> int:
         """Returns a random integer from 1 to 999999 as internal req_id for

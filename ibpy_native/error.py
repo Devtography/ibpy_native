@@ -12,7 +12,7 @@ class IBErrorCode(enum.IntEnum):
     RES_NO_CONTENT = 50204
     RES_UNEXPECTED = 50214
     QUEUE_IN_USE = 50400
-    MISSING_REQUIRED = 50404
+    RES_NOT_FOUND = 50404
 
 class IBError(Exception):
     """Error object to handle the error retruns from IB."""

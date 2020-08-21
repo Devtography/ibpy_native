@@ -391,9 +391,21 @@ class IBClient(EClient):
 
         Args:
             req_id (int): Request ID (ticker ID in IB API).
+
+        Raises:
+            IBError: If there's no `FinishableQueue` object associated with the
+                specified `req_id` found in the internal `IBWrapper` object.
         """
-        self.cancelTickByTickData(reqId=req_id)
-        self.__wrapper.get_request_queue(req_id=req_id).put(fq.Status.FINISHED)
+        f_queue = self.__wrapper.get_request_queue_no_throw(req_id=req_id)
+
+        if f_queue is not None:
+            self.cancelTickByTickData(reqId=req_id)
+            f_queue.put(fq.Status.FINISHED)
+        else:
+            raise IBError(
+                rid=req_id, err_code=IBErrorCode.RES_NOT_FOUND,
+                err_str=f"Task associated with request ID {req_id} not found"
+            )
 
     # Private functions
     @deprecated(version='0.2.0',

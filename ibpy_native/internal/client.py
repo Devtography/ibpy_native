@@ -70,25 +70,30 @@ class IBClient(EClient):
         self.reqContractDetails(req_id, contract)
 
         # Run until we get a valid contract(s)
-        contract_details = await f_queue.get()
+        res = await f_queue.get()
 
-        try:
-            self.__check_error()
-        except IBError as err:
-            raise err
+        if res:
+            if f_queue.status is fq.Status.ERROR:
+                if isinstance(res[-1], IBError):
+                    raise res[-1]
 
-        if len(contract_details) == 0:
-            raise IBError(
-                req_id, IBErrorCode.RES_NO_CONTENT.value,
-                "Failed to get additional contract details"
-            )
+                raise IBError(
+                    rid=req_id, err_code=IBErrorCode.UNKNOWN,
+                    err_str="Unknown error: Internal queue reported error "
+                    "status but there is no exception received"
+                )
 
-        if len(contract_details) > 1:
-            print("Multiple contracts found: returning 1st contract")
+            if len(res) > 1:
+                print("Multiple contracts found: returning 1st contract")
 
-        resolved_contract = contract_details[0].contract
+            resolved_contract = res[0].contract
 
-        return resolved_contract
+            return resolved_contract
+
+        raise IBError(
+            req_id, IBErrorCode.RES_NO_CONTENT.value,
+            "Failed to get additional contract details"
+        )
 
     async def resolve_head_timestamp(
             self, req_id: int, contract: Contract,

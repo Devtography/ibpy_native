@@ -223,6 +223,52 @@ class TestIBBridge(unittest.TestCase):
         client.cancel_live_ticks_stream(req_id=req_id)
         await asyncio.sleep(0.5)
 
+    @async_test
+    async def test_stop_live_ticks_stream(self):
+        """Test functions `stop_live_ticks_stream`."""
+        # pylint: disable=protected-access
+        class MockListener(LiveTicksListener):
+            """Mock notification listener"""
+            finished: bool = False
+
+            def on_tick_receive(self, req_id: int, tick: Union[
+                    HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast
+                ]):
+                print(tick)
+
+            def on_finish(self, req_id: int):
+                self.finished = True
+
+            def on_err(self, err: IBError):
+                raise err
+
+        client: IBClient = self._bridge._IBBridge__client
+        listener = MockListener()
+
+        contract = Contract()
+        contract.secType = 'CASH'
+        contract.symbol = 'EUR'
+        contract.exchange = 'IDEALPRO'
+        contract.currency = 'GBP'
+
+        resolved = await client.resolve_contract(
+            req_id=1, contract=contract
+        )
+
+        stream_id = await self._bridge.stream_live_ticks(
+            contract=resolved, listener=listener, tick_type=dt.LiveTicks.BID_ASK
+        )
+
+        await asyncio.sleep(2)
+        self._bridge.stop_live_ticks_stream(stream_id=stream_id)
+        await asyncio.sleep(0.5)
+        self.assertTrue(listener.finished)
+
+    def test_stop_live_ticks_stream_err(self):
+        """Test functions `stop_live_ticks_stream` for the error cases."""
+        with self.assertRaises(IBError):
+            self._bridge.stop_live_ticks_stream(stream_id=0)
+
     @classmethod
     def tearDownClass(cls):
         cls._bridge.disconnect()

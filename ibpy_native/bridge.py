@@ -384,13 +384,12 @@ class IBBridge:
                 started by this function.
         """
         while True:
-            # To ensure the `req_id` is useable.
-            try:
-                req_id = self.__gen_req_id()
-                _ = self.__wrapper.get_request_queue(req_id=req_id)
-            except IBError:
-                continue
-            break
+            req_id = self.__gen_req_id()
+            validation = self.__wrapper\
+                .get_request_queue_no_throw(req_id=req_id)
+
+            if validation is None:
+                break
 
         asyncio.create_task(
             self.__client.stream_live_ticks(

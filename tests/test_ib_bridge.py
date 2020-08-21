@@ -187,7 +187,6 @@ class TestIBBridge(unittest.TestCase):
             ticks: List[Union[
                 HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast
             ]] = []
-            finished: bool = False
 
             def on_tick_receive(self, req_id: int, tick: Union[
                     HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast
@@ -196,7 +195,7 @@ class TestIBBridge(unittest.TestCase):
                 self.ticks.append(tick)
 
             def on_finish(self, req_id: int):
-                self.finished = True
+                pass
 
             def on_err(self, err: IBError):
                 raise err
@@ -219,7 +218,8 @@ class TestIBBridge(unittest.TestCase):
         )
         self.assertIsNotNone(req_id)
 
-        await asyncio.sleep(2)
+        await asyncio.sleep(5)
+        self.assertTrue(listener.ticks)
         client.cancel_live_ticks_stream(req_id=req_id)
         await asyncio.sleep(0.5)
 

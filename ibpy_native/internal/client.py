@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from typing import List, Tuple, Union
 
 import pytz
-from deprecated.sphinx import deprecated
 from typing_extensions import Literal, TypedDict
 
 from ibapi.contract import Contract
@@ -423,22 +422,6 @@ class IBClient(EClient):
             )
 
     # Private functions
-    @deprecated(version='0.2.0',
-                reason="Function deprecated. Corresponding listener should be "
-                       "used instead to monitor errors.")
-    def __check_error(self):
-        """Check if the error queue in wrapper contains any error returned
-        from IB
-        """
-        while self.__wrapper.has_err():
-            err: IBError = self.__wrapper.get_err()
-
-            if err.rid == -1:
-                # -1 means a notification not error
-                continue
-
-            raise err
-
     def __process_historical_ticks(
             self, ticks: List[Union[HistoricalTick,
                                     HistoricalTickBidAsk,

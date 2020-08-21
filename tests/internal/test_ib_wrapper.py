@@ -63,8 +63,7 @@ class TestIBWrapper(unittest.TestCase):
     def test_notification_listener(self):
         """Test notification listener approach."""
         class MockListener(NotificationListener):
-            """Mock notification listener
-            """
+            """Mock notification listener."""
             triggered = False
 
             def on_notify(self, msg_code: int, msg: str):
@@ -83,16 +82,12 @@ class TestIBWrapper(unittest.TestCase):
 
     @async_test
     async def test_historical_ticks(self):
-        """
-        Test overridden function `historicalTicks`.
-        """
+        """Test overridden function `historicalTicks`."""
         end_time = "20200327 16:30:00"
 
-        queue = self.wrapper.get_request_queue(
+        f_queue = self.wrapper.get_request_queue(
             Const.RID_FETCH_HISTORICAL_TICKS
         )
-
-        f_queue = fq.FinishableQueue(queue)
 
         self.client.reqHistoricalTicks(
             Const.RID_FETCH_HISTORICAL_TICKS.value, self.resolved_contract,
@@ -110,11 +105,9 @@ class TestIBWrapper(unittest.TestCase):
         """Test overridden function `historicalTicksBidAsk`."""
         end_time = "20200327 16:30:00"
 
-        queue = self.wrapper.get_request_queue(
+        f_queue = self.wrapper.get_request_queue(
             Const.RID_FETCH_HISTORICAL_TICKS
         )
-
-        f_queue = fq.FinishableQueue(queue)
 
         self.client.reqHistoricalTicks(
             Const.RID_FETCH_HISTORICAL_TICKS.value, self.resolved_contract,
@@ -132,11 +125,9 @@ class TestIBWrapper(unittest.TestCase):
         """Test overridden function `historicalTicksLast`."""
         end_time = "20200327 16:30:00"
 
-        queue = self.wrapper.get_request_queue(
+        f_queue = self.wrapper.get_request_queue(
             Const.RID_FETCH_HISTORICAL_TICKS
         )
-
-        f_queue = fq.FinishableQueue(queue)
 
         self.client.reqHistoricalTicks(
             Const.RID_FETCH_HISTORICAL_TICKS.value, self.resolved_contract,
@@ -152,11 +143,9 @@ class TestIBWrapper(unittest.TestCase):
     @async_test
     async def test_tick_by_tick_all_last(self):
         """Test overridden function `tickByTickAllLast`."""
-        queue = self.wrapper.get_request_queue(
+        f_queue = self.wrapper.get_request_queue(
             Const.RID_REQ_TICK_BY_TICK_DATA_ALL_LAST
         )
-
-        f_queue = fq.FinishableQueue(queue)
 
         self.client.reqTickByTickData(
             reqId=Const.RID_REQ_TICK_BY_TICK_DATA_ALL_LAST.value,
@@ -175,17 +164,15 @@ class TestIBWrapper(unittest.TestCase):
                     Const.RID_REQ_TICK_BY_TICK_DATA_ALL_LAST.value
                 )
 
-                queue.put(fq.Status.FINISHED)
+                f_queue.put(fq.Status.FINISHED)
 
     @async_test
     async def test_tick_by_tick_last(self):
         """Test overridden function `tickByTickAllLast` with tick type `Last`.
         """
-        queue = self.wrapper.get_request_queue(
+        f_queue = self.wrapper.get_request_queue(
             Const.RID_REQ_TICK_BY_TICK_DATA_LAST
         )
-
-        f_queue = fq.FinishableQueue(queue)
 
         self.client.reqTickByTickData(
             reqId=Const.RID_REQ_TICK_BY_TICK_DATA_LAST.value,
@@ -204,17 +191,15 @@ class TestIBWrapper(unittest.TestCase):
                     Const.RID_REQ_TICK_BY_TICK_DATA_LAST.value
                 )
 
-                queue.put(fq.Status.FINISHED)
+                f_queue.put(fq.Status.FINISHED)
 
 
     @async_test
     async def test_tick_by_tick_bid_ask(self):
         """Test overridden function `tickByTickBidAsk`."""
-        queue = self.wrapper.get_request_queue(
+        f_queue = self.wrapper.get_request_queue(
             Const.RID_REQ_TICK_BY_TICK_DATA_BIDASK
         )
-
-        f_queue = fq.FinishableQueue(queue)
 
         self.client.reqTickByTickData(
             reqId=Const.RID_REQ_TICK_BY_TICK_DATA_BIDASK.value,
@@ -233,16 +218,14 @@ class TestIBWrapper(unittest.TestCase):
                     Const.RID_REQ_TICK_BY_TICK_DATA_BIDASK.value
                 )
 
-                queue.put(fq.Status.FINISHED)
+                f_queue.put(fq.Status.FINISHED)
 
     @async_test
     async def test_tick_by_tick_mid_point(self):
         """Test overridden function `tickByTickMidPoint`."""
-        queue = self.wrapper.get_request_queue(
+        f_queue = self.wrapper.get_request_queue(
             Const.RID_REQ_TICK_BY_TICK_DATA_MIDPOINT
         )
-
-        f_queue = fq.FinishableQueue(queue)
 
         self.client.reqTickByTickData(
             reqId=Const.RID_REQ_TICK_BY_TICK_DATA_MIDPOINT.value,
@@ -261,7 +244,7 @@ class TestIBWrapper(unittest.TestCase):
                     Const.RID_REQ_TICK_BY_TICK_DATA_MIDPOINT
                 )
 
-                queue.put(fq.Status.FINISHED)
+                f_queue.put(fq.Status.FINISHED)
 
     @classmethod
     def tearDownClass(cls):

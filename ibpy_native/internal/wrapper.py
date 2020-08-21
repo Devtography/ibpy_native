@@ -2,8 +2,6 @@
 import queue
 from typing import Dict, List, Optional, Union
 
-from deprecated.sphinx import deprecated
-
 from ibapi.wrapper import (EWrapper, HistoricalTick, HistoricalTickBidAsk,
                            HistoricalTickLast, TickAttribBidAsk, TickAttribLast)
 from ibpy_native.interfaces.listeners import NotificationListener
@@ -19,7 +17,6 @@ class IBWrapper(EWrapper):
     __req_queue: Dict[int, fq.FinishableQueue] = {}
 
     def __init__(self, listener: Optional[NotificationListener] = None):
-        self.__err_queue: queue.Queue = queue.Queue()
         self.__listener: Optional[NotificationListener] = listener
 
         super().__init__()
@@ -70,46 +67,11 @@ class IBWrapper(EWrapper):
         """
         self.__listener = listener
 
-    @deprecated(version='0.2.0',
-                reason="Function deprecated. Corresponding listener should be "
-                       "used instead to monitor errors")
-    def has_err(self) -> bool:
-        """Check if there's any error in the error queue.
-
-        Returns:
-            bool: Indicates if the error queue contains any error or not.
-        """
-        return not self.__err_queue.empty()
-
-    @deprecated(version='0.2.0',
-                reason="Function deprecated. Corresponding listener should be "
-                       "used instead to monitor errors")
-    def get_err(self, timeout=10) -> Optional[error.IBError]:
-        """Get the error from error queue.
-
-        Args:
-            timeout (int, optional): Second(s) to wait for the get request.
-                Defaults to 10.
-
-        Returns:
-            `IBError` if there's any in the error queue;
-            `None` if there is no error.
-        """
-        if self.has_err():
-            try:
-                return self.__err_queue.get(timeout=timeout)
-            except queue.Empty:
-                return None
-
-        return None
-
     def error(self, reqId, errorCode, errorString):
         # override method
         # This section should be changed prior to version 1.0.0 to optimise
         # memory usage.
         err = error.IBError(reqId, errorCode, errorString)
-
-        self.__err_queue.put(err)
 
         # -1 indicates a notification and not true error condition
         if reqId is not -1:

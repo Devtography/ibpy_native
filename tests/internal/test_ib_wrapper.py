@@ -96,7 +96,7 @@ class TestIBWrapper(unittest.TestCase):
 
         result = await f_queue.get()
 
-        self.assertFalse(self.wrapper.has_err())
+        self.assertEqual(f_queue.status, fq.Status.FINISHED)
         self.assertEqual(len(result), 2)
         self.assertIsInstance(result[0], ListOfHistoricalTick)
 
@@ -116,7 +116,7 @@ class TestIBWrapper(unittest.TestCase):
 
         result = await f_queue.get()
 
-        self.assertFalse(self.wrapper.has_err())
+        self.assertEqual(f_queue.status, fq.Status.FINISHED)
         self.assertEqual(len(result), 2)
         self.assertIsInstance(result[0], ListOfHistoricalTickBidAsk)
 
@@ -136,7 +136,7 @@ class TestIBWrapper(unittest.TestCase):
 
         result = await f_queue.get()
 
-        self.assertFalse(self.wrapper.has_err())
+        self.assertEqual(f_queue.status, fq.Status.FINISHED)
         self.assertEqual(len(result), 2)
         self.assertIsInstance(result[0], ListOfHistoricalTickLast)
 
@@ -241,7 +241,7 @@ class TestIBWrapper(unittest.TestCase):
 
             if ele is not fq.Status.FINISHED:
                 self.client.cancelTickByTickData(
-                    Const.RID_REQ_TICK_BY_TICK_DATA_MIDPOINT
+                    Const.RID_REQ_TICK_BY_TICK_DATA_MIDPOINT.value
                 )
 
                 f_queue.put(fq.Status.FINISHED)

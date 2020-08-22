@@ -21,6 +21,30 @@ class IBWrapper(EWrapper):
 
         super().__init__()
 
+    @property
+    def next_req_id(self) -> int:
+        """The next usable request ID (ticker ID in IB API).
+
+        Finds the next available request ID by looking up if there's any
+        finished `FinishableQueue` in internal queue dictionary `__req_queue`.
+        If so, returns the ID of the first finished `FinishableQueue` found.
+        Returns the last ID in `__req_queue` + 1 if otherwise.
+
+        Returns:
+            int: The next usable request ID.
+        """
+        usable_id = 0
+
+        if self.__req_queue:
+            for key, f_queue in self.__req_queue.items():
+                if f_queue.finished:
+                    return key
+
+                if key > usable_id:
+                    usable_id = key
+
+        return usable_id + 1
+
     def get_request_queue(self, req_id: int) -> fq.FinishableQueue:
         """Initialise queue or returns the existing queue with ID `req_id`.
 

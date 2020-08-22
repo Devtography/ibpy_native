@@ -2,7 +2,6 @@
 IB API.
 """
 import asyncio
-import random
 import threading
 from datetime import datetime, tzinfo
 from typing import Optional
@@ -106,7 +105,7 @@ class IBBridge:
 
         try:
             result = await self.__client.resolve_contract(
-                self.__gen_req_id(), contract
+                self.__wrapper.next_req_id, contract
             )
         except IBError as err:
             raise err
@@ -153,7 +152,7 @@ class IBBridge:
 
         try:
             result = await self.__client.resolve_contract(
-                self.__gen_req_id(), contract
+                self.__wrapper.next_req_id, contract
             )
         except IBError as err:
             raise err
@@ -190,7 +189,7 @@ class IBBridge:
 
         try:
             result = await self.__client.resolve_head_timestamp(
-                req_id=self.__gen_req_id(), contract=contract,
+                req_id=self.__wrapper.next_req_id, contract=contract,
                 show=data_type if data_type == 'TRADES' else 'BID'
             )
         except (ValueError, IBError) as err:
@@ -267,7 +266,7 @@ class IBBridge:
         try:
             head_timestamp = datetime.fromtimestamp(
                 await self.__client.resolve_head_timestamp(
-                    self.__gen_req_id(), contract,
+                    self.__wrapper.next_req_id, contract,
                     'TRADES' if data_type == 'TRADES' else 'BID'
                 )
             ).astimezone(IBClient.TZ)
@@ -307,7 +306,7 @@ class IBBridge:
 
             try:
                 ticks = await self.__client.fetch_historical_ticks(
-                    self.__gen_req_id(), contract,
+                    self.__wrapper.next_req_id, contract,
                     start, next_end_time, data_type
                 )
 
@@ -383,13 +382,7 @@ class IBBridge:
             int: Request identifier. This will be needed to stop the stream
                 started by this function.
         """
-        while True:
-            req_id = self.__gen_req_id()
-            validation = self.__wrapper\
-                .get_request_queue_no_throw(req_id=req_id)
-
-            if validation is None:
-                break
+        req_id = self.__wrapper.next_req_id
 
         asyncio.create_task(
             self.__client.stream_live_ticks(
@@ -413,9 +406,3 @@ class IBBridge:
             self.__client.cancel_live_ticks_stream(req_id=stream_id)
         except IBError as err:
             raise err
-
-    def __gen_req_id(self) -> int:
-        """Returns a random integer from 1 to 999999 as internal req_id for
-        IB API requests.
-        """
-        return random.randint(1, 999999)

@@ -60,6 +60,22 @@ class TestIBWrapper(unittest.TestCase):
 
         print(cls.resolved_contract)
 
+    @async_test
+    async def test_next_req_id(self):
+        # pylint: disable=protected-access
+        """Test retrieval of next usable request ID."""
+        # Prepare the `FinishableQueue` objects in internal `__req_queue`
+        self.wrapper._IBWrapper__req_queue.clear()
+        _ = self.wrapper.get_request_queue(req_id=0)
+        f_queue = self.wrapper.get_request_queue(req_id=1)
+        _ = self.wrapper.get_request_queue(req_id=10)
+
+        self.assertEqual(self.wrapper.next_req_id, 11)
+
+        f_queue.put(fq.Status.FINISHED)
+        await f_queue.get()
+        self.assertEqual(self.wrapper.next_req_id, 1)
+
     def test_notification_listener(self):
         """Test notification listener approach."""
         class MockListener(NotificationListener):

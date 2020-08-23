@@ -188,7 +188,7 @@ class TestIBClient(unittest.TestCase):
     async def test_stream_live_ticks(self):
         """Test function `stream_live_ticks`."""
         async def cancel_req():
-            await asyncio.sleep(3)
+            await asyncio.sleep(5)
             self.client.cancelTickByTickData(
                 reqId=Const.RID_STREAM_LIVE_TICKS.value
             )

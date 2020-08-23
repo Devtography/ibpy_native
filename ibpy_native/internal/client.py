@@ -1,6 +1,6 @@
 """Code implementation for `EClient` related stuffs"""
 from datetime import datetime, timedelta
-from typing import List, Tuple, Union
+from typing import Any, List, Tuple, Union
 
 import pytz
 from typing_extensions import Literal, TypedDict
@@ -76,11 +76,7 @@ class IBClient(EClient):
                 if isinstance(res[-1], IBError):
                     raise res[-1]
 
-                raise IBError(
-                    rid=req_id, err_code=IBErrorCode.UNKNOWN,
-                    err_str="Unknown error: Internal queue reported error "
-                    "status but there is no exception received"
-                )
+                raise self._unknown_error(req_id=req_id)
 
             if len(res) > 1:
                 print("Multiple contracts found: returning 1st contract")
@@ -145,11 +141,7 @@ class IBClient(EClient):
                 if isinstance(res[-1], IBError):
                     raise res[-1]
 
-                raise IBError(
-                    rid=req_id, err_code=IBErrorCode.UNKNOWN,
-                    err_str="Unknown error: Internal queue reported error "
-                    "status but there is no exception received"
-                )
+                raise self._unknown_error(req_id=req_id)
 
             if len(res) > 1:
                 raise IBError(
@@ -275,12 +267,7 @@ class IBClient(EClient):
                     res[-1].err_extra = next_end_time
                     raise res[-1]
 
-                raise IBError(
-                    rid=req_id, err_code=IBErrorCode.UNKNOWN,
-                    err_str="Unknown error: Internal queue reported error "
-                    "status but there is no exception received",
-                    err_extra=next_end_time
-                )
+                raise self._unknown_error(req_id=req_id, extra=next_end_time)
 
             if res:
                 if len(res) != 2:
@@ -478,3 +465,25 @@ class IBClient(EClient):
             'ticks': ticks,
             'next_end_time': end_time,
         }
+
+    def _unknown_error(self, req_id: int, extra: Any = None):
+        """Constructs `IBError` with error code `UNKNOWN`
+
+        For siturations which internal `FinishableQueue` reports error status
+        but not exception received.
+
+        Args:
+            req_id (int): Request ID (ticker ID in IB API).
+            extra (:obj:`Any`): Extra data to be passed through the exception.
+                Defaults to `None`.
+
+        Returns:
+            IBError: Preconfigured `IBError` object with error code
+                `50500: UNKNOWN`
+        """
+        return IBError(
+            rid=req_id, err_code=IBErrorCode.UNKNOWN,
+            err_str="Unknown error: Internal queue reported error "
+            "status but no exception received",
+            err_extra=extra
+        )

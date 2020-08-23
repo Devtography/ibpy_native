@@ -18,7 +18,7 @@ class NotificationListener(metaclass=abc.ABCMeta):
 
         Args:
             msg_code (int): Code of system or warning message defined by IB.
-            msg (str): TWS message.
+            msg (:obj:`str`): TWS message.
 
         .. _TWS API v9.72+: Message Codes:
             https://interactivebrokers.github.io/tws-api/message_codes.html

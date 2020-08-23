@@ -267,7 +267,7 @@ class TestIBBridge(unittest.TestCase):
     def test_stop_live_ticks_stream_err(self):
         """Test functions `stop_live_ticks_stream` for the error cases."""
         with self.assertRaises(IBError):
-            self._bridge.stop_live_ticks_stream(stream_id=0)
+            self._bridge.stop_live_ticks_stream(stream_id=9999999)
 
     @classmethod
     def tearDownClass(cls):

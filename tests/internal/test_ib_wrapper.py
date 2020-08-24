@@ -5,15 +5,15 @@ import enum
 import threading
 import unittest
 
-from ibpy_native.interfaces.listeners import NotificationListener
-from ibpy_native.internal import client, wrapper
+from ibapi import contract as ib_contract
+from ibapi import wrapper as ib_wrapper
+
+from ibpy_native.interfaces import listeners
+from ibpy_native.internal import client as ibpy_client
+from ibpy_native.internal import wrapper as ibpy_wrapper
 from ibpy_native.utils import finishable_queue as fq
-from ibapi.contract import Contract
-from ibapi.wrapper import (
-    HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast,
-    ListOfHistoricalTick, ListOfHistoricalTickBidAsk, ListOfHistoricalTickLast
-)
-from tests.utils import async_test
+
+from tests import utils
 
 class Const(enum.IntEnum):
     """Predefined constants for `TestIBWrapper`."""
@@ -27,7 +27,7 @@ class Const(enum.IntEnum):
 
 class TestIBWrapper(unittest.TestCase):
     """Unit tests for class `IBWrapper`."""
-    __contract = Contract()
+    __contract = ib_contract.Contract()
     # __contract.secType = 'STK'
     # __contract.symbol = 'AAPL'
     # __contract.exchange = 'SMART'
@@ -38,8 +38,8 @@ class TestIBWrapper(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.wrapper = wrapper.IBWrapper()
-        cls.client = client.IBClient(cls.wrapper)
+        cls.wrapper = ibpy_wrapper.IBWrapper()
+        cls.client = ibpy_client.IBClient(cls.wrapper)
 
         cls.client.connect(
             os.getenv('IB_HOST', '127.0.0.1'),
@@ -60,7 +60,7 @@ class TestIBWrapper(unittest.TestCase):
 
         print(cls.resolved_contract)
 
-    @async_test
+    @utils.async_test
     async def test_next_req_id(self):
         # pylint: disable=protected-access
         """Test retrieval of next usable request ID."""
@@ -78,7 +78,7 @@ class TestIBWrapper(unittest.TestCase):
 
     def test_notification_listener(self):
         """Test notification listener approach."""
-        class MockListener(NotificationListener):
+        class MockListener(listeners.NotificationListener):
             """Mock notification listener."""
             triggered = False
 
@@ -96,7 +96,7 @@ class TestIBWrapper(unittest.TestCase):
 
         self.assertTrue(mock_listener.triggered)
 
-    @async_test
+    @utils.async_test
     async def test_historical_ticks(self):
         """Test overridden function `historicalTicks`."""
         end_time = "20200327 16:30:00"
@@ -114,9 +114,9 @@ class TestIBWrapper(unittest.TestCase):
 
         self.assertEqual(f_queue.status, fq.Status.FINISHED)
         self.assertEqual(len(result), 2)
-        self.assertIsInstance(result[0], ListOfHistoricalTick)
+        self.assertIsInstance(result[0], ib_wrapper.ListOfHistoricalTick)
 
-    @async_test
+    @utils.async_test
     async def test_historical_ticks_bid_ask(self):
         """Test overridden function `historicalTicksBidAsk`."""
         end_time = "20200327 16:30:00"
@@ -134,9 +134,9 @@ class TestIBWrapper(unittest.TestCase):
 
         self.assertEqual(f_queue.status, fq.Status.FINISHED)
         self.assertEqual(len(result), 2)
-        self.assertIsInstance(result[0], ListOfHistoricalTickBidAsk)
+        self.assertIsInstance(result[0], ib_wrapper.ListOfHistoricalTickBidAsk)
 
-    @async_test
+    @utils.async_test
     async def test_historical_ticks_last(self):
         """Test overridden function `historicalTicksLast`."""
         end_time = "20200327 16:30:00"
@@ -154,9 +154,9 @@ class TestIBWrapper(unittest.TestCase):
 
         self.assertEqual(f_queue.status, fq.Status.FINISHED)
         self.assertEqual(len(result), 2)
-        self.assertIsInstance(result[0], ListOfHistoricalTickLast)
+        self.assertIsInstance(result[0], ib_wrapper.ListOfHistoricalTickLast)
 
-    @async_test
+    @utils.async_test
     async def test_tick_by_tick_all_last(self):
         """Test overridden function `tickByTickAllLast`."""
         f_queue = self.wrapper.get_request_queue(
@@ -172,7 +172,8 @@ class TestIBWrapper(unittest.TestCase):
         )
 
         async for ele in f_queue.stream():
-            self.assertIsInstance(ele, (HistoricalTickLast, fq.Status))
+            self.assertIsInstance(ele,
+                                  (ib_wrapper.HistoricalTickLast, fq.Status))
             self.assertIsNot(ele, fq.Status.ERROR)
 
             if ele is not fq.Status.FINISHED:
@@ -182,7 +183,7 @@ class TestIBWrapper(unittest.TestCase):
 
                 f_queue.put(fq.Status.FINISHED)
 
-    @async_test
+    @utils.async_test
     async def test_tick_by_tick_last(self):
         """Test overridden function `tickByTickAllLast` with tick type `Last`.
         """
@@ -199,7 +200,8 @@ class TestIBWrapper(unittest.TestCase):
         )
 
         async for ele in f_queue.stream():
-            self.assertIsInstance(ele, (HistoricalTickLast, fq.Status))
+            self.assertIsInstance(ele,
+                                  (ib_wrapper.HistoricalTickLast, fq.Status))
             self.assertIsNot(ele, fq.Status.ERROR)
 
             if ele is not fq.Status.FINISHED:
@@ -210,7 +212,7 @@ class TestIBWrapper(unittest.TestCase):
                 f_queue.put(fq.Status.FINISHED)
 
 
-    @async_test
+    @utils.async_test
     async def test_tick_by_tick_bid_ask(self):
         """Test overridden function `tickByTickBidAsk`."""
         f_queue = self.wrapper.get_request_queue(
@@ -226,7 +228,8 @@ class TestIBWrapper(unittest.TestCase):
         )
 
         async for ele in f_queue.stream():
-            self.assertIsInstance(ele, (HistoricalTickBidAsk, fq.Status))
+            self.assertIsInstance(ele,
+                                  (ib_wrapper.HistoricalTickBidAsk, fq.Status))
             self.assertIsNot(ele, fq.Status.ERROR)
 
             if ele is not fq.Status.FINISHED:
@@ -236,7 +239,7 @@ class TestIBWrapper(unittest.TestCase):
 
                 f_queue.put(fq.Status.FINISHED)
 
-    @async_test
+    @utils.async_test
     async def test_tick_by_tick_mid_point(self):
         """Test overridden function `tickByTickMidPoint`."""
         f_queue = self.wrapper.get_request_queue(
@@ -252,7 +255,8 @@ class TestIBWrapper(unittest.TestCase):
         )
 
         async for ele in f_queue.stream():
-            self.assertIsInstance(ele, (HistoricalTick, fq.Status))
+            self.assertIsInstance(ele,
+                                  (ib_wrapper.HistoricalTick, fq.Status))
             self.assertIsNot(ele, fq.Status.ERROR)
 
             if ele is not fq.Status.FINISHED:

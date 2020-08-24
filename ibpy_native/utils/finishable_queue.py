@@ -30,8 +30,9 @@ class FinishableQueue():
         """Get status of the finishable queue.
 
         Returns:
-            Status: Enum `Status` represents either the queue has been started,
-                finished, timeout, or encountered error.
+            ibpy_native.utils.finishable_queue.Status: Enum `Status` represents
+                either the queue has been started, finished, timeout, or
+                encountered error.
         """
         return self.__status
 
@@ -86,11 +87,6 @@ class FinishableQueue():
     async def stream(self) -> Iterator[Any]:
         """Yields the elements in queue as soon as an element has been put into
         the queue.
-
-        Notes:
-            This function will not timeout like the `get(timeout: int)`
-            function. Instead, it waits forever until the finish signal is
-            received before it breaks the internal loop.
         """
         loop = asyncio.get_event_loop()
 

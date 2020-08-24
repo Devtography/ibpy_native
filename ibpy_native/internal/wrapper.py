@@ -2,22 +2,22 @@
 import queue
 from typing import Dict, List, Optional, Union
 
-from ibapi.wrapper import (EWrapper, HistoricalTick, HistoricalTickBidAsk,
-                           HistoricalTickLast, TickAttribBidAsk, TickAttribLast)
-from ibpy_native.interfaces.listeners import NotificationListener
+from ibapi import wrapper
 
 from ibpy_native import error
+from ibpy_native.interfaces import listeners
 from ibpy_native.utils import finishable_queue as fq
 
-class IBWrapper(EWrapper):
+class IBWrapper(wrapper.EWrapper):
     """The wrapper deals with the action coming back from the IB gateway or
     TWS instance.
     """
 
     __req_queue: Dict[int, fq.FinishableQueue] = {}
 
-    def __init__(self, listener: Optional[NotificationListener] = None):
-        self.__listener: Optional[NotificationListener] = listener
+    def __init__(self,
+                 listener: Optional[listeners.NotificationListener] = None):
+        self.__listener: Optional[listeners.NotificationListener] = listener
 
         super().__init__()
 
@@ -53,12 +53,13 @@ class IBWrapper(EWrapper):
                 queue.
 
         Returns:
-            FinishableQueue: The newly initialised queue or the already existed
-                queue associated to the `req_id`.
+            ibpy_native.utils.finishable_queue.FinishableQueue: The newly
+                initialised queue or the already existed queue associated to
+                the `req_id`.
 
         Raises:
-            IBError: If `FinishableQueue` associated with `req_id` is being
-                used by other tasks.
+            ibpy_native.error.IBError: If `FinishableQueue` associated with
+                `req_id` is being used by other tasks.
         """
         try:
             self.__init_req_queue(req_id)
@@ -76,25 +77,25 @@ class IBWrapper(EWrapper):
                 queue.
 
         Returns:
-            Optional[FinishableQueue]: The existing `FinishableQueue` associated
-                to the specified `req_id`. `None` if `req_id` doesn't match with
-                any existing `FinishableQueue` object.
+            Optional[ibpy_native.utils.finishable_queue.FinishableQueue]: 
+                The existing `FinishableQueue` associated to the specified
+                `req_id`. `None` if `req_id` doesn't match with any existing
+                `FinishableQueue` object.
         """
         return self.__req_queue[req_id] if req_id in self.__req_queue else None
 
     # Error handling
-    def set_on_notify_listener(self, listener: NotificationListener):
+    def set_on_notify_listener(self, listener: listeners.NotificationListener):
         """Setter for optional `NotificationListener`.
 
         Args:
-            listener (NotificationListener): Listener for IB notifications.
+            listener (ibpy_native.interfaces.listeners.NotificationListener):
+                Listener for IB notifications.
         """
         self.__listener = listener
 
     def error(self, reqId, errorCode, errorString):
         # override method
-        # This section should be changed prior to version 1.0.0 to optimise
-        # memory usage.
         err = error.IBError(reqId, errorCode, errorString)
 
         # -1 indicates a notification and not true error condition
@@ -120,32 +121,30 @@ class IBWrapper(EWrapper):
         self.__req_queue[reqId].put(fq.Status.FINISHED)
 
     # Fetch historical ticks data
-    def historicalTicks(
-            self, reqId: int, ticks: List[HistoricalTick], done: bool
-        ):
+    def historicalTicks(self, reqId: int,
+                        ticks: List[wrapper.HistoricalTick], done: bool):
         # override method
         self.__handle_historical_ticks_results(reqId, ticks, done)
 
-    def historicalTicksBidAsk(
-            self, reqId: int, ticks: List[HistoricalTickBidAsk], done: bool
-        ):
+    def historicalTicksBidAsk(self, reqId: int,
+                              ticks: List[wrapper.HistoricalTickBidAsk],
+                              done: bool):
         # override method
         self.__handle_historical_ticks_results(reqId, ticks, done)
 
-    def historicalTicksLast(
-            self, reqId: int, ticks: List[HistoricalTickLast], done: bool
-        ):
+    def historicalTicksLast(self, reqId: int,
+                            ticks: List[wrapper.HistoricalTickLast],
+                            done: bool):
         # override method
         self.__handle_historical_ticks_results(reqId, ticks, done)
 
     # Stream live tick data
-    def tickByTickAllLast(
-            self, reqId: int, tickType: int, time: int, price: float,
-            size: int, tickAttribLast: TickAttribLast, exchange: str,
-            specialConditions: str
-    ):
+    def tickByTickAllLast(self, reqId: int, tickType: int, time: int,
+                          price: float, size: int,
+                          tickAttribLast: wrapper.TickAttribLast,
+                          exchange: str, specialConditions: str):
         # override method
-        record = HistoricalTickLast()
+        record = wrapper.HistoricalTickLast()
         record.time = time
         record.price = price
         record.size = size
@@ -155,12 +154,11 @@ class IBWrapper(EWrapper):
 
         self.__handle_live_ticks(req_id=reqId, tick=record)
 
-    def tickByTickBidAsk(
-            self, reqId: int, time: int, bidPrice: float, askPrice: float,
-            bidSize: int, askSize: int, tickAttribBidAsk: TickAttribBidAsk
-    ):
+    def tickByTickBidAsk(self, reqId: int, time: int, bidPrice: float,
+                         askPrice: float, bidSize: int, askSize: int,
+                         tickAttribBidAsk: wrapper.TickAttribBidAsk):
         # override method
-        record = HistoricalTickBidAsk()
+        record = wrapper.HistoricalTickBidAsk()
         record.time = time
         record.priceBid = bidPrice
         record.sizeBid = bidSize
@@ -172,7 +170,7 @@ class IBWrapper(EWrapper):
 
     def tickByTickMidPoint(self, reqId: int, time: int, midPoint: float):
         # override method
-        record = HistoricalTick()
+        record = wrapper.HistoricalTick()
         record.time = time
         record.price = midPoint
 
@@ -185,7 +183,7 @@ class IBWrapper(EWrapper):
         status.
 
         Raises:
-            IBError: If a `FinishableQueue` already exists at
+            ibpy_native.error.IBError: If a `FinishableQueue` already exists at
                 `self.__req_queue[req_id]` and it's not finished.
         """
         if req_id in self.__req_queue:
@@ -201,13 +199,10 @@ class IBWrapper(EWrapper):
             self.__req_queue[req_id] = fq.FinishableQueue(queue.Queue())
 
     def __handle_historical_ticks_results(
-            self,
-            req_id: int,
-            ticks: Union[
-                List[HistoricalTick],
-                List[HistoricalTickBidAsk],
-                List[HistoricalTickLast]
-            ],
+            self, req_id: int,
+            ticks: Union[List[wrapper.HistoricalTick],
+                         List[wrapper.HistoricalTickBidAsk],
+                         List[wrapper.HistoricalTickLast]],
             done: bool
     ):
         """Handles results return from functions `historicalTicks`,
@@ -218,14 +213,10 @@ class IBWrapper(EWrapper):
         self.__req_queue[req_id].put(done)
         self.__req_queue[req_id].put(fq.Status.FINISHED)
 
-    def __handle_live_ticks(
-            self, req_id: int,
-            tick: Union[
-                HistoricalTick,
-                HistoricalTickBidAsk,
-                HistoricalTickLast
-            ]
-    ):
+    def __handle_live_ticks(self, req_id: int,
+                            tick: Union[wrapper.HistoricalTick,
+                                        wrapper.HistoricalTickBidAsk,
+                                        wrapper.HistoricalTickLast]):
         """Handles live ticks passed to functions `tickByTickAllLast`,
         `tickByTickBidAsk`, and `tickByTickMidPoint` by putting the ticks
         received into corresponding queue.

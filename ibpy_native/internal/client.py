@@ -16,14 +16,14 @@ from ibpy_native.utils import const
 from ibpy_native.utils import finishable_queue as fq
 
 class _ProcessHistoricalTicksResult(TypedDict):
-    """Use for type hint the returns of `IBClient.fetch_historical_ticks`."""
+    """Use for type hint the returns of `_IBClient.fetch_historical_ticks`."""
     ticks: List[Union[ib_wrapper.HistoricalTick,
                       ib_wrapper.HistoricalTickBidAsk,
                       ib_wrapper.HistoricalTickLast]]
     next_end_time: datetime.datetime
 
 class _IBClient(ib_client.EClient):
-    """The client calls the native methods from IBWrapper instead of
+    """The client calls the native methods from _IBWrapper instead of
     overriding native methods.
 
     Attributes:
@@ -38,7 +38,7 @@ class _IBClient(ib_client.EClient):
     # Default timeout time in second for requests
     REQ_TIMEOUT = 10
 
-    def __init__(self, wrapper: ibpy_wrapper.IBWrapper):
+    def __init__(self, wrapper: ibpy_wrapper._IBWrapper):
         self._wrapper = wrapper
         super().__init__(wrapper)
 
@@ -398,7 +398,7 @@ class _IBClient(ib_client.EClient):
         Raises:
             ibpy_native.error.IBError: If there's no `FinishableQueue` object
                 associated with the specified `req_id` found in the internal
-                `IBWrapper` object.
+                `_IBWrapper` object.
         """
         f_queue = self._wrapper.get_request_queue_no_throw(req_id=req_id)
 

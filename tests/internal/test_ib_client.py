@@ -53,7 +53,7 @@ class Const(enum.IntEnum):
     RID_CANCEL_LIVE_TICKS_STREAM_ERR = 19003
 
 class TestIBClient(unittest.TestCase):
-    """Unit tests for class `IBClient`."""
+    """Unit tests for class `_IBClient`."""
     _contract = ib_contract.Contract()
     _contract.secType = 'CASH'
     _contract.symbol = 'EUR'
@@ -64,7 +64,7 @@ class TestIBClient(unittest.TestCase):
     def setUpClass(cls):
         ibpy_client._IBClient.TZ = pytz.timezone('America/New_York')
 
-        cls._wrapper = ibpy_wrapper.IBWrapper()
+        cls._wrapper = ibpy_wrapper._IBWrapper()
         cls._client = ibpy_client._IBClient(cls._wrapper)
 
         cls._client.connect(

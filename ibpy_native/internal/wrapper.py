@@ -8,7 +8,7 @@ from ibpy_native import error
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import finishable_queue as fq
 
-class IBWrapper(wrapper.EWrapper):
+class _IBWrapper(wrapper.EWrapper):
     """The wrapper deals with the action coming back from the IB gateway or
     TWS instance.
     """

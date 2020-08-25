@@ -27,7 +27,7 @@ class Const(enum.IntEnum):
     QUEUE_MAX_WAIT_SEC = 10
 
 class TestIBWrapper(unittest.TestCase):
-    """Unit tests for class `IBWrapper`."""
+    """Unit tests for class `_IBWrapper`."""
     _contract = ib_contract.Contract()
     _contract.secType = 'FUT'
     _contract.symbol = 'YM'
@@ -36,7 +36,7 @@ class TestIBWrapper(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls._wrapper = ibpy_wrapper.IBWrapper()
+        cls._wrapper = ibpy_wrapper._IBWrapper()
         cls._client = ibpy_client._IBClient(cls._wrapper)
 
         cls._client.connect(

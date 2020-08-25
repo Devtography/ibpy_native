@@ -22,8 +22,8 @@ class FinishableQueue():
             the async task
     """
     def __init__(self, queue_to_finish: queue.Queue):
-        self.__queue = queue_to_finish
-        self.__status = Status.STARTED
+        self._queue = queue_to_finish
+        self._status = Status.STARTED
 
     @property
     def status(self) -> Status:
@@ -34,7 +34,7 @@ class FinishableQueue():
                 either the queue has been started, finished, timeout, or
                 encountered error.
         """
-        return self.__status
+        return self._status
 
     @property
     def finished(self) -> bool:
@@ -44,20 +44,20 @@ class FinishableQueue():
         Returns:
             bool: True is task last associated is finished, False otherwise.
         """
-        return (self.__status is Status.TIMEOUT
-                or self.__status is Status.FINISHED
-                or self.__status is Status.ERROR)
+        return (self._status is Status.TIMEOUT
+                or self._status is Status.FINISHED
+                or self._status is Status.ERROR)
 
     def reset(self):
         """Reset the status to `STARTED` for reusing the queue if the
         status is marked as either `TIMEOUT` or `FINISHED`
         """
         if self.finished:
-            self.__status = Status.STARTED
+            self._status = Status.STARTED
 
     def put(self, element: Any):
         """Setter to put element to internal synchronised queue."""
-        self.__queue.put(element)
+        self._queue.put(element)
 
     async def get(self) -> list:
         """Returns a list of elements retrieved from queue once the FINISHED
@@ -71,14 +71,14 @@ class FinishableQueue():
 
         while not self.finished:
             current_element = await loop.run_in_executor(
-                None, self.__queue.get
+                None, self._queue.get
             )
 
             if current_element is Status.FINISHED:
-                self.__status = Status.FINISHED
+                self._status = Status.FINISHED
             else:
                 if isinstance(current_element, BaseException):
-                    self.__status = Status.ERROR
+                    self._status = Status.ERROR
 
                 contents_of_queue.append(current_element)
 
@@ -92,12 +92,12 @@ class FinishableQueue():
 
         while not self.finished:
             current_element = await loop.run_in_executor(
-                None, self.__queue.get
+                None, self._queue.get
             )
 
             if current_element is Status.FINISHED:
-                self.__status = current_element
+                self._status = current_element
             elif isinstance(current_element, BaseException):
-                self.__status = Status.ERROR
+                self._status = Status.ERROR
 
             yield current_element

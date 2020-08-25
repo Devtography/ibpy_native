@@ -1,4 +1,4 @@
-"""Code implementation for custom `FinishableQueue`."""
+"""Code implementation for custom `_FinishableQueue`."""
 import asyncio
 import enum
 import queue
@@ -7,13 +7,13 @@ from typing import Iterator, Any
 
 # Queue status
 class Status(enum.Enum):
-    """Status codes for `FinishableQueue`"""
+    """Status codes for `_FinishableQueue`"""
     STARTED = 103
     ERROR = 500
     FINISHED = 200
     TIMEOUT = 408
 
-class FinishableQueue():
+class _FinishableQueue():
     """This class takes a built-in `Queue` object to handle the async tasks by
     managing its' status based on elements retrieve from the `Queue` object.
 

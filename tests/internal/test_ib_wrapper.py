@@ -61,7 +61,7 @@ class TestIBWrapper(unittest.TestCase):
     @utils.async_test
     async def test_next_req_id(self):
         """Test retrieval of next usable request ID."""
-        # Prepare the `FinishableQueue` objects in internal `__req_queue`
+        # Prepare the `_FinishableQueue` objects in internal `__req_queue`
         self._wrapper._req_queue.clear()
         _ = self._wrapper.get_request_queue(req_id=0)
         f_queue = self._wrapper.get_request_queue(req_id=1)

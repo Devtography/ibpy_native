@@ -397,7 +397,7 @@ class _IBClient(ib_client.EClient):
             req_id (int): Request ID (ticker ID in IB API).
 
         Raises:
-            ibpy_native.error.IBError: If there's no `FinishableQueue` object
+            ibpy_native.error.IBError: If there's no `_FinishableQueue` object
                 associated with the specified `req_id` found in the internal
                 `_IBWrapper` object.
         """
@@ -473,7 +473,7 @@ class _IBClient(ib_client.EClient):
     def _unknown_error(self, req_id: int, extra: Any = None):
         """Constructs `IBError` with error code `UNKNOWN`
 
-        For siturations which internal `FinishableQueue` reports error status
+        For siturations which internal `_FinishableQueue` reports error status
         but not exception received.
 
         Args:

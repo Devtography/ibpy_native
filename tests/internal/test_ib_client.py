@@ -268,7 +268,7 @@ class TestIBClient(unittest.TestCase):
     @utils.async_test
     async def test_cancel_live_ticks_stream_err(self):
         """Test function `cancel_live_ticks_stream` with request ID that has no
-        `FinishableQueue` associated with.
+        `_FinishableQueue` associated with.
         """
         with self.assertRaises(error.IBError):
             self._client.cancel_live_ticks_stream(

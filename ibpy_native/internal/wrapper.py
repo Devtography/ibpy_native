@@ -13,7 +13,7 @@ class _IBWrapper(wrapper.EWrapper):
     TWS instance.
     """
 
-    _req_queue: Dict[int, fq.FinishableQueue] = {}
+    _req_queue: Dict[int, fq._FinishableQueue] = {}
 
     def __init__(self,
                  listener: Optional[listeners.NotificationListener] = None):
@@ -26,8 +26,8 @@ class _IBWrapper(wrapper.EWrapper):
         """The next usable request ID (ticker ID in IB API).
 
         Finds the next available request ID by looking up if there's any
-        finished `FinishableQueue` in internal queue dictionary `__req_queue`.
-        If so, returns the ID of the first finished `FinishableQueue` found.
+        finished `_FinishableQueue` in internal queue dictionary `__req_queue`.
+        If so, returns the ID of the first finished `_FinishableQueue` found.
         Returns the last ID in `__req_queue` + 1 if otherwise.
 
         Returns:
@@ -45,7 +45,7 @@ class _IBWrapper(wrapper.EWrapper):
 
         return usable_id + 1
 
-    def get_request_queue(self, req_id: int) -> fq.FinishableQueue:
+    def get_request_queue(self, req_id: int) -> fq._FinishableQueue:
         """Initialise queue or returns the existing queue with ID `req_id`.
 
         Args:
@@ -53,12 +53,12 @@ class _IBWrapper(wrapper.EWrapper):
                 queue.
 
         Returns:
-            ibpy_native.utils.finishable_queue.FinishableQueue: The newly
+            ibpy_native.utils.finishable_queue._FinishableQueue: The newly
                 initialised queue or the already existed queue associated to
                 the `req_id`.
 
         Raises:
-            ibpy_native.error.IBError: If `FinishableQueue` associated with
+            ibpy_native.error.IBError: If `_FinishableQueue` associated with
                 `req_id` is being used by other tasks.
         """
         try:
@@ -69,7 +69,7 @@ class _IBWrapper(wrapper.EWrapper):
         return self._req_queue[req_id]
 
     def get_request_queue_no_throw(self, req_id: int) -> \
-        Optional[fq.FinishableQueue]:
+        Optional[fq._FinishableQueue]:
         """Returns the existing queue with ID `req_id`.
 
         Args:
@@ -77,10 +77,10 @@ class _IBWrapper(wrapper.EWrapper):
                 queue.
 
         Returns:
-            Optional[ibpy_native.utils.finishable_queue.FinishableQueue]:
-                The existing `FinishableQueue` associated to the specified
+            Optional[ibpy_native.utils.finishable_queue._FinishableQueue]:
+                The existing `_FinishableQueue` associated to the specified
                 `req_id`. `None` if `req_id` doesn't match with any existing
-                `FinishableQueue` object.
+                `_FinishableQueue` object.
         """
         return self._req_queue[req_id] if req_id in self._req_queue else None
 
@@ -178,12 +178,12 @@ class _IBWrapper(wrapper.EWrapper):
 
     ## Private functions
     def __init_req_queue(self, req_id: int):
-        """Initials a new `FinishableQueue` if there's no object at
+        """Initials a new `_FinishableQueue` if there's no object at
         `self.__req_queue[req_id]`; Resets the queue status to its' initial
         status.
 
         Raises:
-            ibpy_native.error.IBError: If a `FinishableQueue` already exists at
+            ibpy_native.error.IBError: If a `_FinishableQueue` already exists at
                 `self.__req_queue[req_id]` and it's not finished.
         """
         if req_id in self._req_queue:
@@ -196,7 +196,7 @@ class _IBWrapper(wrapper.EWrapper):
                         "currently in use"
                 )
         else:
-            self._req_queue[req_id] = fq.FinishableQueue(queue.Queue())
+            self._req_queue[req_id] = fq._FinishableQueue(queue.Queue())
 
     def _handle_historical_ticks_results(
             self, req_id: int,

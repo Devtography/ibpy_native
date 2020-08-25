@@ -1,4 +1,5 @@
 """Code implementation of IB API resposes handling."""
+# pylint: disable=protected-access
 import queue
 from typing import Dict, List, Optional, Union
 
@@ -112,13 +113,13 @@ class _IBWrapper(wrapper.EWrapper):
 
     def contractDetailsEnd(self, reqId):
         # override method
-        self._req_queue[reqId].put(fq.Status.FINISHED)
+        self._req_queue[reqId].put(fq._Status.FINISHED)
 
     # Get earliest data point for a given instrument and data
     def headTimestamp(self, reqId: int, headTimestamp: str):
         # override method
         self._req_queue[reqId].put(headTimestamp)
-        self._req_queue[reqId].put(fq.Status.FINISHED)
+        self._req_queue[reqId].put(fq._Status.FINISHED)
 
     # Fetch historical ticks data
     def historicalTicks(self, reqId: int,
@@ -211,7 +212,7 @@ class _IBWrapper(wrapper.EWrapper):
         """
         self._req_queue[req_id].put(ticks)
         self._req_queue[req_id].put(done)
-        self._req_queue[req_id].put(fq.Status.FINISHED)
+        self._req_queue[req_id].put(fq._Status.FINISHED)
 
     def _handle_live_ticks(self, req_id: int,
                            tick: Union[wrapper.HistoricalTick,

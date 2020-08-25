@@ -78,7 +78,7 @@ class _IBClient(ib_client.EClient):
         res = await f_queue.get()
 
         if res:
-            if f_queue.status is fq.Status.ERROR:
+            if f_queue.status is fq._Status.ERROR:
                 if isinstance(res[-1], error.IBError):
                     raise res[-1]
 
@@ -143,7 +143,7 @@ class _IBClient(ib_client.EClient):
         self.cancelHeadTimeStamp(req_id)
 
         if res:
-            if f_queue.status is fq.Status.ERROR:
+            if f_queue.status is fq._Status.ERROR:
                 if isinstance(res[-1], error.IBError):
                     raise res[-1]
 
@@ -251,7 +251,7 @@ class _IBClient(ib_client.EClient):
                                  ib_wrapper.HistoricalTickLast]],
                       bool] = await f_queue.get()
 
-            if res and f_queue.status is fq.Status.ERROR:
+            if res and f_queue.status is fq._Status.ERROR:
                 # Response received and internal queue reports error
                 if isinstance(res[-1], error.IBError):
                     if all_ticks:
@@ -387,7 +387,7 @@ class _IBClient(ib_client.EClient):
                 listener.on_tick_receive(req_id=req_id, tick=elm)
             elif isinstance(elm, error.IBError):
                 listener.on_err(err=elm)
-            elif elm is fq.Status.FINISHED:
+            elif elm is fq._Status.FINISHED:
                 listener.on_finish(req_id=req_id)
 
     def cancel_live_ticks_stream(self, req_id: int):
@@ -405,7 +405,7 @@ class _IBClient(ib_client.EClient):
 
         if f_queue is not None:
             self.cancelTickByTickData(reqId=req_id)
-            f_queue.put(fq.Status.FINISHED)
+            f_queue.put(fq._Status.FINISHED)
         else:
             raise error.IBError(
                 rid=req_id, err_code=error.IBErrorCode.RES_NOT_FOUND,

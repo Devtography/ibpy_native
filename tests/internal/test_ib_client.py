@@ -197,7 +197,7 @@ class TestIBClient(unittest.TestCase):
             queue = self._wrapper.get_request_queue_no_throw(
                 req_id=Const.RID_STREAM_LIVE_TICKS
             )
-            queue.put(fq.Status.FINISHED)
+            queue.put(fq._Status.FINISHED)
 
         resolved_contract = await self._client.resolve_contract(
             req_id=Const.RID_RESOLVE_CONTRACT.value, contract=self._contract

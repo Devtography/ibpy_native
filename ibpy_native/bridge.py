@@ -1,6 +1,7 @@
 """Code implementation of public interface to bridge between the package &
 IB API.
 """
+# pylint: disable=protected-access
 import asyncio
 import datetime
 import threading
@@ -28,7 +29,7 @@ class IBBridge:
         self._client_id = client_id
 
         self._wrapper = ib_wrapper.IBWrapper(listener=notification_listener)
-        self._client = ib_client.IBClient(self._wrapper)
+        self._client = ib_client._IBClient(self._wrapper)
 
         if auto_conn:
             self.connect()
@@ -48,7 +49,7 @@ class IBBridge:
             tz (datetime.tzinfo): Timezone. Recommend to set this value via
                 `pytz.timezone(zone: str)`.
         """
-        ib_client.IBClient.TZ = tz
+        ib_client._IBClient.TZ = tz
 
     def set_on_notify_listener(self, listener: listeners.NotificationListener):
         """Setter for optional `NotificationListener`.
@@ -201,7 +202,7 @@ class IBBridge:
             raise err
 
         data_point = datetime.datetime.fromtimestamp(result)\
-            .astimezone(ib_client.IBClient.TZ)
+            .astimezone(ib_client._IBClient.TZ)
 
         return data_point.replace(tzinfo=None)
 
@@ -254,7 +255,7 @@ class IBBridge:
                 attempt(s).
         """
         all_ticks = []
-        next_end_time = ib_client.IBClient.TZ.localize(end)
+        next_end_time = ib_client._IBClient.TZ.localize(end)
 
         # Error checking
         if end.tzinfo is not None or (
@@ -277,7 +278,7 @@ class IBBridge:
                     self._wrapper.next_req_id, contract,
                     'TRADES' if data_type == 'TRADES' else 'BID'
                 )
-            ).astimezone(ib_client.IBClient.TZ)
+            ).astimezone(ib_client._IBClient.TZ)
         except (ValueError, error.IBError) as err:
             raise err
 
@@ -293,7 +294,7 @@ class IBBridge:
                     "Specificed end time cannot be earlier than start time"
                 )
 
-            start = ib_client.IBClient.TZ.localize(start)
+            start = ib_client._IBClient.TZ.localize(start)
         else:
             start = head_timestamp
 
@@ -333,7 +334,7 @@ class IBBridge:
 
                 next_end_time = datetime.datetime.fromtimestamp(
                     ticks[0][0].time
-                ).astimezone(ib_client.IBClient.TZ)
+                ).astimezone(ib_client._IBClient.TZ)
             except ValueError as err:
                 raise err
             except error.IBError as err:
@@ -355,7 +356,7 @@ class IBBridge:
                         # Updates the end time for next attempt
                         next_end_time = datetime.datetime.fromtimestamp(
                             all_ticks[0].time
-                        ).astimezone(ib_client.IBClient.TZ)
+                        ).astimezone(ib_client._IBClient.TZ)
 
                     continue
 

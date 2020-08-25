@@ -1,4 +1,5 @@
 """Unit tests for module `ibpy_native.client`."""
+# pylint: disable=protected-access
 import asyncio
 import datetime
 import enum
@@ -61,10 +62,10 @@ class TestIBClient(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        ibpy_client.IBClient.TZ = pytz.timezone('America/New_York')
+        ibpy_client._IBClient.TZ = pytz.timezone('America/New_York')
 
         cls._wrapper = ibpy_wrapper.IBWrapper()
-        cls._client = ibpy_client.IBClient(cls._wrapper)
+        cls._client = ibpy_client._IBClient(cls._wrapper)
 
         cls._client.connect(
             os.getenv('IB_HOST', '127.0.0.1'),
@@ -124,9 +125,9 @@ class TestIBClient(unittest.TestCase):
 
         data = await self._client.fetch_historical_ticks(
             Const.RID_FETCH_HISTORICAL_TICKS.value, resolved_contract,
-            start=ibpy_client.IBClient.TZ.localize(datetime\
+            start=ibpy_client._IBClient.TZ.localize(datetime\
                 .datetime(2020, 4, 29, 10, 30, 0)),
-            end=ibpy_client.IBClient.TZ.localize(datetime\
+            end=ibpy_client._IBClient.TZ.localize(datetime\
                 .datetime(2020, 4, 29, 10, 31, 0)),
             show='MIDPOINT'
         )
@@ -138,9 +139,9 @@ class TestIBClient(unittest.TestCase):
 
         data = await self._client.fetch_historical_ticks(
             Const.RID_FETCH_HISTORICAL_TICKS.value, resolved_contract,
-            start=ibpy_client.IBClient.TZ.localize(datetime\
+            start=ibpy_client._IBClient.TZ.localize(datetime\
                 .datetime(2020, 4, 29, 10, 30, 0)),
-            end=ibpy_client.IBClient.TZ.localize(datetime\
+            end=ibpy_client._IBClient.TZ.localize(datetime\
                 .datetime(2020, 4, 29, 10, 31, 0)),
             show='BID_ASK'
         )
@@ -180,8 +181,8 @@ class TestIBClient(unittest.TestCase):
                 Const.RID_FETCH_HISTORICAL_TICKS_ERR.value,
                 ib_contract.Contract(),
                 datetime.datetime(2020, 5, 20, 3, 20, 0)\
-                    .astimezone(ibpy_client.IBClient.TZ),
-                datetime.datetime.now().astimezone(ibpy_client.IBClient.TZ)
+                    .astimezone(ibpy_client._IBClient.TZ),
+                datetime.datetime.now().astimezone(ibpy_client._IBClient.TZ)
             )
 
     @utils.async_test

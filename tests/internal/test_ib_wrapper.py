@@ -1,4 +1,5 @@
 """Unit tests for module `ibpy_native.wrapper`."""
+# pylint: disable=protected-access
 import asyncio
 import os
 import enum
@@ -36,7 +37,7 @@ class TestIBWrapper(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._wrapper = ibpy_wrapper.IBWrapper()
-        cls._client = ibpy_client.IBClient(cls._wrapper)
+        cls._client = ibpy_client._IBClient(cls._wrapper)
 
         cls._client.connect(
             os.getenv('IB_HOST', '127.0.0.1'),
@@ -59,7 +60,6 @@ class TestIBWrapper(unittest.TestCase):
 
     @utils.async_test
     async def test_next_req_id(self):
-        # pylint: disable=protected-access
         """Test retrieval of next usable request ID."""
         # Prepare the `FinishableQueue` objects in internal `__req_queue`
         self._wrapper._req_queue.clear()

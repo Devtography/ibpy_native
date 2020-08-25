@@ -22,7 +22,7 @@ class _ProcessHistoricalTicksResult(TypedDict):
                       ib_wrapper.HistoricalTickLast]]
     next_end_time: datetime.datetime
 
-class IBClient(ib_client.EClient):
+class _IBClient(ib_client.EClient):
     """The client calls the native methods from IBWrapper instead of
     overriding native methods.
 
@@ -226,11 +226,11 @@ class IBClient(ib_client.EClient):
         all_ticks: list = []
 
         real_start_time = (
-            IBClient.TZ.localize(start) if start.tzinfo is None else start
+            _IBClient.TZ.localize(start) if start.tzinfo is None else start
         )
 
         next_end_time = (
-            IBClient.TZ.localize(end) if end.tzinfo is None else end
+            _IBClient.TZ.localize(end) if end.tzinfo is None else end
         )
 
         finished = False

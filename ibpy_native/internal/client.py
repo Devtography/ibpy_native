@@ -1,4 +1,5 @@
 """Code implementation for `EClient` related stuffs"""
+# pylint: disable=protected-access
 import datetime
 from typing import Any, List, Tuple, Union
 
@@ -241,7 +242,7 @@ class _IBClient(ib_client.EClient):
         while not finished:
             self.reqHistoricalTicks(
                 req_id, contract, "",
-                next_end_time.strftime(const.IB.TIME_FMT),
+                next_end_time.strftime(const._IB.TIME_FMT),
                 1000, show, 0, False, []
             )
 
@@ -300,7 +301,7 @@ class _IBClient(ib_client.EClient):
                 print(
                     f"{len(all_ticks)} ticks fetched ("
                     f"{len(processed_result['ticks'])} new ticks); Next end "
-                    f"time - {next_end_time.strftime(const.IB.TIME_FMT)}"
+                    f"time - {next_end_time.strftime(const._IB.TIME_FMT)}"
                 )
 
                 if next_end_time.timestamp() <= real_start_time.timestamp():

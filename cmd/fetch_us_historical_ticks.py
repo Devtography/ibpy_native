@@ -199,9 +199,9 @@ class _FetchCmd:
         end_time: datetime = datetime.now()
 
         if args.ft:
-            start_time = datetime.strptime(args.ft, const.IB.TIME_FMT)
+            start_time = datetime.strptime(args.ft, const._IB.TIME_FMT)
         if args.to:
-            end_time = datetime.strptime(args.to, const.IB.TIME_FMT)
+            end_time = datetime.strptime(args.to, const._IB.TIME_FMT)
 
         if contract.lastTradeDateOrContractMonth != '':
             last_trade_time = datetime.strptime(

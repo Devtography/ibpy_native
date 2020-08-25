@@ -287,7 +287,7 @@ class IBBridge:
                 raise ValueError(
                     "Specificed start time is earlier than the earliest "
                     "available datapoint - "
-                    + head_timestamp.strftime(const.IB.TIME_FMT)
+                    + head_timestamp.strftime(const._IB.TIME_FMT)
                 )
             if end.timestamp() < start.timestamp():
                 raise ValueError(
@@ -301,7 +301,7 @@ class IBBridge:
         if next_end_time.timestamp() < head_timestamp.timestamp():
             raise ValueError(
                 "Specificed end time is earlier than the earliest available "
-                f"datapoint - {head_timestamp.strftime(const.IB.TIME_FMT)}"
+                f"datapoint - {head_timestamp.strftime(const._IB.TIME_FMT)}"
             )
 
         if attempts < 1 and attempts != -1:

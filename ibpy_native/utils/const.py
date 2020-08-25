@@ -2,7 +2,7 @@
 from typing_extensions import final, Final
 
 @final
-class IB:
+class _IB:
     # pylint: disable=too-few-public-methods
     """Constants use across the project."""
 

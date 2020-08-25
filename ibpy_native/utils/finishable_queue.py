@@ -1,4 +1,4 @@
-"""Code implementation for custom `FinishableQueue`."""
+"""Code implementation for custom `_FinishableQueue`."""
 import asyncio
 import enum
 import queue
@@ -6,14 +6,14 @@ import queue
 from typing import Iterator, Any
 
 # Queue status
-class Status(enum.Enum):
-    """Status codes for `FinishableQueue`"""
+class _Status(enum.Enum):
+    """Status codes for `_FinishableQueue`"""
     STARTED = 103
     ERROR = 500
     FINISHED = 200
     TIMEOUT = 408
 
-class FinishableQueue():
+class _FinishableQueue():
     """This class takes a built-in `Queue` object to handle the async tasks by
     managing its' status based on elements retrieve from the `Queue` object.
 
@@ -22,19 +22,19 @@ class FinishableQueue():
             the async task
     """
     def __init__(self, queue_to_finish: queue.Queue):
-        self.__queue = queue_to_finish
-        self.__status = Status.STARTED
+        self._queue = queue_to_finish
+        self._status = _Status.STARTED
 
     @property
-    def status(self) -> Status:
+    def status(self) -> _Status:
         """Get status of the finishable queue.
 
         Returns:
-            ibpy_native.utils.finishable_queue.Status: Enum `Status` represents
-                either the queue has been started, finished, timeout, or
-                encountered error.
+            ibpy_native.utils.finishable_queue._Status: Enum `_Status`
+                represents either the queue has been started, finished,
+                timeout, or encountered error.
         """
-        return self.__status
+        return self._status
 
     @property
     def finished(self) -> bool:
@@ -44,20 +44,20 @@ class FinishableQueue():
         Returns:
             bool: True is task last associated is finished, False otherwise.
         """
-        return (self.__status is Status.TIMEOUT
-                or self.__status is Status.FINISHED
-                or self.__status is Status.ERROR)
+        return (self._status is _Status.TIMEOUT
+                or self._status is _Status.FINISHED
+                or self._status is _Status.ERROR)
 
     def reset(self):
         """Reset the status to `STARTED` for reusing the queue if the
         status is marked as either `TIMEOUT` or `FINISHED`
         """
         if self.finished:
-            self.__status = Status.STARTED
+            self._status = _Status.STARTED
 
     def put(self, element: Any):
         """Setter to put element to internal synchronised queue."""
-        self.__queue.put(element)
+        self._queue.put(element)
 
     async def get(self) -> list:
         """Returns a list of elements retrieved from queue once the FINISHED
@@ -71,14 +71,14 @@ class FinishableQueue():
 
         while not self.finished:
             current_element = await loop.run_in_executor(
-                None, self.__queue.get
+                None, self._queue.get
             )
 
-            if current_element is Status.FINISHED:
-                self.__status = Status.FINISHED
+            if current_element is _Status.FINISHED:
+                self._status = _Status.FINISHED
             else:
                 if isinstance(current_element, BaseException):
-                    self.__status = Status.ERROR
+                    self._status = _Status.ERROR
 
                 contents_of_queue.append(current_element)
 
@@ -92,12 +92,12 @@ class FinishableQueue():
 
         while not self.finished:
             current_element = await loop.run_in_executor(
-                None, self.__queue.get
+                None, self._queue.get
             )
 
-            if current_element is Status.FINISHED:
-                self.__status = current_element
+            if current_element is _Status.FINISHED:
+                self._status = current_element
             elif isinstance(current_element, BaseException):
-                self.__status = Status.ERROR
+                self._status = _Status.ERROR
 
             yield current_element

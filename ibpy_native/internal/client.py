@@ -1,4 +1,5 @@
 """Code implementation for `EClient` related stuffs"""
+# pylint: disable=protected-access
 import datetime
 from typing import Any, List, Tuple, Union
 
@@ -16,14 +17,14 @@ from ibpy_native.utils import const
 from ibpy_native.utils import finishable_queue as fq
 
 class _ProcessHistoricalTicksResult(TypedDict):
-    """Use for type hint the returns of `IBClient.fetch_historical_ticks`."""
+    """Use for type hint the returns of `_IBClient.fetch_historical_ticks`."""
     ticks: List[Union[ib_wrapper.HistoricalTick,
                       ib_wrapper.HistoricalTickBidAsk,
                       ib_wrapper.HistoricalTickLast]]
     next_end_time: datetime.datetime
 
-class IBClient(ib_client.EClient):
-    """The client calls the native methods from IBWrapper instead of
+class _IBClient(ib_client.EClient):
+    """The client calls the native methods from _IBWrapper instead of
     overriding native methods.
 
     Attributes:
@@ -38,8 +39,8 @@ class IBClient(ib_client.EClient):
     # Default timeout time in second for requests
     REQ_TIMEOUT = 10
 
-    def __init__(self, wrapper: ibpy_wrapper.IBWrapper):
-        self.__wrapper = wrapper
+    def __init__(self, wrapper: ibpy_wrapper._IBWrapper):
+        self._wrapper = wrapper
         super().__init__(wrapper)
 
     async def resolve_contract(
@@ -65,7 +66,7 @@ class IBClient(ib_client.EClient):
 
         # Make place to store the data that will be returned
         try:
-            f_queue = self.__wrapper.get_request_queue(req_id)
+            f_queue = self._wrapper.get_request_queue(req_id)
         except error.IBError as err:
             raise err
 
@@ -77,7 +78,7 @@ class IBClient(ib_client.EClient):
         res = await f_queue.get()
 
         if res:
-            if f_queue.status is fq.Status.ERROR:
+            if f_queue.status is fq._Status.ERROR:
                 if isinstance(res[-1], error.IBError):
                     raise res[-1]
 
@@ -126,7 +127,7 @@ class IBClient(ib_client.EClient):
             )
 
         try:
-            f_queue = self.__wrapper.get_request_queue(req_id)
+            f_queue = self._wrapper.get_request_queue(req_id)
         except error.IBError as err:
             raise err
 
@@ -142,7 +143,7 @@ class IBClient(ib_client.EClient):
         self.cancelHeadTimeStamp(req_id)
 
         if res:
-            if f_queue.status is fq.Status.ERROR:
+            if f_queue.status is fq._Status.ERROR:
                 if isinstance(res[-1], error.IBError):
                     raise res[-1]
 
@@ -219,18 +220,18 @@ class IBClient(ib_client.EClient):
 
         # Time to fetch the ticks
         try:
-            f_queue = self.__wrapper.get_request_queue(req_id)
+            f_queue = self._wrapper.get_request_queue(req_id)
         except error.IBError as err:
             raise err
 
         all_ticks: list = []
 
         real_start_time = (
-            IBClient.TZ.localize(start) if start.tzinfo is None else start
+            _IBClient.TZ.localize(start) if start.tzinfo is None else start
         )
 
         next_end_time = (
-            IBClient.TZ.localize(end) if end.tzinfo is None else end
+            _IBClient.TZ.localize(end) if end.tzinfo is None else end
         )
 
         finished = False
@@ -241,7 +242,7 @@ class IBClient(ib_client.EClient):
         while not finished:
             self.reqHistoricalTicks(
                 req_id, contract, "",
-                next_end_time.strftime(const.IB.TIME_FMT),
+                next_end_time.strftime(const._IB.TIME_FMT),
                 1000, show, 0, False, []
             )
 
@@ -250,7 +251,7 @@ class IBClient(ib_client.EClient):
                                  ib_wrapper.HistoricalTickLast]],
                       bool] = await f_queue.get()
 
-            if res and f_queue.status is fq.Status.ERROR:
+            if res and f_queue.status is fq._Status.ERROR:
                 # Response received and internal queue reports error
                 if isinstance(res[-1], error.IBError):
                     if all_ticks:
@@ -289,7 +290,7 @@ class IBClient(ib_client.EClient):
                     )
 
                 # Process the data
-                processed_result = self.__process_historical_ticks(
+                processed_result = self._process_historical_ticks(
                     ticks=res[0],
                     start_time=real_start_time,
                     end_time=next_end_time
@@ -300,7 +301,7 @@ class IBClient(ib_client.EClient):
                 print(
                     f"{len(all_ticks)} ticks fetched ("
                     f"{len(processed_result['ticks'])} new ticks); Next end "
-                    f"time - {next_end_time.strftime(const.IB.TIME_FMT)}"
+                    f"time - {next_end_time.strftime(const._IB.TIME_FMT)}"
                 )
 
                 if next_end_time.timestamp() <= real_start_time.timestamp():
@@ -367,7 +368,7 @@ class IBClient(ib_client.EClient):
             )
 
         try:
-            f_queue = self.__wrapper.get_request_queue(req_id)
+            f_queue = self._wrapper.get_request_queue(req_id)
         except error.IBError as err:
             raise err
 
@@ -386,7 +387,7 @@ class IBClient(ib_client.EClient):
                 listener.on_tick_receive(req_id=req_id, tick=elm)
             elif isinstance(elm, error.IBError):
                 listener.on_err(err=elm)
-            elif elm is fq.Status.FINISHED:
+            elif elm is fq._Status.FINISHED:
                 listener.on_finish(req_id=req_id)
 
     def cancel_live_ticks_stream(self, req_id: int):
@@ -396,15 +397,15 @@ class IBClient(ib_client.EClient):
             req_id (int): Request ID (ticker ID in IB API).
 
         Raises:
-            ibpy_native.error.IBError: If there's no `FinishableQueue` object
+            ibpy_native.error.IBError: If there's no `_FinishableQueue` object
                 associated with the specified `req_id` found in the internal
-                `IBWrapper` object.
+                `_IBWrapper` object.
         """
-        f_queue = self.__wrapper.get_request_queue_no_throw(req_id=req_id)
+        f_queue = self._wrapper.get_request_queue_no_throw(req_id=req_id)
 
         if f_queue is not None:
             self.cancelTickByTickData(reqId=req_id)
-            f_queue.put(fq.Status.FINISHED)
+            f_queue.put(fq._Status.FINISHED)
         else:
             raise error.IBError(
                 rid=req_id, err_code=error.IBErrorCode.RES_NOT_FOUND,
@@ -412,7 +413,7 @@ class IBClient(ib_client.EClient):
             )
 
     # Private functions
-    def __process_historical_ticks(
+    def _process_historical_ticks(
             self, ticks: List[Union[ib_wrapper.HistoricalTick,
                                     ib_wrapper.HistoricalTickBidAsk,
                                     ib_wrapper.HistoricalTickLast]],
@@ -472,7 +473,7 @@ class IBClient(ib_client.EClient):
     def _unknown_error(self, req_id: int, extra: Any = None):
         """Constructs `IBError` with error code `UNKNOWN`
 
-        For siturations which internal `FinishableQueue` reports error status
+        For siturations which internal `_FinishableQueue` reports error status
         but not exception received.
 
         Args:

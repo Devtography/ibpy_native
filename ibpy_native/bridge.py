@@ -1,6 +1,7 @@
 """Code implementation of public interface to bridge between the package &
 IB API.
 """
+# pylint: disable=protected-access
 import asyncio
 import datetime
 import threading
@@ -23,12 +24,12 @@ class IBBridge:
     def __init__(self, host='127.0.0.1', port=4001, client_id=1, auto_conn=True,
                  notification_listener: \
                     Optional[listeners.NotificationListener] = None):
-        self.__host = host
-        self.__port = port
-        self.__client_id = client_id
+        self._host = host
+        self._port = port
+        self._client_id = client_id
 
-        self.__wrapper = ib_wrapper.IBWrapper(listener=notification_listener)
-        self.__client = ib_client.IBClient(self.__wrapper)
+        self._wrapper = ib_wrapper._IBWrapper(listener=notification_listener)
+        self._client = ib_client._IBClient(self._wrapper)
 
         if auto_conn:
             self.connect()
@@ -48,7 +49,7 @@ class IBBridge:
             tz (datetime.tzinfo): Timezone. Recommend to set this value via
                 `pytz.timezone(zone: str)`.
         """
-        ib_client.IBClient.TZ = tz
+        ib_client._IBClient.TZ = tz
 
     def set_on_notify_listener(self, listener: listeners.NotificationListener):
         """Setter for optional `NotificationListener`.
@@ -57,30 +58,30 @@ class IBBridge:
             listener (listeners.NotificationListener): Listener for IB
                 notifications.
         """
-        self.__wrapper.set_on_notify_listener(listener=listener)
+        self._wrapper.set_on_notify_listener(listener=listener)
 
     # Connections
     def is_connected(self) -> bool:
         """Check if the bridge is connected to a running & logged in TWS/IB
         Gateway instance.
         """
-        return self.__client.isConnected()
+        return self._client.isConnected()
 
     def connect(self):
         """Connect the bridge to a running & logged in TWS/IB Gateway instance.
         """
         if not self.is_connected():
-            self.__client.connect(self.__host, self.__port, self.__client_id)
+            self._client.connect(self._host, self._port, self._client_id)
 
-            thread = threading.Thread(target=self.__client.run)
+            thread = threading.Thread(target=self._client.run)
             thread.start()
 
-            setattr(self.__client, "_thread", thread)
+            setattr(self._client, "_thread", thread)
 
     def disconnect(self):
         """Disconnect the bridge from the connected TWS/IB Gateway instance.
         """
-        self.__client.disconnect()
+        self._client.disconnect()
 
     ## Interacts with IB APIs
     # Contracts
@@ -107,8 +108,8 @@ class IBBridge:
         contract.symbol = symbol
 
         try:
-            result = await self.__client.resolve_contract(
-                self.__wrapper.next_req_id, contract
+            result = await self._client.resolve_contract(
+                self._wrapper.next_req_id, contract
             )
         except error.IBError as err:
             raise err
@@ -155,8 +156,8 @@ class IBBridge:
         contract.lastTradeDateOrContractMonth = contract_month
 
         try:
-            result = await self.__client.resolve_contract(
-                self.__wrapper.next_req_id, contract
+            result = await self._client.resolve_contract(
+                self._wrapper.next_req_id, contract
             )
         except error.IBError as err:
             raise err
@@ -193,15 +194,15 @@ class IBBridge:
             )
 
         try:
-            result = await self.__client.resolve_head_timestamp(
-                req_id=self.__wrapper.next_req_id, contract=contract,
+            result = await self._client.resolve_head_timestamp(
+                req_id=self._wrapper.next_req_id, contract=contract,
                 show=data_type if data_type == 'TRADES' else 'BID'
             )
         except (ValueError, error.IBError) as err:
             raise err
 
         data_point = datetime.datetime.fromtimestamp(result)\
-            .astimezone(ib_client.IBClient.TZ)
+            .astimezone(ib_client._IBClient.TZ)
 
         return data_point.replace(tzinfo=None)
 
@@ -254,7 +255,7 @@ class IBBridge:
                 attempt(s).
         """
         all_ticks = []
-        next_end_time = ib_client.IBClient.TZ.localize(end)
+        next_end_time = ib_client._IBClient.TZ.localize(end)
 
         # Error checking
         if end.tzinfo is not None or (
@@ -273,11 +274,11 @@ class IBBridge:
 
         try:
             head_timestamp = datetime.datetime.fromtimestamp(
-                await self.__client.resolve_head_timestamp(
-                    self.__wrapper.next_req_id, contract,
+                await self._client.resolve_head_timestamp(
+                    self._wrapper.next_req_id, contract,
                     'TRADES' if data_type == 'TRADES' else 'BID'
                 )
-            ).astimezone(ib_client.IBClient.TZ)
+            ).astimezone(ib_client._IBClient.TZ)
         except (ValueError, error.IBError) as err:
             raise err
 
@@ -286,21 +287,21 @@ class IBBridge:
                 raise ValueError(
                     "Specificed start time is earlier than the earliest "
                     "available datapoint - "
-                    + head_timestamp.strftime(const.IB.TIME_FMT)
+                    + head_timestamp.strftime(const._IB.TIME_FMT)
                 )
             if end.timestamp() < start.timestamp():
                 raise ValueError(
                     "Specificed end time cannot be earlier than start time"
                 )
 
-            start = ib_client.IBClient.TZ.localize(start)
+            start = ib_client._IBClient.TZ.localize(start)
         else:
             start = head_timestamp
 
         if next_end_time.timestamp() < head_timestamp.timestamp():
             raise ValueError(
                 "Specificed end time is earlier than the earliest available "
-                f"datapoint - {head_timestamp.strftime(const.IB.TIME_FMT)}"
+                f"datapoint - {head_timestamp.strftime(const._IB.TIME_FMT)}"
             )
 
         if attempts < 1 and attempts != -1:
@@ -313,8 +314,8 @@ class IBBridge:
             attempts = attempts - 1 if attempts != -1 else attempts
 
             try:
-                ticks = await self.__client.fetch_historical_ticks(
-                    self.__wrapper.next_req_id, contract,
+                ticks = await self._client.fetch_historical_ticks(
+                    self._wrapper.next_req_id, contract,
                     start, next_end_time, data_type
                 )
 
@@ -333,7 +334,7 @@ class IBBridge:
 
                 next_end_time = datetime.datetime.fromtimestamp(
                     ticks[0][0].time
-                ).astimezone(ib_client.IBClient.TZ)
+                ).astimezone(ib_client._IBClient.TZ)
             except ValueError as err:
                 raise err
             except error.IBError as err:
@@ -355,7 +356,7 @@ class IBBridge:
                         # Updates the end time for next attempt
                         next_end_time = datetime.datetime.fromtimestamp(
                             all_ticks[0].time
-                        ).astimezone(ib_client.IBClient.TZ)
+                        ).astimezone(ib_client._IBClient.TZ)
 
                     continue
 
@@ -392,10 +393,10 @@ class IBBridge:
             int: Request identifier. This will be needed to stop the stream
                 started by this function.
         """
-        req_id = self.__wrapper.next_req_id
+        req_id = self._wrapper.next_req_id
 
         asyncio.create_task(
-            self.__client.stream_live_ticks(
+            self._client.stream_live_ticks(
                 req_id=req_id, contract=contract, listener=listener,
                 tick_type=tick_type.value
             )
@@ -414,6 +415,6 @@ class IBBridge:
                 stream associated with.
         """
         try:
-            self.__client.cancel_live_ticks_stream(req_id=stream_id)
+            self._client.cancel_live_ticks_stream(req_id=stream_id)
         except error.IBError as err:
             raise err

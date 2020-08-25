@@ -1,4 +1,5 @@
 """Unit tests for module `ibpy_native.bridge`."""
+# pylint: disable=protected-access
 import asyncio
 import datetime
 import os
@@ -68,17 +69,16 @@ class TestIBBridge(unittest.TestCase):
         """Test function `set_timezone`."""
         ibpy_native.IBBridge.set_timezone(pytz.timezone('Asia/Hong_Kong'))
 
-        self.assertEqual(ibpy_client.IBClient.TZ,
+        self.assertEqual(ibpy_client._IBClient.TZ,
                          pytz.timezone('Asia/Hong_Kong'))
 
         # Reset timezone to New York
         ibpy_native.IBBridge.set_timezone(pytz.timezone('America/New_York'))
-        self.assertEqual(ibpy_client.IBClient.TZ,
+        self.assertEqual(ibpy_client._IBClient.TZ,
                          pytz.timezone('America/New_York'))
 
     def test_set_on_notify_listener(self):
         """Test notification listener supports."""
-        # pylint: disable=protected-access
         class MockListener(listeners.NotificationListener):
             """Mock notification listener"""
             triggered = False
@@ -92,7 +92,7 @@ class TestIBBridge(unittest.TestCase):
         mock_listener = MockListener()
 
         self._bridge.set_on_notify_listener(mock_listener)
-        self._bridge._IBBridge__wrapper.error(
+        self._bridge._wrapper.error(
             reqId=-1, errorCode=1100, errorString="MOCK MSG"
         )
 
@@ -182,7 +182,6 @@ class TestIBBridge(unittest.TestCase):
     @utils.async_test
     async def test_stream_live_ticks(self):
         """Test function `stream_live_ticks`."""
-        # pylint: disable=protected-access
         class MockListener(listeners.LiveTicksListener):
             """Mock notification listener"""
             ticks: List[Union[ib_wrapper.HistoricalTick,
@@ -202,7 +201,7 @@ class TestIBBridge(unittest.TestCase):
             def on_err(self, err: error.IBError):
                 raise err
 
-        client: ibpy_client.IBClient = self._bridge._IBBridge__client
+        client: ibpy_client._IBClient = self._bridge._client
         listener = MockListener()
 
         contract = ib_contract.Contract()
@@ -228,7 +227,6 @@ class TestIBBridge(unittest.TestCase):
     @utils.async_test
     async def test_stop_live_ticks_stream(self):
         """Test functions `stop_live_ticks_stream`."""
-        # pylint: disable=protected-access
         class MockListener(listeners.LiveTicksListener):
             """Mock notification listener"""
             finished: bool = False
@@ -245,7 +243,7 @@ class TestIBBridge(unittest.TestCase):
             def on_err(self, err: error.IBError):
                 raise err
 
-        client: ibpy_client.IBClient = self._bridge._IBBridge__client
+        client: ibpy_client._IBClient = self._bridge._client
         listener = MockListener()
 
         contract = ib_contract.Contract()

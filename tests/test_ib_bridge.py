@@ -92,7 +92,7 @@ class TestIBBridge(unittest.TestCase):
         mock_listener = MockListener()
 
         self._bridge.set_on_notify_listener(mock_listener)
-        self._bridge._IBBridge__wrapper.error(
+        self._bridge._wrapper.error(
             reqId=-1, errorCode=1100, errorString="MOCK MSG"
         )
 
@@ -202,7 +202,7 @@ class TestIBBridge(unittest.TestCase):
             def on_err(self, err: error.IBError):
                 raise err
 
-        client: ibpy_client.IBClient = self._bridge._IBBridge__client
+        client: ibpy_client.IBClient = self._bridge._client
         listener = MockListener()
 
         contract = ib_contract.Contract()
@@ -245,7 +245,7 @@ class TestIBBridge(unittest.TestCase):
             def on_err(self, err: error.IBError):
                 raise err
 
-        client: ibpy_client.IBClient = self._bridge._IBBridge__client
+        client: ibpy_client.IBClient = self._bridge._client
         listener = MockListener()
 
         contract = ib_contract.Contract()

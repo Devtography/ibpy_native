@@ -23,12 +23,12 @@ class IBBridge:
     def __init__(self, host='127.0.0.1', port=4001, client_id=1, auto_conn=True,
                  notification_listener: \
                     Optional[listeners.NotificationListener] = None):
-        self.__host = host
-        self.__port = port
-        self.__client_id = client_id
+        self._host = host
+        self._port = port
+        self._client_id = client_id
 
-        self.__wrapper = ib_wrapper.IBWrapper(listener=notification_listener)
-        self.__client = ib_client.IBClient(self.__wrapper)
+        self._wrapper = ib_wrapper.IBWrapper(listener=notification_listener)
+        self._client = ib_client.IBClient(self._wrapper)
 
         if auto_conn:
             self.connect()
@@ -57,30 +57,30 @@ class IBBridge:
             listener (listeners.NotificationListener): Listener for IB
                 notifications.
         """
-        self.__wrapper.set_on_notify_listener(listener=listener)
+        self._wrapper.set_on_notify_listener(listener=listener)
 
     # Connections
     def is_connected(self) -> bool:
         """Check if the bridge is connected to a running & logged in TWS/IB
         Gateway instance.
         """
-        return self.__client.isConnected()
+        return self._client.isConnected()
 
     def connect(self):
         """Connect the bridge to a running & logged in TWS/IB Gateway instance.
         """
         if not self.is_connected():
-            self.__client.connect(self.__host, self.__port, self.__client_id)
+            self._client.connect(self._host, self._port, self._client_id)
 
-            thread = threading.Thread(target=self.__client.run)
+            thread = threading.Thread(target=self._client.run)
             thread.start()
 
-            setattr(self.__client, "_thread", thread)
+            setattr(self._client, "_thread", thread)
 
     def disconnect(self):
         """Disconnect the bridge from the connected TWS/IB Gateway instance.
         """
-        self.__client.disconnect()
+        self._client.disconnect()
 
     ## Interacts with IB APIs
     # Contracts
@@ -107,8 +107,8 @@ class IBBridge:
         contract.symbol = symbol
 
         try:
-            result = await self.__client.resolve_contract(
-                self.__wrapper.next_req_id, contract
+            result = await self._client.resolve_contract(
+                self._wrapper.next_req_id, contract
             )
         except error.IBError as err:
             raise err
@@ -155,8 +155,8 @@ class IBBridge:
         contract.lastTradeDateOrContractMonth = contract_month
 
         try:
-            result = await self.__client.resolve_contract(
-                self.__wrapper.next_req_id, contract
+            result = await self._client.resolve_contract(
+                self._wrapper.next_req_id, contract
             )
         except error.IBError as err:
             raise err
@@ -193,8 +193,8 @@ class IBBridge:
             )
 
         try:
-            result = await self.__client.resolve_head_timestamp(
-                req_id=self.__wrapper.next_req_id, contract=contract,
+            result = await self._client.resolve_head_timestamp(
+                req_id=self._wrapper.next_req_id, contract=contract,
                 show=data_type if data_type == 'TRADES' else 'BID'
             )
         except (ValueError, error.IBError) as err:
@@ -273,8 +273,8 @@ class IBBridge:
 
         try:
             head_timestamp = datetime.datetime.fromtimestamp(
-                await self.__client.resolve_head_timestamp(
-                    self.__wrapper.next_req_id, contract,
+                await self._client.resolve_head_timestamp(
+                    self._wrapper.next_req_id, contract,
                     'TRADES' if data_type == 'TRADES' else 'BID'
                 )
             ).astimezone(ib_client.IBClient.TZ)
@@ -313,8 +313,8 @@ class IBBridge:
             attempts = attempts - 1 if attempts != -1 else attempts
 
             try:
-                ticks = await self.__client.fetch_historical_ticks(
-                    self.__wrapper.next_req_id, contract,
+                ticks = await self._client.fetch_historical_ticks(
+                    self._wrapper.next_req_id, contract,
                     start, next_end_time, data_type
                 )
 
@@ -392,10 +392,10 @@ class IBBridge:
             int: Request identifier. This will be needed to stop the stream
                 started by this function.
         """
-        req_id = self.__wrapper.next_req_id
+        req_id = self._wrapper.next_req_id
 
         asyncio.create_task(
-            self.__client.stream_live_ticks(
+            self._client.stream_live_ticks(
                 req_id=req_id, contract=contract, listener=listener,
                 tick_type=tick_type.value
             )
@@ -414,6 +414,6 @@ class IBBridge:
                 stream associated with.
         """
         try:
-            self.__client.cancel_live_ticks_stream(req_id=stream_id)
+            self._client.cancel_live_ticks_stream(req_id=stream_id)
         except error.IBError as err:
             raise err

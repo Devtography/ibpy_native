@@ -65,7 +65,7 @@ class TestIBWrapper(unittest.TestCase):
         # pylint: disable=protected-access
         """Test retrieval of next usable request ID."""
         # Prepare the `FinishableQueue` objects in internal `__req_queue`
-        self.wrapper._IBWrapper__req_queue.clear()
+        self.wrapper._req_queue.clear()
         _ = self.wrapper.get_request_queue(req_id=0)
         f_queue = self.wrapper.get_request_queue(req_id=1)
         _ = self.wrapper.get_request_queue(req_id=10)

@@ -39,7 +39,7 @@ class IBClient(ib_client.EClient):
     REQ_TIMEOUT = 10
 
     def __init__(self, wrapper: ibpy_wrapper.IBWrapper):
-        self.__wrapper = wrapper
+        self._wrapper = wrapper
         super().__init__(wrapper)
 
     async def resolve_contract(
@@ -65,7 +65,7 @@ class IBClient(ib_client.EClient):
 
         # Make place to store the data that will be returned
         try:
-            f_queue = self.__wrapper.get_request_queue(req_id)
+            f_queue = self._wrapper.get_request_queue(req_id)
         except error.IBError as err:
             raise err
 
@@ -126,7 +126,7 @@ class IBClient(ib_client.EClient):
             )
 
         try:
-            f_queue = self.__wrapper.get_request_queue(req_id)
+            f_queue = self._wrapper.get_request_queue(req_id)
         except error.IBError as err:
             raise err
 
@@ -219,7 +219,7 @@ class IBClient(ib_client.EClient):
 
         # Time to fetch the ticks
         try:
-            f_queue = self.__wrapper.get_request_queue(req_id)
+            f_queue = self._wrapper.get_request_queue(req_id)
         except error.IBError as err:
             raise err
 
@@ -289,7 +289,7 @@ class IBClient(ib_client.EClient):
                     )
 
                 # Process the data
-                processed_result = self.__process_historical_ticks(
+                processed_result = self._process_historical_ticks(
                     ticks=res[0],
                     start_time=real_start_time,
                     end_time=next_end_time
@@ -367,7 +367,7 @@ class IBClient(ib_client.EClient):
             )
 
         try:
-            f_queue = self.__wrapper.get_request_queue(req_id)
+            f_queue = self._wrapper.get_request_queue(req_id)
         except error.IBError as err:
             raise err
 
@@ -400,7 +400,7 @@ class IBClient(ib_client.EClient):
                 associated with the specified `req_id` found in the internal
                 `IBWrapper` object.
         """
-        f_queue = self.__wrapper.get_request_queue_no_throw(req_id=req_id)
+        f_queue = self._wrapper.get_request_queue_no_throw(req_id=req_id)
 
         if f_queue is not None:
             self.cancelTickByTickData(reqId=req_id)
@@ -412,7 +412,7 @@ class IBClient(ib_client.EClient):
             )
 
     # Private functions
-    def __process_historical_ticks(
+    def _process_historical_ticks(
             self, ticks: List[Union[ib_wrapper.HistoricalTick,
                                     ib_wrapper.HistoricalTickBidAsk,
                                     ib_wrapper.HistoricalTickLast]],

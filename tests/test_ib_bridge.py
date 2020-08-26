@@ -17,7 +17,7 @@ from ibpy_native.interfaces import listeners
 from ibpy_native.internal import client as ibpy_client
 from ibpy_native.utils import datatype as dt
 
-from tests import utils
+from tests.toolkit import utils
 
 TEST_HOST = os.getenv('IB_HOST', '127.0.0.1')
 TEST_PORT = int(os.getenv('IB_PORT', '4002'))

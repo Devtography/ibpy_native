@@ -19,7 +19,7 @@ from ibpy_native.internal import client as ibpy_client
 from ibpy_native.internal import wrapper as ibpy_wrapper
 from ibpy_native.utils import finishable_queue as fq
 
-from tests import utils
+from tests.toolkit import utils
 
 class _MockLiveTicksListener(listeners.LiveTicksListener):
     """Mock live ticks listener for unit test."""

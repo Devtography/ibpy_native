@@ -17,11 +17,33 @@ from ibpy_native.interfaces import listeners
 from ibpy_native.internal import client as ibpy_client
 from ibpy_native.utils import datatype as dt
 
+from tests.toolkit import sample_contracts
 from tests.toolkit import utils
 
 TEST_HOST = os.getenv('IB_HOST', '127.0.0.1')
 TEST_PORT = int(os.getenv('IB_PORT', '4002'))
 TEST_ID = 1001
+
+class _MockLiveTicksListener(listeners.LiveTicksListener):
+    """Mock notification listener"""
+    ticks: List[Union[ib_wrapper.HistoricalTick,
+                      ib_wrapper.HistoricalTickBidAsk,
+                      ib_wrapper.HistoricalTickLast]] = []
+
+    finished: bool = False
+
+    def on_tick_receive(self, req_id: int,
+                        tick: Union[ib_wrapper.HistoricalTick,
+                                    ib_wrapper.HistoricalTickBidAsk,
+                                    ib_wrapper.HistoricalTickLast]):
+        print(tick)
+        self.ticks.append(tick)
+
+    def on_finish(self, req_id: int):
+        self.finished = True
+
+    def on_err(self, err: error.IBError):
+        raise err
 
 class TestIBBridgeConn(unittest.TestCase):
     """Test cases for connection related functions in `IBBridge`."""
@@ -99,14 +121,14 @@ class TestIBBridge(unittest.TestCase):
     @utils.async_test
     async def test_get_us_stock_contract(self):
         """Test function `get_us_stock_contract`."""
-        contract = await self._bridge.get_us_stock_contract('AAPL')
+        contract = await self._bridge.get_us_stock_contract(symbol='AAPL')
 
         self.assertIsInstance(contract, ib_contract.Contract)
 
     @utils.async_test
     async def test_get_us_future_contract(self):
         """Test function `get_us_future_contract`."""
-        contract = await self._bridge.get_us_future_contract('MYM')
+        contract = await self._bridge.get_us_future_contract(symbol='MYM')
         self.assertIsInstance(contract, ib_contract.Contract)
 
         with self.assertRaises(ValueError):
@@ -115,39 +137,36 @@ class TestIBBridge(unittest.TestCase):
     @utils.async_test
     async def test_get_earliest_data_point(self):
         """Test function `get_earliest_data_point`."""
-        contract = await self._bridge.get_us_stock_contract('AAPL')
-
-        head_trade = await self._bridge.get_earliest_data_point(contract)
+        head_trade = await self._bridge.get_earliest_data_point(
+            contract=sample_contracts.us_stock()
+        )
         self.assertEqual(datetime.datetime(1980, 12, 12, 9, 30), head_trade)
 
         head_bid_ask = await self._bridge.get_earliest_data_point(
-            contract, 'BID_ASK'
+            contract=sample_contracts.us_stock(), data_type='BID_ASK'
         )
-        self.assertEqual(datetime.datetime(2004, 1, 23, 9, 30), head_bid_ask)
+        self.assertEqual(datetime.datetime(2008, 12, 29, 7, 0), head_bid_ask)
 
     @utils.async_test
     async def test_get_historical_ticks(self):
         """Test function `get_historical_ticks`."""
-        contract = await self._bridge.get_us_future_contract('mym', '202003')
-
         result = await self._bridge.get_historical_ticks(
-            contract,
-            datetime.datetime(2020, 3, 16, 6, 30),
-            datetime.datetime(2020, 3, 16, 11, 0, 0)
+            contract=sample_contracts.us_stock(),
+            start=datetime.datetime(2020, 3, 16, 9, 30),
+            end=datetime.datetime(2020, 3, 16, 9, 50)
         )
 
-        self.assertGreater(len(result['ticks']), 0)
+        self.assertTrue(result['ticks'])
         self.assertTrue(result['completed'])
 
     @utils.async_test
     async def test_get_historical_ticks_err(self):
         """Test function `get_historical_ticks` for the error cases."""
-        contract = await self._bridge.get_us_stock_contract('AAPL')
-
         # start/end should not contains timezone info
         with self.assertRaises(ValueError):
             await self._bridge.get_historical_ticks(
-                contract, end=pytz.timezone('Asia/Hong_Kong').localize(
+                contract=sample_contracts.us_stock(),
+                end=pytz.timezone('Asia/Hong_Kong').localize(
                     datetime.datetime(2020, 4, 28)
                 )
             )
@@ -155,20 +174,21 @@ class TestIBBridge(unittest.TestCase):
         # Invalid `data_type`
         with self.assertRaises(ValueError):
             await self._bridge.get_historical_ticks(
-                contract,
+                contract=sample_contracts.us_stock(),
                 data_type='BID'
             )
 
         # `start` is earlier than earliest available data point
         with self.assertRaises(ValueError):
             await self._bridge.get_historical_ticks(
-                contract, datetime.datetime(1972, 12, 12)
+                contract=sample_contracts.us_stock(),
+                start=datetime.datetime(1972, 12, 12)
             )
 
         # `end` is earlier than `start`
         with self.assertRaises(ValueError):
             await self._bridge.get_historical_ticks(
-                contract,
+                contract=sample_contracts.us_stock(),
                 start=datetime.datetime(2020, 4, 29, 9, 30),
                 end=datetime.datetime(2020, 4, 28, 9, 30)
             )
@@ -176,46 +196,18 @@ class TestIBBridge(unittest.TestCase):
         # Invalid `attempts` value
         with self.assertRaises(ValueError):
             await self._bridge.get_historical_ticks(
-                contract, attempts=0
+                contract=sample_contracts.us_stock(), attempts=0
             )
 
     @utils.async_test
     async def test_stream_live_ticks(self):
         """Test function `stream_live_ticks`."""
-        class MockListener(listeners.LiveTicksListener):
-            """Mock notification listener"""
-            ticks: List[Union[ib_wrapper.HistoricalTick,
-                              ib_wrapper.HistoricalTickBidAsk,
-                              ib_wrapper.HistoricalTickLast]] = []
-
-            def on_tick_receive(self, req_id: int,
-                                tick: Union[ib_wrapper.HistoricalTick,
-                                            ib_wrapper.HistoricalTickBidAsk,
-                                            ib_wrapper.HistoricalTickLast]):
-                print(tick)
-                self.ticks.append(tick)
-
-            def on_finish(self, req_id: int):
-                pass
-
-            def on_err(self, err: error.IBError):
-                raise err
-
         client: ibpy_client._IBClient = self._bridge._client
-        listener = MockListener()
-
-        contract = ib_contract.Contract()
-        contract.secType = 'CASH'
-        contract.symbol = 'EUR'
-        contract.exchange = 'IDEALPRO'
-        contract.currency = 'GBP'
-
-        resolved = await client.resolve_contract(
-            req_id=1, contract=contract
-        )
+        listener = _MockLiveTicksListener()
 
         req_id = await self._bridge.stream_live_ticks(
-            contract=resolved, listener=listener, tick_type=dt.LiveTicks.BID_ASK
+            contract=sample_contracts.gbp_usd_fx(),
+            listener=listener, tick_type=dt.LiveTicks.BID_ASK
         )
         self.assertIsNotNone(req_id)
 
@@ -227,37 +219,11 @@ class TestIBBridge(unittest.TestCase):
     @utils.async_test
     async def test_stop_live_ticks_stream(self):
         """Test functions `stop_live_ticks_stream`."""
-        class MockListener(listeners.LiveTicksListener):
-            """Mock notification listener"""
-            finished: bool = False
-
-            def on_tick_receive(self, req_id: int,
-                                tick: Union[ib_wrapper.HistoricalTick,
-                                            ib_wrapper.HistoricalTickBidAsk,
-                                            ib_wrapper.HistoricalTickLast]):
-                print(tick)
-
-            def on_finish(self, req_id: int):
-                self.finished = True
-
-            def on_err(self, err: error.IBError):
-                raise err
-
-        client: ibpy_client._IBClient = self._bridge._client
-        listener = MockListener()
-
-        contract = ib_contract.Contract()
-        contract.secType = 'CASH'
-        contract.symbol = 'EUR'
-        contract.exchange = 'IDEALPRO'
-        contract.currency = 'GBP'
-
-        resolved = await client.resolve_contract(
-            req_id=1, contract=contract
-        )
+        listener = _MockLiveTicksListener()
 
         stream_id = await self._bridge.stream_live_ticks(
-            contract=resolved, listener=listener, tick_type=dt.LiveTicks.BID_ASK
+            contract=sample_contracts.gbp_usd_fx(),
+            listener=listener, tick_type=dt.LiveTicks.BID_ASK
         )
 
         await asyncio.sleep(2)

@@ -19,6 +19,7 @@ from ibpy_native.internal import client as ibpy_client
 from ibpy_native.internal import wrapper as ibpy_wrapper
 from ibpy_native.utils import finishable_queue as fq
 
+from tests.toolkit import sample_contracts
 from tests.toolkit import utils
 
 class _MockLiveTicksListener(listeners.LiveTicksListener):
@@ -54,11 +55,6 @@ class Const(enum.IntEnum):
 
 class TestIBClient(unittest.TestCase):
     """Unit tests for class `_IBClient`."""
-    _contract = ib_contract.Contract()
-    _contract.secType = 'CASH'
-    _contract.symbol = 'EUR'
-    _contract.exchange = 'IDEALPRO'
-    _contract.currency = 'GBP'
 
     @classmethod
     def setUpClass(cls):
@@ -81,15 +77,9 @@ class TestIBClient(unittest.TestCase):
     @utils.async_test
     async def test_resolve_contract(self):
         """Test function `resolve_contract`."""
-        contract = ib_contract.Contract()
-        contract.secType = "FUT"
-        contract.lastTradeDateOrContractMonth = "202006"
-        contract.symbol = "MYM"
-        contract.exchange = "ECBOT"
-        contract.includeExpired = True
-
         resolved_contract = await self._client.resolve_contract(
-            Const.RID_RESOLVE_CONTRACT.value, contract
+            req_id=Const.RID_RESOLVE_CONTRACT.value,
+            contract=sample_contracts.gbp_usd_fx()
         )
 
         self.assertIsNotNone(resolved_contract)
@@ -98,15 +88,9 @@ class TestIBClient(unittest.TestCase):
     @utils.async_test
     async def test_resolve_head_timestamp(self):
         """Test function `resolve_head_timestamp`."""
-        resolved_contract = await self._client.resolve_contract(
-            Const.RID_RESOLVE_CONTRACT.value, self._contract
-        )
-
-        print(resolved_contract)
-
         head_timestamp = await self._client.resolve_head_timestamp(
-            Const.RID_RESOLVE_HEAD_TIMESTAMP.value,
-            resolved_contract,
+            req_id=Const.RID_RESOLVE_HEAD_TIMESTAMP.value,
+            contract=sample_contracts.us_future(),
             show='BID'
         )
 
@@ -118,71 +102,66 @@ class TestIBClient(unittest.TestCase):
     @utils.async_test
     async def test_fetch_historical_ticks(self):
         """Test function `fetch_historical_ticks`."""
-
-        resolved_contract = await self._client.resolve_contract(
-            Const.RID_RESOLVE_CONTRACT.value, self._contract
-        )
-
         data = await self._client.fetch_historical_ticks(
-            Const.RID_FETCH_HISTORICAL_TICKS.value, resolved_contract,
+            req_id=Const.RID_FETCH_HISTORICAL_TICKS.value,
+            contract=sample_contracts.gbp_usd_fx(),
             start=ibpy_client._IBClient.TZ.localize(datetime\
                 .datetime(2020, 4, 29, 10, 30, 0)),
             end=ibpy_client._IBClient.TZ.localize(datetime\
-                .datetime(2020, 4, 29, 10, 31, 0)),
+                .datetime(2020, 4, 29, 10, 35, 0)),
             show='MIDPOINT'
         )
 
         self.assertIsInstance(data[0], list)
-        self.assertTrue(data[1], True)
-        self.assertGreater(len(data[0]), 0)
+        self.assertTrue(data[1])
+        self.assertTrue(data[0])
         self.assertIsInstance(data[0][0], ib_wrapper.HistoricalTick)
 
         data = await self._client.fetch_historical_ticks(
-            Const.RID_FETCH_HISTORICAL_TICKS.value, resolved_contract,
+            req_id=Const.RID_FETCH_HISTORICAL_TICKS.value,
+            contract=sample_contracts.gbp_usd_fx(),
             start=ibpy_client._IBClient.TZ.localize(datetime\
                 .datetime(2020, 4, 29, 10, 30, 0)),
             end=ibpy_client._IBClient.TZ.localize(datetime\
-                .datetime(2020, 4, 29, 10, 31, 0)),
+                .datetime(2020, 4, 29, 10, 35, 0)),
             show='BID_ASK'
         )
 
         self.assertIsInstance(data[0], list)
-        self.assertTrue(data[1], True)
-        self.assertGreater(len(data[0]), 0)
+        self.assertTrue(data[1])
+        self.assertTrue(data[0])
         self.assertIsInstance(data[0][0], ib_wrapper.HistoricalTickBidAsk)
 
     @utils.async_test
     async def test_fetch_historical_ticks_err(self):
         """Test function `fetch_historical_ticks` for the error cases."""
-        resolved_contract = await self._client.resolve_contract(
-            Const.RID_RESOLVE_CONTRACT.value, self._contract
-        )
-
         # Incorrect value of `show`
         with self.assertRaises(ValueError):
             await self._client.fetch_historical_ticks(
-                Const.RID_FETCH_HISTORICAL_TICKS_ERR.value, resolved_contract,
-                datetime.datetime.now(), show='LAST'
+                req_id=Const.RID_FETCH_HISTORICAL_TICKS_ERR.value,
+                contract=sample_contracts.gbp_usd_fx(),
+                start=datetime.datetime.now(), show='LAST'
             )
 
         # Timezone of start & end are not identical
         with self.assertRaises(ValueError):
             await self._client.fetch_historical_ticks(
-                Const.RID_FETCH_HISTORICAL_TICKS_ERR.value, resolved_contract,
-                datetime.datetime.now()\
+                req_id=Const.RID_FETCH_HISTORICAL_TICKS_ERR.value,
+                contract=sample_contracts.gbp_usd_fx(),
+                start=datetime.datetime.now()\
                     .astimezone(pytz.timezone('Asia/Hong_Kong')),
-                datetime.datetime.now()\
+                end=datetime.datetime.now()\
                     .astimezone(pytz.timezone('America/New_York'))
             )
 
         # Invalid contract object
         with self.assertRaises(error.IBError):
             await self._client.fetch_historical_ticks(
-                Const.RID_FETCH_HISTORICAL_TICKS_ERR.value,
-                ib_contract.Contract(),
-                datetime.datetime(2020, 5, 20, 3, 20, 0)\
+                req_id=Const.RID_FETCH_HISTORICAL_TICKS_ERR.value,
+                contract=ib_contract.Contract(),
+                start=datetime.datetime(2020, 5, 20, 3, 20, 0)\
                     .astimezone(ibpy_client._IBClient.TZ),
-                datetime.datetime.now().astimezone(ibpy_client._IBClient.TZ)
+                end=datetime.datetime.now().astimezone(ibpy_client._IBClient.TZ)
             )
 
     @utils.async_test
@@ -199,16 +178,12 @@ class TestIBClient(unittest.TestCase):
             )
             queue.put(fq._Status.FINISHED)
 
-        resolved_contract = await self._client.resolve_contract(
-            req_id=Const.RID_RESOLVE_CONTRACT.value, contract=self._contract
-        )
-
         listener = _MockLiveTicksListener()
 
         stream = asyncio.create_task(
             self._client.stream_live_ticks(
                 req_id=Const.RID_STREAM_LIVE_TICKS.value,
-                contract=resolved_contract,
+                contract=sample_contracts.gbp_usd_fx(),
                 listener=listener,
                 tick_type='BidAsk'
             )
@@ -225,7 +200,7 @@ class TestIBClient(unittest.TestCase):
 
             raise err
 
-        self.assertGreater(len(listener.ticks), 0)
+        self.assertTrue(listener.ticks)
         self.assertTrue(listener.finished)
 
     @utils.async_test
@@ -237,16 +212,12 @@ class TestIBClient(unittest.TestCase):
                 req_id=Const.RID_CANCEL_LIVE_TICKS_STREAM.value
             )
 
-        resolved_contract = await self._client.resolve_contract(
-            req_id=Const.RID_RESOLVE_CONTRACT.value, contract=self._contract
-        )
-
         listener = _MockLiveTicksListener()
 
         stream = asyncio.create_task(
             self._client.stream_live_ticks(
                 req_id=Const.RID_CANCEL_LIVE_TICKS_STREAM.value,
-                contract=resolved_contract,
+                contract=sample_contracts.gbp_usd_fx(),
                 listener=listener,
                 tick_type='BidAsk'
             )

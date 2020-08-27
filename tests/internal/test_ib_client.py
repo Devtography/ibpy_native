@@ -156,7 +156,7 @@ class TestIBClient(unittest.TestCase):
                 req_id=Const.RID_STREAM_LIVE_TICKS.value,
                 contract=sample_contracts.gbp_usd_fx(),
                 listener=listener,
-                tick_type='BidAsk'
+                tick_type=dt.LiveTicks.BID_ASK
             )
         )
         cancel = asyncio.create_task(cancel_req())
@@ -190,7 +190,7 @@ class TestIBClient(unittest.TestCase):
                 req_id=Const.RID_CANCEL_LIVE_TICKS_STREAM.value,
                 contract=sample_contracts.gbp_usd_fx(),
                 listener=listener,
-                tick_type='BidAsk'
+                tick_type=dt.LiveTicks.BID_ASK
             )
         )
         cancel = asyncio.create_task(cancel_req())

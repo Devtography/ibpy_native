@@ -385,7 +385,7 @@ class IBBridge:
         asyncio.create_task(
             self._client.stream_live_ticks(
                 req_id=req_id, contract=contract, listener=listener,
-                tick_type=tick_type.value
+                tick_type=tick_type
             )
         )
 

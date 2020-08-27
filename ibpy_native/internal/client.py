@@ -4,7 +4,7 @@ import datetime
 from typing import Any, List, Optional, Tuple, Union
 
 import pytz
-from typing_extensions import Literal, TypedDict
+from typing_extensions import TypedDict
 
 from ibapi import client as ib_client
 from ibapi import contract as ib_contract
@@ -323,7 +323,7 @@ class _IBClient(ib_client.EClient):
     async def stream_live_ticks(
             self, req_id: int, contract: ib_contract.Contract,
             listener: listeners.LiveTicksListener,
-            tick_type: Literal['Last', 'AllLast', 'BidAsk', 'MidPoint'] = 'Last'
+            tick_type: Optional[dt.LiveTicks] = dt.LiveTicks.LAST
         ):
         """Request to stream live tick data.
 
@@ -342,20 +342,13 @@ class _IBClient(ib_client.EClient):
                 being used by other tasks.
 
         Note:
-            The value of `tick_type` is case sensitive - it must be `"BidAsk"`,
-            `"Last"`, `"AllLast"`, `"MidPoint"`. `"AllLast"` has additional
-            trade types such as combos, derivatives, and average price trades
-            which are not included in `"Last"`.
+            The value `ibpy_native.utils.datatype.LiveTicks.ALL_LAST` of
+            argument `tick_type` has additional trade types such as combos,
+            derivatives, and average price trades which are not included in
+            `ibpy_native.utils.datatype.LiveTicks.LAST`.
             Also, this function depends on `live_ticks_listener` to return
             live ticks received. The listener should be set explicitly.
         """
-        # Error checking
-        if tick_type not in {'Last', 'AllLast', 'BidAsk', 'MidPoint'}:
-            raise ValueError(
-                "Value of argument `tick_type` can only be either 'Last', "
-                "'AllLast', 'BidAsk', or 'MidPoint'"
-            )
-
         try:
             f_queue = self._wrapper.get_request_queue(req_id)
         except error.IBError as err:
@@ -365,7 +358,7 @@ class _IBClient(ib_client.EClient):
               "instrument from IB...")
 
         self.reqTickByTickData(
-            reqId=req_id, contract=contract, tickType=tick_type,
+            reqId=req_id, contract=contract, tickType=tick_type.value,
             numberOfTicks=0, ignoreSize=True
         )
 

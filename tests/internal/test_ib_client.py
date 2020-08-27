@@ -6,7 +6,6 @@ import enum
 import os
 import threading
 import unittest
-from typing import List, Union
 
 import pytz
 
@@ -14,33 +13,12 @@ from ibapi import contract as ib_contract
 from ibapi import wrapper as ib_wrapper
 
 from ibpy_native import error
-from ibpy_native.interfaces import listeners
 from ibpy_native.internal import client as ibpy_client
 from ibpy_native.internal import wrapper as ibpy_wrapper
 from ibpy_native.utils import finishable_queue as fq
 
 from tests.toolkit import sample_contracts
 from tests.toolkit import utils
-
-class _MockLiveTicksListener(listeners.LiveTicksListener):
-    """Mock live ticks listener for unit test."""
-    ticks: List[Union[ib_wrapper.HistoricalTick,
-                      ib_wrapper.HistoricalTickBidAsk,
-                      ib_wrapper.HistoricalTickLast]] = []
-    finished: bool = False
-
-    def on_tick_receive(self, req_id: int,
-                        tick: Union[ib_wrapper.HistoricalTick,
-                                    ib_wrapper.HistoricalTickBidAsk,
-                                    ib_wrapper.HistoricalTickLast]):
-        print(tick)
-        self.ticks.append(tick)
-
-    def on_finish(self, req_id: int):
-        self.finished = True
-
-    def on_err(self, err: error.IBError):
-        raise err
 
 class Const(enum.IntEnum):
     """Predefined request IDs for tests in `TestIBClient`."""
@@ -178,7 +156,7 @@ class TestIBClient(unittest.TestCase):
             )
             queue.put(fq._Status.FINISHED)
 
-        listener = _MockLiveTicksListener()
+        listener = utils.MockLiveTicksListener()
 
         stream = asyncio.create_task(
             self._client.stream_live_ticks(
@@ -212,7 +190,7 @@ class TestIBClient(unittest.TestCase):
                 req_id=Const.RID_CANCEL_LIVE_TICKS_STREAM.value
             )
 
-        listener = _MockLiveTicksListener()
+        listener = utils.MockLiveTicksListener()
 
         stream = asyncio.create_task(
             self._client.stream_live_ticks(

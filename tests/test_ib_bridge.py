@@ -4,12 +4,10 @@ import asyncio
 import datetime
 import os
 import unittest
-from typing import List, Union
 
 import pytz
 
 from ibapi import contract as ib_contract
-from ibapi import wrapper as ib_wrapper
 
 import ibpy_native
 from ibpy_native import error
@@ -23,27 +21,6 @@ from tests.toolkit import utils
 TEST_HOST = os.getenv('IB_HOST', '127.0.0.1')
 TEST_PORT = int(os.getenv('IB_PORT', '4002'))
 TEST_ID = 1001
-
-class _MockLiveTicksListener(listeners.LiveTicksListener):
-    """Mock notification listener"""
-    ticks: List[Union[ib_wrapper.HistoricalTick,
-                      ib_wrapper.HistoricalTickBidAsk,
-                      ib_wrapper.HistoricalTickLast]] = []
-
-    finished: bool = False
-
-    def on_tick_receive(self, req_id: int,
-                        tick: Union[ib_wrapper.HistoricalTick,
-                                    ib_wrapper.HistoricalTickBidAsk,
-                                    ib_wrapper.HistoricalTickLast]):
-        print(tick)
-        self.ticks.append(tick)
-
-    def on_finish(self, req_id: int):
-        self.finished = True
-
-    def on_err(self, err: error.IBError):
-        raise err
 
 class TestIBBridgeConn(unittest.TestCase):
     """Test cases for connection related functions in `IBBridge`."""
@@ -203,7 +180,7 @@ class TestIBBridge(unittest.TestCase):
     async def test_stream_live_ticks(self):
         """Test function `stream_live_ticks`."""
         client: ibpy_client._IBClient = self._bridge._client
-        listener = _MockLiveTicksListener()
+        listener = utils.MockLiveTicksListener()
 
         req_id = await self._bridge.stream_live_ticks(
             contract=sample_contracts.gbp_usd_fx(),
@@ -219,7 +196,7 @@ class TestIBBridge(unittest.TestCase):
     @utils.async_test
     async def test_stop_live_ticks_stream(self):
         """Test functions `stop_live_ticks_stream`."""
-        listener = _MockLiveTicksListener()
+        listener = utils.MockLiveTicksListener()
 
         stream_id = await self._bridge.stream_live_ticks(
             contract=sample_contracts.gbp_usd_fx(),

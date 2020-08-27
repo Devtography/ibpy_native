@@ -167,7 +167,8 @@ class IBBridge:
     # Historical data
     async def get_earliest_data_point(
             self, contract: ib_contract.Contract,
-            data_type: Literal['BID_ASK', 'TRADES'] = 'TRADES'
+            data_type: Optional[dt.EarliestDataPoint] = \
+                dt.EarliestDataPoint.TRADES
         ) -> datetime:
         """Returns the earliest data point of specified contract.
 
@@ -183,22 +184,15 @@ class IBBridge:
                 `IBBridge`.
 
         Raises:
-            ValueError: If `data_type` is not 'BID_ASK' nor 'TRADES'.
             ibpy_native.error.IBError: If there is either connection related
                 issue, IB returns 0 or multiple results.
         """
-        if data_type not in {'BID_ASK', 'TRADES'}:
-            raise ValueError(
-                "Value of argument `data_type` can only be either 'BID_ASK' "
-                "or 'TRADES'"
-            )
-
         try:
             result = await self._client.resolve_head_timestamp(
                 req_id=self._wrapper.next_req_id, contract=contract,
-                show=data_type if data_type == 'TRADES' else 'BID'
+                show=data_type
             )
-        except (ValueError, error.IBError) as err:
+        except error.IBError as err:
             raise err
 
         data_point = datetime.datetime.fromtimestamp(result)\
@@ -276,7 +270,8 @@ class IBBridge:
             head_timestamp = datetime.datetime.fromtimestamp(
                 await self._client.resolve_head_timestamp(
                     req_id=self._wrapper.next_req_id, contract=contract,
-                    show='TRADES' if data_type == 'TRADES' else 'BID'
+                    show=dt.EarliestDataPoint.TRADES if data_type == 'TRADES' \
+                        else dt.EarliestDataPoint.BID
                 )
             ).astimezone(tz=ib_client._IBClient.TZ)
         except (ValueError, error.IBError) as err:

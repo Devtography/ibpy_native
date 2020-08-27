@@ -6,6 +6,13 @@ from typing_extensions import TypedDict
 from ibapi import wrapper
 
 @enum.unique
+class EarliestDataPoint(enum.Enum):
+    """Data type options defined for earliest data point."""
+    BID = 'BID'
+    ASK = 'ASK'
+    TRADES = 'TRADES'
+
+@enum.unique
 class LiveTicks(enum.Enum):
     """Data types defined for live tick data."""
     ALL_LAST = 'AllLast'

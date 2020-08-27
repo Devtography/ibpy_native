@@ -120,10 +120,11 @@ class TestIBBridge(unittest.TestCase):
         )
         self.assertEqual(datetime.datetime(1980, 12, 12, 9, 30), head_trade)
 
-        head_bid_ask = await self._bridge.get_earliest_data_point(
-            contract=sample_contracts.us_stock(), data_type='BID_ASK'
+        head_bid = await self._bridge.get_earliest_data_point(
+            contract=sample_contracts.us_stock(),
+            data_type=dt.EarliestDataPoint.BID
         )
-        self.assertEqual(datetime.datetime(2008, 12, 29, 7, 0), head_bid_ask)
+        self.assertEqual(datetime.datetime(2008, 12, 29, 7, 0), head_bid)
 
     @utils.async_test
     async def test_get_historical_ticks(self):

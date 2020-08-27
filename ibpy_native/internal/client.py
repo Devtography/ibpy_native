@@ -1,7 +1,7 @@
 """Code implementation for `EClient` related stuffs"""
 # pylint: disable=protected-access
 import datetime
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 import pytz
 from typing_extensions import Literal, TypedDict
@@ -14,6 +14,7 @@ from ibpy_native import error
 from ibpy_native.interfaces import listeners
 from ibpy_native.internal import wrapper as ibpy_wrapper
 from ibpy_native.utils import const
+from ibpy_native.utils import datatype as dt
 from ibpy_native.utils import finishable_queue as fq
 
 class _ProcessHistoricalTicksResult(TypedDict):
@@ -98,7 +99,7 @@ class _IBClient(ib_client.EClient):
 
     async def resolve_head_timestamp(
             self, req_id: int, contract: ib_contract.Contract,
-            show: Literal['BID', 'ASK', 'TRADES'] = 'TRADES'
+            show: Optional[dt.EarliestDataPoint] = dt.EarliestDataPoint.TRADES
         ) -> int:
         """Fetch the earliest available data point for a given instrument
         from IB.
@@ -120,12 +121,6 @@ class _IBClient(ib_client.EClient):
                 - no element found in received result;
                 - multiple elements found in received result.
         """
-        if show not in {'BID', 'ASK', 'TRADES'}:
-            raise ValueError(
-                "Value of argument `show` can only be either 'BID', 'ASK', or "
-                "'TRADES'"
-            )
-
         try:
             f_queue = self._wrapper.get_request_queue(req_id=req_id)
         except error.IBError as err:
@@ -135,7 +130,7 @@ class _IBClient(ib_client.EClient):
               "instrument from IB... ")
 
         self.reqHeadTimeStamp(reqId=req_id, contract=contract,
-                              whatToShow=show, useRTH=0, formatDate=2)
+                              whatToShow=show.value, useRTH=0, formatDate=2)
 
         res = await f_queue.get()
 

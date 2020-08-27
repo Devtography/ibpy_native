@@ -161,8 +161,9 @@ class _IBClient(ib_client.EClient):
     async def fetch_historical_ticks(
             self, req_id: int, contract: ib_contract.Contract,
             start: datetime.datetime,
-            end: datetime.datetime = datetime.datetime.now().astimezone(TZ),
-            show: Literal['MIDPOINT', 'BID_ASK', 'TRADES'] = 'TRADES'
+            end: Optional[datetime.datetime] = datetime.datetime.now()\
+                .astimezone(TZ),
+            show: Optional[dt.HistoricalTicks] = dt.HistoricalTicks.TRADES
         ) -> Tuple[List[Union[ib_wrapper.HistoricalTick,
                               ib_wrapper.HistoricalTickBidAsk,
                               ib_wrapper.HistoricalTickLast]],
@@ -185,7 +186,6 @@ class _IBClient(ib_client.EClient):
 
         Raises:
             ValueError: If
-                - `show` is not 'MIDPOINT', 'BIDASK' or 'TRADES';
                 - `tzinfo` of `start` & `end` do not align;
                 - Value of start` > `end`.
             ibpy_native.error.IBError: If
@@ -198,12 +198,6 @@ class _IBClient(ib_client.EClient):
                 from IB with no tick fetched in pervious request(s).
         """
         # Pre-process & error checking
-        if show not in {'MIDPOINT', 'BID_ASK', 'TRADES'}:
-            raise ValueError(
-                "Value of argument `show` can only be either 'MIDPOINT', "
-                "'BID_ASK', or 'TRADES'"
-            )
-
         if type(start.tzinfo) is not type(end.tzinfo):
             raise ValueError(
                 "Timezone of the start time and end time must be the same"
@@ -237,7 +231,7 @@ class _IBClient(ib_client.EClient):
             self.reqHistoricalTicks(
                 reqId=req_id, contract=contract, startDateTime="",
                 endDateTime=next_end_time.strftime(const._IB.TIME_FMT),
-                numberOfTicks=1000, whatToShow=show, useRth=0,
+                numberOfTicks=1000, whatToShow=show.value, useRth=0,
                 ignoreSize=False, miscOptions=[]
             )
 

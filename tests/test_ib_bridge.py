@@ -150,13 +150,6 @@ class TestIBBridge(unittest.TestCase):
                 )
             )
 
-        # Invalid `data_type`
-        with self.assertRaises(ValueError):
-            await self._bridge.get_historical_ticks(
-                contract=sample_contracts.us_stock(),
-                data_type='BID'
-            )
-
         # `start` is earlier than earliest available data point
         with self.assertRaises(ValueError):
             await self._bridge.get_historical_ticks(

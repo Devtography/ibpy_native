@@ -7,8 +7,6 @@ import datetime
 import threading
 from typing import Optional
 
-from typing_extensions import Literal
-
 from ibapi import contract as ib_contract
 
 from ibpy_native import error
@@ -203,9 +201,9 @@ class IBBridge:
     async def get_historical_ticks(
             self, contract: ib_contract.Contract,
             start: datetime.datetime = None,
-            end: datetime.datetime = datetime.datetime.now(),
-            data_type: Literal['MIDPOINT', 'BID_ASK', 'TRADES'] = 'TRADES',
-            attempts: int = 1
+            end: Optional[datetime.datetime] = datetime.datetime.now(),
+            data_type: Optional[dt.HistoricalTicks] = dt.HistoricalTicks.TRADES,
+            attempts: Optional[int] = 1
         ) -> dt.HistoricalTicksResult:
         """Retrieve historical ticks data for specificed instrument/contract
         from IB.
@@ -237,7 +235,6 @@ class IBBridge:
         Raises:
             ValueError: If
                 - argument `start` or `end` contains the timezone info;
-                - `data_type` is not 'MIDPOINT', 'BID_ASK' or 'TRADES';
                 - timestamp of `start` is earlier than the earliest available
                 datapoint.
                 - timestamp of `end` is earlier than `start` or earliest
@@ -260,21 +257,16 @@ class IBBridge:
                 "Timezone should not be specified in either `start` or `end`."
             )
 
-        if data_type not in {'MIDPOINT', 'BID_ASK', 'TRADES'}:
-            raise ValueError(
-                "Value of argument `data_type` can only be either 'MIDPOINT', "
-                "'BID_ASK', or 'TRADES'"
-            )
-
         try:
             head_timestamp = datetime.datetime.fromtimestamp(
                 await self._client.resolve_head_timestamp(
                     req_id=self._wrapper.next_req_id, contract=contract,
-                    show=dt.EarliestDataPoint.TRADES if data_type == 'TRADES' \
+                    show=dt.EarliestDataPoint.TRADES if \
+                        data_type is dt.HistoricalTicks.TRADES \
                         else dt.EarliestDataPoint.BID
                 )
             ).astimezone(tz=ib_client._IBClient.TZ)
-        except (ValueError, error.IBError) as err:
+        except error.IBError as err:
             raise err
 
         if start is not None:

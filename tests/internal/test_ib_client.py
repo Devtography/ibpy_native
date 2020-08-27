@@ -88,7 +88,7 @@ class TestIBClient(unittest.TestCase):
                 .datetime(2020, 4, 29, 10, 30, 0)),
             end=ibpy_client._IBClient.TZ.localize(datetime\
                 .datetime(2020, 4, 29, 10, 35, 0)),
-            show='MIDPOINT'
+            show=dt.HistoricalTicks.MIDPOINT
         )
 
         self.assertIsInstance(data[0], list)
@@ -103,7 +103,7 @@ class TestIBClient(unittest.TestCase):
                 .datetime(2020, 4, 29, 10, 30, 0)),
             end=ibpy_client._IBClient.TZ.localize(datetime\
                 .datetime(2020, 4, 29, 10, 35, 0)),
-            show='BID_ASK'
+            show=dt.HistoricalTicks.BID_ASK
         )
 
         self.assertIsInstance(data[0], list)
@@ -114,14 +114,6 @@ class TestIBClient(unittest.TestCase):
     @utils.async_test
     async def test_fetch_historical_ticks_err(self):
         """Test function `fetch_historical_ticks` for the error cases."""
-        # Incorrect value of `show`
-        with self.assertRaises(ValueError):
-            await self._client.fetch_historical_ticks(
-                req_id=Const.RID_FETCH_HISTORICAL_TICKS_ERR.value,
-                contract=sample_contracts.gbp_usd_fx(),
-                start=datetime.datetime.now(), show='LAST'
-            )
-
         # Timezone of start & end are not identical
         with self.assertRaises(ValueError):
             await self._client.fetch_historical_ticks(

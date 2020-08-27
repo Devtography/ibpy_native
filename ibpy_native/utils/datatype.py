@@ -13,12 +13,11 @@ class EarliestDataPoint(enum.Enum):
     TRADES = 'TRADES'
 
 @enum.unique
-class LiveTicks(enum.Enum):
-    """Data types defined for live tick data."""
-    ALL_LAST = 'AllLast'
-    BID_ASK = 'BidAsk'
-    MIDPOINT = 'MidPoint'
-    LAST = 'Last'
+class HistoricalTicks(enum.Enum):
+    """Data type options defined for fetching historical ticks."""
+    BID_ASK = 'BID_ASK'
+    MIDPOINT = 'MIDPOINT'
+    TRADES = 'TRADES'
 
 class HistoricalTicksResult(TypedDict):
     """Use to type hint the returns of `IBBridge.get_historical_ticks`."""
@@ -28,3 +27,11 @@ class HistoricalTicksResult(TypedDict):
         wrapper.HistoricalTickLast
     ]
     completed: bool
+
+@enum.unique
+class LiveTicks(enum.Enum):
+    """Data types defined for live tick data."""
+    ALL_LAST = 'AllLast'
+    BID_ASK = 'BidAsk'
+    MIDPOINT = 'MidPoint'
+    LAST = 'Last'

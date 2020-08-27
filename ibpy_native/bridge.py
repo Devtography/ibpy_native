@@ -29,7 +29,7 @@ class IBBridge:
         self._client_id = client_id
 
         self._wrapper = ib_wrapper._IBWrapper(listener=notification_listener)
-        self._client = ib_client._IBClient(self._wrapper)
+        self._client = ib_client._IBClient(wrapper=self._wrapper)
 
         if auto_conn:
             self.connect()
@@ -109,7 +109,7 @@ class IBBridge:
 
         try:
             result = await self._client.resolve_contract(
-                self._wrapper.next_req_id, contract
+                req_id=self._wrapper.next_req_id, contract=contract
             )
         except error.IBError as err:
             raise err
@@ -157,7 +157,7 @@ class IBBridge:
 
         try:
             result = await self._client.resolve_contract(
-                self._wrapper.next_req_id, contract
+                req_id=self._wrapper.next_req_id, contract=contract
             )
         except error.IBError as err:
             raise err
@@ -255,7 +255,7 @@ class IBBridge:
                 attempt(s).
         """
         all_ticks = []
-        next_end_time = ib_client._IBClient.TZ.localize(end)
+        next_end_time = ib_client._IBClient.TZ.localize(dt=end)
 
         # Error checking
         if end.tzinfo is not None or (
@@ -275,10 +275,10 @@ class IBBridge:
         try:
             head_timestamp = datetime.datetime.fromtimestamp(
                 await self._client.resolve_head_timestamp(
-                    self._wrapper.next_req_id, contract,
-                    'TRADES' if data_type == 'TRADES' else 'BID'
+                    req_id=self._wrapper.next_req_id, contract=contract,
+                    show='TRADES' if data_type == 'TRADES' else 'BID'
                 )
-            ).astimezone(ib_client._IBClient.TZ)
+            ).astimezone(tz=ib_client._IBClient.TZ)
         except (ValueError, error.IBError) as err:
             raise err
 
@@ -287,14 +287,14 @@ class IBBridge:
                 raise ValueError(
                     "Specificed start time is earlier than the earliest "
                     "available datapoint - "
-                    + head_timestamp.strftime(const._IB.TIME_FMT)
+                    f"{head_timestamp.strftime(const._IB.TIME_FMT)}"
                 )
             if end.timestamp() < start.timestamp():
                 raise ValueError(
                     "Specificed end time cannot be earlier than start time"
                 )
 
-            start = ib_client._IBClient.TZ.localize(start)
+            start = ib_client._IBClient.TZ.localize(dt=start)
         else:
             start = head_timestamp
 
@@ -315,8 +315,8 @@ class IBBridge:
 
             try:
                 ticks = await self._client.fetch_historical_ticks(
-                    self._wrapper.next_req_id, contract,
-                    start, next_end_time, data_type
+                    req_id=self._wrapper.next_req_id, contract=contract,
+                    start=start, end=next_end_time, show=data_type
                 )
 
                 #  `ticks[1]` is a boolean represents if the data are all

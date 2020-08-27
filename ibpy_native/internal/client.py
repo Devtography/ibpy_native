@@ -66,13 +66,13 @@ class _IBClient(ib_client.EClient):
 
         # Make place to store the data that will be returned
         try:
-            f_queue = self._wrapper.get_request_queue(req_id)
+            f_queue = self._wrapper.get_request_queue(req_id=req_id)
         except error.IBError as err:
             raise err
 
         print("Getting full contract details from IB...")
 
-        self.reqContractDetails(req_id, contract)
+        self.reqContractDetails(reqId=req_id, contract=contract)
 
         # Run until we get a valid contract(s)
         res = await f_queue.get()
@@ -92,8 +92,8 @@ class _IBClient(ib_client.EClient):
             return resolved_contract
 
         raise error.IBError(
-            req_id, error.IBErrorCode.RES_NO_CONTENT,
-            "Failed to get additional contract details"
+            rid=req_id, err_code=error.IBErrorCode.RES_NO_CONTENT,
+            err_str="Failed to get additional contract details"
         )
 
     async def resolve_head_timestamp(
@@ -127,20 +127,21 @@ class _IBClient(ib_client.EClient):
             )
 
         try:
-            f_queue = self._wrapper.get_request_queue(req_id)
+            f_queue = self._wrapper.get_request_queue(req_id=req_id)
         except error.IBError as err:
             raise err
 
         print("Getting earliest available data point for the given "
               "instrument from IB... ")
 
-        self.reqHeadTimeStamp(req_id, contract, show, 0, 2)
+        self.reqHeadTimeStamp(reqId=req_id, contract=contract,
+                              whatToShow=show, useRTH=0, formatDate=2)
 
         res = await f_queue.get()
 
         # Cancel the head time stamp request to release the ID after the
         # request queue is finished
-        self.cancelHeadTimeStamp(req_id)
+        self.cancelHeadTimeStamp(reqId=req_id)
 
         if res:
             if f_queue.status is fq._Status.ERROR:
@@ -151,15 +152,15 @@ class _IBClient(ib_client.EClient):
 
             if len(res) > 1:
                 raise error.IBError(
-                    req_id, error.IBErrorCode.RES_UNEXPECTED,
-                    "[Abnormal] Multiple result received"
+                    rid=req_id, err_code=error.IBErrorCode.RES_UNEXPECTED,
+                    err_str="[Abnormal] Multiple result received"
                 )
 
             return int(res[0])
 
         raise error.IBError(
-            req_id, error.IBErrorCode.RES_NO_CONTENT,
-            "Failed to get the earliest available data point"
+            rid=req_id, err_code=error.IBErrorCode.RES_NO_CONTENT,
+            err_str="Failed to get the earliest available data point"
         )
 
     async def fetch_historical_ticks(
@@ -220,19 +221,17 @@ class _IBClient(ib_client.EClient):
 
         # Time to fetch the ticks
         try:
-            f_queue = self._wrapper.get_request_queue(req_id)
+            f_queue = self._wrapper.get_request_queue(req_id=req_id)
         except error.IBError as err:
             raise err
 
         all_ticks: list = []
 
-        real_start_time = (
-            _IBClient.TZ.localize(start) if start.tzinfo is None else start
-        )
+        real_start_time = _IBClient.TZ.localize(start) if start.tzinfo is None \
+            else start
 
-        next_end_time = (
-            _IBClient.TZ.localize(end) if end.tzinfo is None else end
-        )
+        next_end_time = _IBClient.TZ.localize(end) if end.tzinfo is None \
+            else end
 
         finished = False
 
@@ -241,9 +240,10 @@ class _IBClient(ib_client.EClient):
 
         while not finished:
             self.reqHistoricalTicks(
-                req_id, contract, "",
-                next_end_time.strftime(const._IB.TIME_FMT),
-                1000, show, 0, False, []
+                reqId=req_id, contract=contract, startDateTime="",
+                endDateTime=next_end_time.strftime(const._IB.TIME_FMT),
+                numberOfTicks=1000, whatToShow=show, useRth=0,
+                ignoreSize=False, miscOptions=[]
             )
 
             res: List[List[Union[ib_wrapper.HistoricalTick,
@@ -284,9 +284,9 @@ class _IBClient(ib_client.EClient):
                         break
 
                     raise error.IBError(
-                        req_id, error.IBErrorCode.RES_UNEXPECTED,
-                        "[Abnormal] Incorrect number of items received: "
-                        f"{len(res)}"
+                        rid=req_id, err_code=error.IBErrorCode.RES_UNEXPECTED,
+                        err_str="[Abnormal] Incorrect number of items "
+                        f"received: {len(res)}"
                     )
 
                 # Process the data
@@ -405,7 +405,7 @@ class _IBClient(ib_client.EClient):
 
         if f_queue is not None:
             self.cancelTickByTickData(reqId=req_id)
-            f_queue.put(fq._Status.FINISHED)
+            f_queue.put(element=fq._Status.FINISHED)
         else:
             raise error.IBError(
                 rid=req_id, err_code=error.IBErrorCode.RES_NOT_FOUND,
@@ -445,9 +445,8 @@ class _IBClient(ib_client.EClient):
 
                 # Updates the next end time to prepare to fetch more
                 # data again from IB
-                end_time = datetime.datetime.fromtimestamp(
-                    ticks[-1].time
-                ).astimezone(end_time.tzinfo)
+                end_time = datetime.datetime.fromtimestamp(ticks[-1].time)\
+                    .astimezone(end_time.tzinfo)
             else:
                 # Ticks data received from IB but all records included in
                 # response are earlier than the start time.
@@ -465,10 +464,8 @@ class _IBClient(ib_client.EClient):
             else:
                 end_time = end_time - delta
 
-        return {
-            'ticks': ticks,
-            'next_end_time': end_time,
-        }
+        return {'ticks': ticks,
+                'next_end_time': end_time}
 
     def _unknown_error(self, req_id: int, extra: Any = None):
         """Constructs `IBError` with error code `UNKNOWN`

@@ -55,7 +55,7 @@ class TestIBWrapper(unittest.TestCase):
 
         self.assertEqual(self._wrapper.next_req_id, 11)
 
-        f_queue.put(fq._Status.FINISHED)
+        f_queue.put(element=fq._Status.FINISHED)
         await f_queue.get()
         self.assertEqual(self._wrapper.next_req_id, 1)
 

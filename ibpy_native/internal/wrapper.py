@@ -63,7 +63,7 @@ class _IBWrapper(wrapper.EWrapper):
                 `req_id` is being used by other tasks.
         """
         try:
-            self.__init_req_queue(req_id)
+            self.__init_req_queue(req_id=req_id)
         except error.IBError as err:
             raise err
 
@@ -97,11 +97,11 @@ class _IBWrapper(wrapper.EWrapper):
 
     def error(self, reqId, errorCode, errorString):
         # override method
-        err = error.IBError(reqId, errorCode, errorString)
+        err = error.IBError(rid=reqId, err_code=errorCode, err_str=errorString)
 
         # -1 indicates a notification and not true error condition
         if reqId is not -1:
-            self._req_queue[reqId].put(err)
+            self._req_queue[reqId].put(element=err)
         else:
             if self._listener is not None:
                 self._listener.on_notify(msg_code=errorCode, msg=errorString)
@@ -109,17 +109,17 @@ class _IBWrapper(wrapper.EWrapper):
     # Get contract details
     def contractDetails(self, reqId, contractDetails):
         # override method
-        self._req_queue[reqId].put(contractDetails)
+        self._req_queue[reqId].put(element=contractDetails)
 
     def contractDetailsEnd(self, reqId):
         # override method
-        self._req_queue[reqId].put(fq._Status.FINISHED)
+        self._req_queue[reqId].put(element=fq._Status.FINISHED)
 
     # Get earliest data point for a given instrument and data
     def headTimestamp(self, reqId: int, headTimestamp: str):
         # override method
-        self._req_queue[reqId].put(headTimestamp)
-        self._req_queue[reqId].put(fq._Status.FINISHED)
+        self._req_queue[reqId].put(element=headTimestamp)
+        self._req_queue[reqId].put(element=fq._Status.FINISHED)
 
     # Fetch historical ticks data
     def historicalTicks(self, reqId: int,
@@ -131,13 +131,15 @@ class _IBWrapper(wrapper.EWrapper):
                               ticks: List[wrapper.HistoricalTickBidAsk],
                               done: bool):
         # override method
-        self._handle_historical_ticks_results(reqId, ticks, done)
+        self._handle_historical_ticks_results(req_id=reqId, ticks=ticks,
+                                              done=done)
 
     def historicalTicksLast(self, reqId: int,
                             ticks: List[wrapper.HistoricalTickLast],
                             done: bool):
         # override method
-        self._handle_historical_ticks_results(reqId, ticks, done)
+        self._handle_historical_ticks_results(req_id=reqId, ticks=ticks,
+                                              done=done)
 
     # Stream live tick data
     def tickByTickAllLast(self, reqId: int, tickType: int, time: int,
@@ -210,9 +212,9 @@ class _IBWrapper(wrapper.EWrapper):
         `historicalTicksBidAsk`, and `historicalTicksLast` by putting the
         results into corresponding queue & marks the queue as finished.
         """
-        self._req_queue[req_id].put(ticks)
-        self._req_queue[req_id].put(done)
-        self._req_queue[req_id].put(fq._Status.FINISHED)
+        self._req_queue[req_id].put(element=ticks)
+        self._req_queue[req_id].put(element=done)
+        self._req_queue[req_id].put(element=fq._Status.FINISHED)
 
     def _handle_live_ticks(self, req_id: int,
                            tick: Union[wrapper.HistoricalTick,
@@ -222,4 +224,4 @@ class _IBWrapper(wrapper.EWrapper):
         `tickByTickBidAsk`, and `tickByTickMidPoint` by putting the ticks
         received into corresponding queue.
         """
-        self._req_queue[req_id].put(tick)
+        self._req_queue[req_id].put(element=tick)

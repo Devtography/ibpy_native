@@ -66,13 +66,13 @@ class TestIBBridge(unittest.TestCase):
 
     def test_set_timezone(self):
         """Test function `set_timezone`."""
-        ibpy_native.IBBridge.set_timezone(pytz.timezone('Asia/Hong_Kong'))
+        ibpy_native.IBBridge.set_timezone(tz=pytz.timezone('Asia/Hong_Kong'))
 
         self.assertEqual(ibpy_client._IBClient.TZ,
                          pytz.timezone('Asia/Hong_Kong'))
 
         # Reset timezone to New York
-        ibpy_native.IBBridge.set_timezone(pytz.timezone('America/New_York'))
+        ibpy_native.IBBridge.set_timezone(tz=pytz.timezone('America/New_York'))
         self.assertEqual(ibpy_client._IBClient.TZ,
                          pytz.timezone('America/New_York'))
 
@@ -90,7 +90,7 @@ class TestIBBridge(unittest.TestCase):
 
         mock_listener = MockListener()
 
-        self._bridge.set_on_notify_listener(mock_listener)
+        self._bridge.set_on_notify_listener(listener=mock_listener)
         self._bridge._wrapper.error(
             reqId=-1, errorCode=1100, errorString="MOCK MSG"
         )
@@ -109,7 +109,8 @@ class TestIBBridge(unittest.TestCase):
         self.assertIsInstance(contract, ib_contract.Contract)
 
         with self.assertRaises(ValueError):
-            await self._bridge.get_us_future_contract('MYM', 'abcd')
+            await self._bridge.get_us_future_contract(symbol='MYM',
+                                                      contract_month='abcd')
 
     @utils.async_test
     async def test_get_earliest_data_point(self):

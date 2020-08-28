@@ -1,56 +1,42 @@
+"""Code implementation of public interface to bridge between the package &
+IB API.
 """
-Code implementation of public interface to bridge between the package & IB API
-"""
+# pylint: disable=protected-access
 import asyncio
-import random
+import datetime
 import threading
-from datetime import datetime, tzinfo
-from typing import Optional, Union
+from typing import Optional
 
-from typing_extensions import Literal, TypedDict
+from ibapi import contract as ib_contract
 
-import ibpy_native.datatype as dt
-
-from ibapi.wrapper import (Contract, HistoricalTick, HistoricalTickBidAsk,
-                           HistoricalTickLast)
-from ibpy_native.interfaces.listeners import (
-    NotificationListener, LiveTicksListener
-)
-from .client import IBClient, Const
-from .error import IBError, IBErrorCode
-from .wrapper import IBWrapper
-
-class IBTicksResult(TypedDict):
-    """
-    Use for type hint the returns of `IBBridge.get_historical_ticks`
-    """
-    ticks: Union[HistoricalTick, HistoricalTickBidAsk, HistoricalTickLast]
-    completed: bool
+from ibpy_native import error
+from ibpy_native.interfaces import listeners
+from ibpy_native.internal import client as ib_client
+from ibpy_native.internal import wrapper as ib_wrapper
+from ibpy_native.utils import const
+from ibpy_native.utils import datatype as dt
 
 class IBBridge:
-    """
-    Public class to bridge between `ibpy-native` & IB API
-    """
+    """Public class to bridge between `ibpy-native` & IB API"""
 
-    def __init__(self, host='127.0.0.1', port=4001,
-                 client_id=1, auto_conn=True,
-                 notification_listener: Optional[NotificationListener] = None):
-        self.__host = host
-        self.__port = port
-        self.__client_id = client_id
+    def __init__(self, host='127.0.0.1', port=4001, client_id=1, auto_conn=True,
+                 notification_listener: \
+                    Optional[listeners.NotificationListener] = None):
+        self._host = host
+        self._port = port
+        self._client_id = client_id
 
-        self.__wrapper = IBWrapper(listener=notification_listener)
-        self.__client = IBClient(self.__wrapper)
+        self._wrapper = ib_wrapper._IBWrapper(listener=notification_listener)
+        self._client = ib_client._IBClient(wrapper=self._wrapper)
 
         if auto_conn:
             self.connect()
 
     # Setters
     @staticmethod
-    def set_timezone(tz: tzinfo):
+    def set_timezone(tz: datetime.tzinfo):
         # pylint: disable=invalid-name
-        """
-        Set the timezone for the bridge to match the IB Gateway/TWS timezone
+        """Set the timezone for the bridge to match the IB Gateway/TWS timezone
         specified at login.
 
         Note:
@@ -58,101 +44,95 @@ class IBBridge:
             has never been called.
 
         Args:
-            tz (tzinfo): Timezone. Recommend to set this value via
+            tz (datetime.tzinfo): Timezone. Recommend to set this value via
                 `pytz.timezone(zone: str)`.
         """
-        IBClient.TZ = tz
+        ib_client._IBClient.TZ = tz
 
-    def set_on_notify_listener(self, listener: NotificationListener):
+    def set_on_notify_listener(self, listener: listeners.NotificationListener):
         """Setter for optional `NotificationListener`.
 
         Args:
-            listener (NotificationListener): Listener for IB notifications.
+            listener (listeners.NotificationListener): Listener for IB
+                notifications.
         """
-        self.__wrapper.set_on_notify_listener(listener=listener)
+        self._wrapper.set_on_notify_listener(listener=listener)
 
     # Connections
     def is_connected(self) -> bool:
-        """
-        Check if the bridge is connected to a running & logged in TWS/IB
+        """Check if the bridge is connected to a running & logged in TWS/IB
         Gateway instance.
         """
-        return self.__client.isConnected()
+        return self._client.isConnected()
 
     def connect(self):
-        """
-        Connect the bridge to a running & logged in TWS/IB Gateway instance.
+        """Connect the bridge to a running & logged in TWS/IB Gateway instance.
         """
         if not self.is_connected():
-            self.__client.connect(self.__host, self.__port, self.__client_id)
+            self._client.connect(self._host, self._port, self._client_id)
 
-            thread = threading.Thread(target=self.__client.run)
+            thread = threading.Thread(target=self._client.run)
             thread.start()
 
-            setattr(self.__client, "_thread", thread)
+            setattr(self._client, "_thread", thread)
 
     def disconnect(self):
+        """Disconnect the bridge from the connected TWS/IB Gateway instance.
         """
-        Disconnect the bridge from the connected TWS/IB Gateway instance.
-        """
-        self.__client.disconnect()
+        self._client.disconnect()
 
-    # Interacts with IB APIs
-    def get_us_stock_contract(self, symbol: str,
-                              timeout: int = IBClient.REQ_TIMEOUT) -> Contract:
-        """
-        Resolve the IB US stock contract.
+    ## Interacts with IB APIs
+    # Contracts
+    async def get_us_stock_contract(self, symbol: str) -> ib_contract.Contract:
+        """Resolve the IB US stock contract.
 
         Args:
-            symbol (str): Symbol of the target instrument.
-            timeout (int, optional): Second(s) to wait for the request. Defaults
-                to 10.
+            symbol (:obj:`str`): Symbol of the target instrument.
 
         Returns:
-            Contract: Corresponding `Contract` object returned from IB.
+            ibapi.contract.Contract: Corresponding `Contract` object returned
+                from IB.
 
         Raises:
-            IBError: If there is connection issue, or it failed to get
-                additional contract details for the specified symbol.
+            ibpy_native.error.IBError: If there is connection issue, or it
+                failed to get additional contract details for the specified
+                symbol.
         """
 
-        contract = Contract()
+        contract = ib_contract.Contract()
         contract.currency = 'USD'
         contract.exchange = 'SMART'
         contract.secType = 'STK'
         contract.symbol = symbol
 
         try:
-            result = self.__client.resolve_contract(
-                self.__gen_req_id(), contract, timeout
+            result = await self._client.resolve_contract(
+                req_id=self._wrapper.next_req_id, contract=contract
             )
-        except IBError as err:
+        except error.IBError as err:
             raise err
 
         return result
 
-    def get_us_future_contract(
-            self, symbol: str, contract_month: Optional[str] = None,
-            timeout: int = IBClient.REQ_TIMEOUT
-        ) -> Contract:
-        """
-        Search the US future contract from IB.
+    async def get_us_future_contract(
+            self, symbol: str, contract_month: Optional[str] = None
+        ) -> ib_contract.Contract:
+        """Search the US future contract from IB.
 
         Args:
-            symbol (str): Symbol of the target instrument.
-            contract_month (str, optional): Contract month for the target future
-                contract in format - "YYYYMM". Defaults to None.
-            timeout (int, optional): Second(s) to wait for the request. Defaults
-                to 10.
+            symbol (:obj:`str`): Symbol of the target instrument.
+            contract_month (:obj:`str`, optional): Contract month for the
+                target future contract in format - "YYYYMM". Defaults to None.
 
         Returns:
-            Contract: Corresponding `Contract` object returned from IB. The
-                current on going contract will be returned if `contract_month`
-                is left as `None`.
+            ibapi.contract.Contract: Corresponding `Contract` object returned
+                from IB. The current on going contract will be returned if
+                `contract_month` is left as `None`.
 
         Raises:
-            IBError: If there is connection related issue, or it failed to get
-                additional contract details for the specified symbol.
+            ibpy_native.error.IBError: If there is connection related issue,
+                or it failed to get additional contract details for the
+                specified symbol.
         """
         include_expired = False
 
@@ -166,7 +146,7 @@ class IBBridge:
                 )
             include_expired = True
 
-        contract = Contract()
+        contract = ib_contract.Contract()
         contract.currency = 'USD'
         contract.secType = 'FUT'
         contract.includeExpired = include_expired
@@ -174,66 +154,58 @@ class IBBridge:
         contract.lastTradeDateOrContractMonth = contract_month
 
         try:
-            result = self.__client.resolve_contract(
-                self.__gen_req_id(), contract, timeout
+            result = await self._client.resolve_contract(
+                req_id=self._wrapper.next_req_id, contract=contract
             )
-        except IBError as err:
+        except error.IBError as err:
             raise err
 
         return result
 
-    def get_earliest_data_point(
-            self, contract: Contract,
-            data_type: Literal['BID_ASK', 'TRADES'] = 'TRADES',
-            timeout: int = IBClient.REQ_TIMEOUT
+    # Historical data
+    async def get_earliest_data_point(
+            self, contract: ib_contract.Contract,
+            data_type: Optional[dt.EarliestDataPoint] = \
+                dt.EarliestDataPoint.TRADES
         ) -> datetime:
-        """
-        Returns the earliest data point of specified contract.
+        """Returns the earliest data point of specified contract.
 
         Args:
-            contract (Contract): `Contract` object with sufficient info to
-                identify the instrument.
+            contract (:obj:`ibapi.contract.Contract`): `Contract` object with
+                sufficient info to identify the instrument.
             data_type (Literal['BID_ASK', 'TRADES'], optional):
                 Type of data for earliest data point. Defaults to 'TRADES'.
-            timeout (int, optional): Second(s) to wait for the request. Defaults
-                to 10.
 
         Returns:
-            datetime: The earliest data point for the specified contract in the
-                timezone of whatever timezone set for this `IBBridge`.
+            datetime.datetime: The earliest data point for the specified
+                contract in the timezone of whatever timezone set for this
+                `IBBridge`.
 
         Raises:
-            ValueError: If `data_type` is not 'BID_ASK' nor 'TRADES'.
-            IBError: If there is either connection related issue, request
-                timeout, IB returns 0 or multiple results.
+            ibpy_native.error.IBError: If there is either connection related
+                issue, IB returns 0 or multiple results.
         """
-        if data_type not in {'BID_ASK', 'TRADES'}:
-            raise ValueError(
-                "Value of argument `data_type` can only be either 'BID_ASK' "
-                "or 'TRADES'"
-            )
-
         try:
-            result = self.__client.resolve_head_timestamp(
-                req_id=self.__gen_req_id(), contract=contract,
-                show=data_type if data_type == 'TRADES' else 'BID',
-                timeout=timeout
+            result = await self._client.resolve_head_timestamp(
+                req_id=self._wrapper.next_req_id, contract=contract,
+                show=data_type
             )
-        except (ValueError, IBError) as err:
+        except error.IBError as err:
             raise err
 
-        data_point = datetime.fromtimestamp(result).astimezone(IBClient.TZ)
+        data_point = datetime.datetime.fromtimestamp(result)\
+            .astimezone(ib_client._IBClient.TZ)
 
         return data_point.replace(tzinfo=None)
 
-    def get_historical_ticks(
-            self, contract: Contract,
-            start: datetime = None, end: datetime = datetime.now(),
-            data_type: Literal['MIDPOINT', 'BID_ASK', 'TRADES'] = 'TRADES',
-            attempts: int = 1, timeout: int = IBClient.REQ_TIMEOUT
-        ) -> IBTicksResult:
-        """
-        Retrieve historical ticks data for specificed instrument/contract
+    async def get_historical_ticks(
+            self, contract: ib_contract.Contract,
+            start: datetime.datetime = None,
+            end: Optional[datetime.datetime] = datetime.datetime.now(),
+            data_type: Optional[dt.HistoricalTicks] = dt.HistoricalTicks.TRADES,
+            attempts: Optional[int] = 1
+        ) -> dt.HistoricalTicksResult:
+        """Retrieve historical ticks data for specificed instrument/contract
         from IB.
 
         Note:
@@ -244,19 +216,17 @@ class IBBridge:
             30 to 100 seconds should be reasonable.
 
         Args:
-            contract (Contract): `Contract` object with sufficient info to
-                identify the instrument.
-            start (datetime, optional): The time for the earliest tick data to
-                be included. Defaults to None.
-            end (datetime, optional): The time for the latest tick data to be
-                included. Defaults to now.
+            contract (:obj:`ibapi.contract.Contract`): `Contract` object with
+                sufficient info to identify the instrument.
+            start (:obj:`datetime.datetime`, optional): The time for the
+                earliest tick data to be included. Defaults to `None`.
+            end (:obj:`datetime.datetime`, optional): The time for the latest
+                tick data to be included. Defaults to now.
             data_type (Literal['MIDPOINT', 'BID_ASK', 'TRADES'], optional):
                 Type of data for the ticks. Defaults to 'TRADES'.
             attempts (int, optional): Attemp(s) to try requesting the historical
                 ticks. Passing -1 into this argument will let the function
                 retries for infinity times until all available ticks are received. Defaults to 1.
-            timeout (int, optional): Second(s) to wait for each historical ticks
-                API request to IB server. Defaults to 10.
 
         Returns:
             IBTicksResult: Ticks returned from IB and a boolean to indicate if
@@ -265,18 +235,18 @@ class IBBridge:
         Raises:
             ValueError: If
                 - argument `start` or `end` contains the timezone info;
-                - `data_type` is not 'MIDPOINT', 'BID_ASK' or 'TRADES';
                 - timestamp of `start` is earlier than the earliest available
                 datapoint.
                 - timestamp of `end` is earlier than `start` or earliest
                 available datapoint;
                 - value of `attempts` < 1 and != -1.
-            IBError: If there is any issue raised from the request function
-                while excuteing the task, with `attempts` reduced to 0 and no
-                tick fetched successfully in pervious attempt(s).
+            ibpy_native.error.IBError: If there is any issue raised from the
+                request function while excuteing the task, with `attempts
+                reduced to 0 and no tick fetched successfully in pervious
+                attempt(s).
         """
         all_ticks = []
-        next_end_time = IBClient.TZ.localize(end)
+        next_end_time = ib_client._IBClient.TZ.localize(dt=end)
 
         # Error checking
         if end.tzinfo is not None or (
@@ -287,21 +257,16 @@ class IBBridge:
                 "Timezone should not be specified in either `start` or `end`."
             )
 
-        if data_type not in {'MIDPOINT', 'BID_ASK', 'TRADES'}:
-            raise ValueError(
-                "Value of argument `data_type` can only be either 'MIDPOINT', "
-                "'BID_ASK', or 'TRADES'"
-            )
-
         try:
-            head_timestamp = datetime.fromtimestamp(
-                self.__client.resolve_head_timestamp(
-                    self.__gen_req_id(), contract,
-                    'TRADES' if data_type == 'TRADES' else 'BID',
-                    timeout
+            head_timestamp = datetime.datetime.fromtimestamp(
+                await self._client.resolve_head_timestamp(
+                    req_id=self._wrapper.next_req_id, contract=contract,
+                    show=dt.EarliestDataPoint.TRADES if \
+                        data_type is dt.HistoricalTicks.TRADES \
+                        else dt.EarliestDataPoint.BID
                 )
-            ).astimezone(IBClient.TZ)
-        except (ValueError, IBError) as err:
+            ).astimezone(tz=ib_client._IBClient.TZ)
+        except error.IBError as err:
             raise err
 
         if start is not None:
@@ -309,21 +274,21 @@ class IBBridge:
                 raise ValueError(
                     "Specificed start time is earlier than the earliest "
                     "available datapoint - "
-                    + head_timestamp.strftime(Const.TIME_FMT.value)
+                    f"{head_timestamp.strftime(const._IB.TIME_FMT)}"
                 )
             if end.timestamp() < start.timestamp():
                 raise ValueError(
                     "Specificed end time cannot be earlier than start time"
                 )
 
-            start = IBClient.TZ.localize(start)
+            start = ib_client._IBClient.TZ.localize(dt=start)
         else:
             start = head_timestamp
 
         if next_end_time.timestamp() < head_timestamp.timestamp():
             raise ValueError(
                 "Specificed end time is earlier than the earliest available "
-                f"datapoint - {head_timestamp.strftime(Const.TIME_FMT.value)}"
+                f"datapoint - {head_timestamp.strftime(const._IB.TIME_FMT)}"
             )
 
         if attempts < 1 and attempts != -1:
@@ -336,31 +301,31 @@ class IBBridge:
             attempts = attempts - 1 if attempts != -1 else attempts
 
             try:
-                ticks = self.__client.fetch_historical_ticks(
-                    self.__gen_req_id(), contract,
-                    start, next_end_time, data_type, timeout
+                res = await self._client.fetch_historical_ticks(
+                    req_id=self._wrapper.next_req_id, contract=contract,
+                    start=start, end=next_end_time, show=data_type
                 )
 
                 #  `ticks[1]` is a boolean represents if the data are all
                 # fetched without timeout
-                if ticks[1]:
-                    ticks[0].extend(all_ticks)
+                if res['completed']:
+                    res['ticks'].extend(all_ticks)
 
                     return {
-                        'ticks': ticks[0],
+                        'ticks': res['ticks'],
                         'completed': True
                     }
 
-                ticks[0].extend(all_ticks)
-                all_ticks = ticks[0]
+                res['ticks'].extend(all_ticks)
+                all_ticks = res['ticks']
 
-                next_end_time = datetime.fromtimestamp(
-                    ticks[0][0].time
-                ).astimezone(IBClient.TZ)
+                next_end_time = datetime.datetime.fromtimestamp(
+                    res[0][0].time
+                ).astimezone(ib_client._IBClient.TZ)
             except ValueError as err:
                 raise err
-            except IBError as err:
-                if err.err_code == IBErrorCode.DUPLICATE_TICKER_ID:
+            except error.IBError as err:
+                if err.err_code == error.IBErrorCode.DUPLICATE_TICKER_ID:
                     # Restore the attempts count for error `Duplicate ticker ID`
                     # as it seems like sometimes IB cannot release the ID used
                     # as soon as it has responded the request while the
@@ -374,19 +339,19 @@ class IBBridge:
                     continue
 
                 if attempts > 0:
-                    if len(all_ticks) > 0:
+                    if all_ticks:
                         # Updates the end time for next attempt
-                        next_end_time = datetime.fromtimestamp(
+                        next_end_time = datetime.datetime.fromtimestamp(
                             all_ticks[0].time
-                        ).astimezone(IBClient.TZ)
+                        ).astimezone(ib_client._IBClient.TZ)
 
                     continue
 
-                if attempts == 0 and len(all_ticks) > 0:
+                if attempts == 0 and all_ticks:
                     print("Reached maximum attempts. Ending...")
                     break
 
-                if attempts == 0 and len(all_ticks) == 0:
+                if attempts == 0 and not all_ticks:
                     raise err
 
         return {
@@ -394,45 +359,49 @@ class IBBridge:
             'completed': False
         }
 
+    # Live data
     async def stream_live_ticks(
-            self, contract: Contract, listener: LiveTicksListener,
+            self, contract: ib_contract.Contract,
+            listener: listeners.LiveTicksListener,
             tick_type: Optional[dt.LiveTicks] = dt.LiveTicks.LAST
         ) -> int:
         """Request to stream live tick data.
 
         Args:
-            contract (:obj: `Contract`): `Contract` object with sufficient info
-                to identify the instrument.
-            listener (:obj: `LiveTicksListener`): Callback listener for
-                receiving ticks, finish signale, and error from IB API.
-            tick_type (:obj: `TickType`, optional): Type of ticks to be
+            contract (:obj:`ibapi.contract.Contract`): `Contract` object with
+                sufficient info to identify the instrument.
+            listener (:obj:`ibpy_native.interfaces.listenersLiveTicksListener`):
+                Callback listener for receiving ticks, finish signale, and
+                error from IB API.
+            tick_type (:obj:`TickType`, optional): Type of ticks to be
                 requested. Defaults to `TickType.LAST`.
 
         Returns:
             int: Request identifier. This will be needed to stop the stream
                 started by this function.
         """
-        while True:
-            # To ensure the `req_id` is useable.
-            try:
-                req_id = self.__gen_req_id()
-                _ = self.__wrapper.get_request_queue(req_id=req_id)
-            except IBError:
-                continue
-            break
+        req_id = self._wrapper.next_req_id
 
         asyncio.create_task(
-            self.__client.stream_live_ticks(
+            self._client.stream_live_ticks(
                 req_id=req_id, contract=contract, listener=listener,
-                tick_type=tick_type.value
+                tick_type=tick_type
             )
         )
 
         return req_id
 
-    def __gen_req_id(self) -> int:
+    def stop_live_ticks_stream(self, stream_id: int):
+        """Stop the specificed live tick data stream that's currently streaming.
+
+        Args:
+            stream_id (int): Identifier for the stream.
+
+        Raises:
+            ibpy_native.error.IBError: If the specificed identifier has no
+                stream associated with.
         """
-        Returns a random integer from 1 to 999999 as internal req_id for
-        IB API requests
-        """
-        return random.randint(1, 999999)
+        try:
+            self._client.cancel_live_ticks_stream(req_id=stream_id)
+        except error.IBError as err:
+            raise err

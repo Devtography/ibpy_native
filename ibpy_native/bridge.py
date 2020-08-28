@@ -7,8 +7,6 @@ import datetime
 import threading
 from typing import Optional
 
-from typing_extensions import Literal
-
 from ibapi import contract as ib_contract
 
 from ibpy_native import error
@@ -167,7 +165,8 @@ class IBBridge:
     # Historical data
     async def get_earliest_data_point(
             self, contract: ib_contract.Contract,
-            data_type: Literal['BID_ASK', 'TRADES'] = 'TRADES'
+            data_type: Optional[dt.EarliestDataPoint] = \
+                dt.EarliestDataPoint.TRADES
         ) -> datetime:
         """Returns the earliest data point of specified contract.
 
@@ -183,22 +182,15 @@ class IBBridge:
                 `IBBridge`.
 
         Raises:
-            ValueError: If `data_type` is not 'BID_ASK' nor 'TRADES'.
             ibpy_native.error.IBError: If there is either connection related
                 issue, IB returns 0 or multiple results.
         """
-        if data_type not in {'BID_ASK', 'TRADES'}:
-            raise ValueError(
-                "Value of argument `data_type` can only be either 'BID_ASK' "
-                "or 'TRADES'"
-            )
-
         try:
             result = await self._client.resolve_head_timestamp(
                 req_id=self._wrapper.next_req_id, contract=contract,
-                show=data_type if data_type == 'TRADES' else 'BID'
+                show=data_type
             )
-        except (ValueError, error.IBError) as err:
+        except error.IBError as err:
             raise err
 
         data_point = datetime.datetime.fromtimestamp(result)\
@@ -209,9 +201,9 @@ class IBBridge:
     async def get_historical_ticks(
             self, contract: ib_contract.Contract,
             start: datetime.datetime = None,
-            end: datetime.datetime = datetime.datetime.now(),
-            data_type: Literal['MIDPOINT', 'BID_ASK', 'TRADES'] = 'TRADES',
-            attempts: int = 1
+            end: Optional[datetime.datetime] = datetime.datetime.now(),
+            data_type: Optional[dt.HistoricalTicks] = dt.HistoricalTicks.TRADES,
+            attempts: Optional[int] = 1
         ) -> dt.HistoricalTicksResult:
         """Retrieve historical ticks data for specificed instrument/contract
         from IB.
@@ -243,7 +235,6 @@ class IBBridge:
         Raises:
             ValueError: If
                 - argument `start` or `end` contains the timezone info;
-                - `data_type` is not 'MIDPOINT', 'BID_ASK' or 'TRADES';
                 - timestamp of `start` is earlier than the earliest available
                 datapoint.
                 - timestamp of `end` is earlier than `start` or earliest
@@ -266,20 +257,16 @@ class IBBridge:
                 "Timezone should not be specified in either `start` or `end`."
             )
 
-        if data_type not in {'MIDPOINT', 'BID_ASK', 'TRADES'}:
-            raise ValueError(
-                "Value of argument `data_type` can only be either 'MIDPOINT', "
-                "'BID_ASK', or 'TRADES'"
-            )
-
         try:
             head_timestamp = datetime.datetime.fromtimestamp(
                 await self._client.resolve_head_timestamp(
                     req_id=self._wrapper.next_req_id, contract=contract,
-                    show='TRADES' if data_type == 'TRADES' else 'BID'
+                    show=dt.EarliestDataPoint.TRADES if \
+                        data_type is dt.HistoricalTicks.TRADES \
+                        else dt.EarliestDataPoint.BID
                 )
             ).astimezone(tz=ib_client._IBClient.TZ)
-        except (ValueError, error.IBError) as err:
+        except error.IBError as err:
             raise err
 
         if start is not None:
@@ -314,26 +301,26 @@ class IBBridge:
             attempts = attempts - 1 if attempts != -1 else attempts
 
             try:
-                ticks = await self._client.fetch_historical_ticks(
+                res = await self._client.fetch_historical_ticks(
                     req_id=self._wrapper.next_req_id, contract=contract,
                     start=start, end=next_end_time, show=data_type
                 )
 
                 #  `ticks[1]` is a boolean represents if the data are all
                 # fetched without timeout
-                if ticks[1]:
-                    ticks[0].extend(all_ticks)
+                if res['completed']:
+                    res['ticks'].extend(all_ticks)
 
                     return {
-                        'ticks': ticks[0],
+                        'ticks': res['ticks'],
                         'completed': True
                     }
 
-                ticks[0].extend(all_ticks)
-                all_ticks = ticks[0]
+                res['ticks'].extend(all_ticks)
+                all_ticks = res['ticks']
 
                 next_end_time = datetime.datetime.fromtimestamp(
-                    ticks[0][0].time
+                    res[0][0].time
                 ).astimezone(ib_client._IBClient.TZ)
             except ValueError as err:
                 raise err
@@ -398,7 +385,7 @@ class IBBridge:
         asyncio.create_task(
             self._client.stream_live_ticks(
                 req_id=req_id, contract=contract, listener=listener,
-                tick_type=tick_type.value
+                tick_type=tick_type
             )
         )
 

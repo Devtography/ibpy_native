@@ -1,10 +1,10 @@
 """Code implementation for `EClient` related stuffs"""
 # pylint: disable=protected-access
 import datetime
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Optional, Union
 
 import pytz
-from typing_extensions import Literal, TypedDict
+from typing_extensions import TypedDict
 
 from ibapi import client as ib_client
 from ibapi import contract as ib_contract
@@ -14,6 +14,7 @@ from ibpy_native import error
 from ibpy_native.interfaces import listeners
 from ibpy_native.internal import wrapper as ibpy_wrapper
 from ibpy_native.utils import const
+from ibpy_native.utils import datatype as dt
 from ibpy_native.utils import finishable_queue as fq
 
 class _ProcessHistoricalTicksResult(TypedDict):
@@ -98,7 +99,7 @@ class _IBClient(ib_client.EClient):
 
     async def resolve_head_timestamp(
             self, req_id: int, contract: ib_contract.Contract,
-            show: Literal['BID', 'ASK', 'TRADES'] = 'TRADES'
+            show: Optional[dt.EarliestDataPoint] = dt.EarliestDataPoint.TRADES
         ) -> int:
         """Fetch the earliest available data point for a given instrument
         from IB.
@@ -120,12 +121,6 @@ class _IBClient(ib_client.EClient):
                 - no element found in received result;
                 - multiple elements found in received result.
         """
-        if show not in {'BID', 'ASK', 'TRADES'}:
-            raise ValueError(
-                "Value of argument `show` can only be either 'BID', 'ASK', or "
-                "'TRADES'"
-            )
-
         try:
             f_queue = self._wrapper.get_request_queue(req_id=req_id)
         except error.IBError as err:
@@ -135,7 +130,7 @@ class _IBClient(ib_client.EClient):
               "instrument from IB... ")
 
         self.reqHeadTimeStamp(reqId=req_id, contract=contract,
-                              whatToShow=show, useRTH=0, formatDate=2)
+                              whatToShow=show.value, useRTH=0, formatDate=2)
 
         res = await f_queue.get()
 
@@ -166,12 +161,10 @@ class _IBClient(ib_client.EClient):
     async def fetch_historical_ticks(
             self, req_id: int, contract: ib_contract.Contract,
             start: datetime.datetime,
-            end: datetime.datetime = datetime.datetime.now().astimezone(TZ),
-            show: Literal['MIDPOINT', 'BID_ASK', 'TRADES'] = 'TRADES'
-        ) -> Tuple[List[Union[ib_wrapper.HistoricalTick,
-                              ib_wrapper.HistoricalTickBidAsk,
-                              ib_wrapper.HistoricalTickLast]],
-                   bool]:
+            end: Optional[datetime.datetime] = datetime.datetime.now()\
+                .astimezone(TZ),
+            show: Optional[dt.HistoricalTicks] = dt.HistoricalTicks.TRADES
+        ) -> dt.HistoricalTicksResult:
         """Fetch the historical ticks data for a given instrument from IB.
 
         Args:
@@ -190,7 +183,6 @@ class _IBClient(ib_client.EClient):
 
         Raises:
             ValueError: If
-                - `show` is not 'MIDPOINT', 'BIDASK' or 'TRADES';
                 - `tzinfo` of `start` & `end` do not align;
                 - Value of start` > `end`.
             ibpy_native.error.IBError: If
@@ -203,12 +195,6 @@ class _IBClient(ib_client.EClient):
                 from IB with no tick fetched in pervious request(s).
         """
         # Pre-process & error checking
-        if show not in {'MIDPOINT', 'BID_ASK', 'TRADES'}:
-            raise ValueError(
-                "Value of argument `show` can only be either 'MIDPOINT', "
-                "'BID_ASK', or 'TRADES'"
-            )
-
         if type(start.tzinfo) is not type(end.tzinfo):
             raise ValueError(
                 "Timezone of the start time and end time must be the same"
@@ -242,7 +228,7 @@ class _IBClient(ib_client.EClient):
             self.reqHistoricalTicks(
                 reqId=req_id, contract=contract, startDateTime="",
                 endDateTime=next_end_time.strftime(const._IB.TIME_FMT),
-                numberOfTicks=1000, whatToShow=show, useRth=0,
+                numberOfTicks=1000, whatToShow=show.value, useRth=0,
                 ignoreSize=False, miscOptions=[]
             )
 
@@ -328,13 +314,15 @@ class _IBClient(ib_client.EClient):
 
         all_ticks.reverse()
 
-        return (all_ticks, finished)
+        # return (all_ticks, finished)
+        return {'ticks': all_ticks,
+                'completed': finished}
 
     # Stream live tick data
     async def stream_live_ticks(
             self, req_id: int, contract: ib_contract.Contract,
             listener: listeners.LiveTicksListener,
-            tick_type: Literal['Last', 'AllLast', 'BidAsk', 'MidPoint'] = 'Last'
+            tick_type: Optional[dt.LiveTicks] = dt.LiveTicks.LAST
         ):
         """Request to stream live tick data.
 
@@ -353,20 +341,13 @@ class _IBClient(ib_client.EClient):
                 being used by other tasks.
 
         Note:
-            The value of `tick_type` is case sensitive - it must be `"BidAsk"`,
-            `"Last"`, `"AllLast"`, `"MidPoint"`. `"AllLast"` has additional
-            trade types such as combos, derivatives, and average price trades
-            which are not included in `"Last"`.
+            The value `ibpy_native.utils.datatype.LiveTicks.ALL_LAST` of
+            argument `tick_type` has additional trade types such as combos,
+            derivatives, and average price trades which are not included in
+            `ibpy_native.utils.datatype.LiveTicks.LAST`.
             Also, this function depends on `live_ticks_listener` to return
             live ticks received. The listener should be set explicitly.
         """
-        # Error checking
-        if tick_type not in {'Last', 'AllLast', 'BidAsk', 'MidPoint'}:
-            raise ValueError(
-                "Value of argument `tick_type` can only be either 'Last', "
-                "'AllLast', 'BidAsk', or 'MidPoint'"
-            )
-
         try:
             f_queue = self._wrapper.get_request_queue(req_id)
         except error.IBError as err:
@@ -376,7 +357,7 @@ class _IBClient(ib_client.EClient):
               "instrument from IB...")
 
         self.reqTickByTickData(
-            reqId=req_id, contract=contract, tickType=tick_type,
+            reqId=req_id, contract=contract, tickType=tick_type.value,
             numberOfTicks=0, ignoreSize=True
         )
 

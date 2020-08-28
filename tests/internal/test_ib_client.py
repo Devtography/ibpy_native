@@ -15,6 +15,7 @@ from ibapi import wrapper as ib_wrapper
 from ibpy_native import error
 from ibpy_native.internal import client as ibpy_client
 from ibpy_native.internal import wrapper as ibpy_wrapper
+from ibpy_native.utils import datatype as dt
 from ibpy_native.utils import finishable_queue as fq
 
 from tests.toolkit import sample_contracts
@@ -69,7 +70,7 @@ class TestIBClient(unittest.TestCase):
         head_timestamp = await self._client.resolve_head_timestamp(
             req_id=Const.RID_RESOLVE_HEAD_TIMESTAMP.value,
             contract=sample_contracts.us_future(),
-            show='BID'
+            show=dt.EarliestDataPoint.BID
         )
 
         print(head_timestamp)
@@ -87,13 +88,13 @@ class TestIBClient(unittest.TestCase):
                 .datetime(2020, 4, 29, 10, 30, 0)),
             end=ibpy_client._IBClient.TZ.localize(datetime\
                 .datetime(2020, 4, 29, 10, 35, 0)),
-            show='MIDPOINT'
+            show=dt.HistoricalTicks.MIDPOINT
         )
 
-        self.assertIsInstance(data[0], list)
-        self.assertTrue(data[1])
-        self.assertTrue(data[0])
-        self.assertIsInstance(data[0][0], ib_wrapper.HistoricalTick)
+        self.assertIsInstance(data['ticks'], list)
+        self.assertTrue(data['completed'])
+        self.assertTrue(data['ticks'])
+        self.assertIsInstance(data['ticks'][0], ib_wrapper.HistoricalTick)
 
         data = await self._client.fetch_historical_ticks(
             req_id=Const.RID_FETCH_HISTORICAL_TICKS.value,
@@ -102,25 +103,17 @@ class TestIBClient(unittest.TestCase):
                 .datetime(2020, 4, 29, 10, 30, 0)),
             end=ibpy_client._IBClient.TZ.localize(datetime\
                 .datetime(2020, 4, 29, 10, 35, 0)),
-            show='BID_ASK'
+            show=dt.HistoricalTicks.BID_ASK
         )
 
-        self.assertIsInstance(data[0], list)
-        self.assertTrue(data[1])
-        self.assertTrue(data[0])
-        self.assertIsInstance(data[0][0], ib_wrapper.HistoricalTickBidAsk)
+        self.assertIsInstance(data['ticks'], list)
+        self.assertTrue(data['completed'])
+        self.assertTrue(data['ticks'])
+        self.assertIsInstance(data['ticks'][0], ib_wrapper.HistoricalTickBidAsk)
 
     @utils.async_test
     async def test_fetch_historical_ticks_err(self):
         """Test function `fetch_historical_ticks` for the error cases."""
-        # Incorrect value of `show`
-        with self.assertRaises(ValueError):
-            await self._client.fetch_historical_ticks(
-                req_id=Const.RID_FETCH_HISTORICAL_TICKS_ERR.value,
-                contract=sample_contracts.gbp_usd_fx(),
-                start=datetime.datetime.now(), show='LAST'
-            )
-
         # Timezone of start & end are not identical
         with self.assertRaises(ValueError):
             await self._client.fetch_historical_ticks(
@@ -163,7 +156,7 @@ class TestIBClient(unittest.TestCase):
                 req_id=Const.RID_STREAM_LIVE_TICKS.value,
                 contract=sample_contracts.gbp_usd_fx(),
                 listener=listener,
-                tick_type='BidAsk'
+                tick_type=dt.LiveTicks.BID_ASK
             )
         )
         cancel = asyncio.create_task(cancel_req())
@@ -197,7 +190,7 @@ class TestIBClient(unittest.TestCase):
                 req_id=Const.RID_CANCEL_LIVE_TICKS_STREAM.value,
                 contract=sample_contracts.gbp_usd_fx(),
                 listener=listener,
-                tick_type='BidAsk'
+                tick_type=dt.LiveTicks.BID_ASK
             )
         )
         cancel = asyncio.create_task(cancel_req())

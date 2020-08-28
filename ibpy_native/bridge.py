@@ -301,26 +301,26 @@ class IBBridge:
             attempts = attempts - 1 if attempts != -1 else attempts
 
             try:
-                ticks = await self._client.fetch_historical_ticks(
+                res = await self._client.fetch_historical_ticks(
                     req_id=self._wrapper.next_req_id, contract=contract,
                     start=start, end=next_end_time, show=data_type
                 )
 
                 #  `ticks[1]` is a boolean represents if the data are all
                 # fetched without timeout
-                if ticks[1]:
-                    ticks[0].extend(all_ticks)
+                if res['completed']:
+                    res['ticks'].extend(all_ticks)
 
                     return {
-                        'ticks': ticks[0],
+                        'ticks': res['ticks'],
                         'completed': True
                     }
 
-                ticks[0].extend(all_ticks)
-                all_ticks = ticks[0]
+                res['ticks'].extend(all_ticks)
+                all_ticks = res['ticks']
 
                 next_end_time = datetime.datetime.fromtimestamp(
-                    ticks[0][0].time
+                    res[0][0].time
                 ).astimezone(ib_client._IBClient.TZ)
             except ValueError as err:
                 raise err

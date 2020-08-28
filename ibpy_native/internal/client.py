@@ -1,7 +1,7 @@
 """Code implementation for `EClient` related stuffs"""
 # pylint: disable=protected-access
 import datetime
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Union
 
 import pytz
 from typing_extensions import TypedDict
@@ -164,10 +164,7 @@ class _IBClient(ib_client.EClient):
             end: Optional[datetime.datetime] = datetime.datetime.now()\
                 .astimezone(TZ),
             show: Optional[dt.HistoricalTicks] = dt.HistoricalTicks.TRADES
-        ) -> Tuple[List[Union[ib_wrapper.HistoricalTick,
-                              ib_wrapper.HistoricalTickBidAsk,
-                              ib_wrapper.HistoricalTickLast]],
-                   bool]:
+        ) -> dt.HistoricalTicksResult:
         """Fetch the historical ticks data for a given instrument from IB.
 
         Args:
@@ -317,7 +314,9 @@ class _IBClient(ib_client.EClient):
 
         all_ticks.reverse()
 
-        return (all_ticks, finished)
+        # return (all_ticks, finished)
+        return {'ticks': all_ticks,
+                'completed': finished}
 
     # Stream live tick data
     async def stream_live_ticks(

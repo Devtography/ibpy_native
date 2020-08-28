@@ -91,10 +91,10 @@ class TestIBClient(unittest.TestCase):
             show=dt.HistoricalTicks.MIDPOINT
         )
 
-        self.assertIsInstance(data[0], list)
-        self.assertTrue(data[1])
-        self.assertTrue(data[0])
-        self.assertIsInstance(data[0][0], ib_wrapper.HistoricalTick)
+        self.assertIsInstance(data['ticks'], list)
+        self.assertTrue(data['completed'])
+        self.assertTrue(data['ticks'])
+        self.assertIsInstance(data['ticks'][0], ib_wrapper.HistoricalTick)
 
         data = await self._client.fetch_historical_ticks(
             req_id=Const.RID_FETCH_HISTORICAL_TICKS.value,
@@ -106,10 +106,10 @@ class TestIBClient(unittest.TestCase):
             show=dt.HistoricalTicks.BID_ASK
         )
 
-        self.assertIsInstance(data[0], list)
-        self.assertTrue(data[1])
-        self.assertTrue(data[0])
-        self.assertIsInstance(data[0][0], ib_wrapper.HistoricalTickBidAsk)
+        self.assertIsInstance(data['ticks'], list)
+        self.assertTrue(data['completed'])
+        self.assertTrue(data['ticks'])
+        self.assertIsInstance(data['ticks'][0], ib_wrapper.HistoricalTickBidAsk)
 
     @utils.async_test
     async def test_fetch_historical_ticks_err(self):

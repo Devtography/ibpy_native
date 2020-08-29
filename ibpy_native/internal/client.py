@@ -97,6 +97,53 @@ class _IBClient(ib_client.EClient):
             err_str="Failed to get additional contract details"
         )
 
+    async def resolve_contracts(
+            self, req_id: int, contract: ib_contract.Contract
+        ) -> List[ib_contract.ContractDetails]:
+        """Search the fully fledged contracts with details from a partially
+        formed `ibapi.contract.Contract` object.
+
+        Args:
+            req_id (int): Request ID (ticker ID in IB API).
+            contract (:obj:`ibapi.contract.Contract`): `Contract` object with
+                partially completed info
+                    - e.g. symbol, currency, etc...
+
+        Returns:
+            List[ibapi.contract.ContractDetails]: Fully fledged IB contract(s)
+                with detailed info.
+
+        Raises:
+            ibpy_native.error.IBError: If
+                - queue associated with `req_id` is being used by other tasks;
+                - there's any error returned from IB;
+                - no item found in received result.
+        """
+        # Prepare queue to store the data that will be returned
+        try:
+            f_queue = self._wrapper.get_request_queue(req_id=req_id)
+        except error.IBError as err:
+            raise err
+
+        print("Searching contracts with details from IB...")
+
+        self.reqContractDetails(reqId=req_id, contract=contract)
+
+        res: List[Union[ib_contract.ContractDetails, error.IBError]] = \
+            await f_queue.get()
+
+        if res:
+            if f_queue.status is fq._Status.ERROR:
+                if isinstance(res[-1], error.IBError):
+                    raise res[-1]
+
+            return res
+
+        raise error.IBError(
+            rid=req_id, err_code=error.IBErrorCode.RES_NO_CONTENT,
+            err_str="Failed to get additional contract details"
+        )
+
     async def resolve_head_timestamp(
             self, req_id: int, contract: ib_contract.Contract,
             show: Optional[dt.EarliestDataPoint] = dt.EarliestDataPoint.TRADES

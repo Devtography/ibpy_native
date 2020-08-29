@@ -6,6 +6,7 @@ import enum
 import os
 import threading
 import unittest
+from typing import List
 
 import pytz
 
@@ -24,6 +25,7 @@ from tests.toolkit import utils
 class Const(enum.IntEnum):
     """Predefined request IDs for tests in `TestIBClient`."""
     RID_RESOLVE_CONTRACT = 43
+    RID_RESOLVE_CONTRACTS = 44
     RID_RESOLVE_HEAD_TIMESTAMP = 14001
     RID_RESOLVE_HEAD_TIMESTAMP_EPOCH = 14002
     RID_FETCH_HISTORICAL_TICKS = 18001
@@ -63,6 +65,19 @@ class TestIBClient(unittest.TestCase):
 
         self.assertIsNotNone(resolved_contract)
         print(resolved_contract)
+
+    @utils.async_test
+    async def test_resolve_contracts(self):
+        """Test function `resolve_contracts`."""
+        contract: ib_contract.Contract = sample_contracts.us_future()
+        contract.lastTradeDateOrContractMonth = ''
+
+        res: List[ib_contract.ContractDetails] = await self._client\
+            .resolve_contracts(req_id=Const.RID_RESOLVE_CONTRACTS.value,
+                               contract=contract)
+
+        self.assertTrue(res)
+        self.assertGreater(len(res), 1)
 
     @utils.async_test
     async def test_resolve_head_timestamp(self):

@@ -7,6 +7,8 @@ import datetime
 import threading
 from typing import List, Optional
 
+from deprecated import sphinx
+
 from ibapi import contract as ib_contract
 
 from ibpy_native import error
@@ -83,6 +85,12 @@ class IBBridge:
 
     ## Interacts with IB APIs
     # Contracts
+    @sphinx.deprecated(
+        version='0.2',
+        reason="Function will be removed in the future if it's not compatible "
+                "with the updates. Suggest to retrieve the contracts by using "
+                "function `search_detailed_contract(contract)` instead."
+    )
     async def get_us_stock_contract(self, symbol: str) -> ib_contract.Contract:
         """Resolve the IB US stock contract.
 
@@ -114,6 +122,12 @@ class IBBridge:
 
         return result
 
+    @sphinx.deprecated(
+        version='0.2',
+        reason="Function will be removed in the future if it's not compatible "
+                "with the updates. Suggest to retrieve the contracts by using "
+                "function `search_detailed_contract(contract)` instead."
+    )
     async def get_us_future_contract(
             self, symbol: str, contract_month: Optional[str] = None
         ) -> ib_contract.Contract:

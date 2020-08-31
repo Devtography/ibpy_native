@@ -5,7 +5,7 @@ IB API.
 import asyncio
 import datetime
 import threading
-from typing import Optional
+from typing import List, Optional
 
 from ibapi import contract as ib_contract
 
@@ -161,6 +161,33 @@ class IBBridge:
             raise err
 
         return result
+
+    async def search_detailed_contracts(self, contract: ib_contract.Contract) \
+        -> List[ib_contract.ContractDetails]:
+        """Search the contracts with complete details from IB's database.
+
+        Args:
+            contract (:obj:`ibapi.contract.Contract): `Contract` object with
+                partially completed info
+                    - e.g. symbol, currency, etc...
+
+        Returns:
+            List[ibapi.contract.ContractDetails]: Fully fledged IB contract(s)
+                with detailed info.
+
+        Raises:
+            ibpy_native.error.IBError: If
+                - no result is found with the contract provided;
+                - there's any error returned from IB.
+        """
+        try:
+            res: List[ib_contract.ContractDetails] = await self._client\
+                .resolve_contracts(req_id=self._wrapper.next_req_id,
+                                   contract=contract)
+        except error.IBError as err:
+            raise err
+
+        return  res
 
     # Historical data
     async def get_earliest_data_point(

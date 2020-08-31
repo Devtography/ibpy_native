@@ -113,6 +113,17 @@ class TestIBBridge(unittest.TestCase):
                                                       contract_month='abcd')
 
     @utils.async_test
+    async def test_search_detailed_contracts(self):
+        """Test function `search_detailed_contracts`."""
+        contract = sample_contracts.us_future()
+        contract.lastTradeDateOrContractMonth = ''
+
+        res = await self._bridge.search_detailed_contracts(contract=contract)
+        self.assertGreater(len(res), 1)
+        for item in res:
+            print(item.contract)
+
+    @utils.async_test
     async def test_get_earliest_data_point(self):
         """Test function `get_earliest_data_point`."""
         head_trade = await self._bridge.get_earliest_data_point(

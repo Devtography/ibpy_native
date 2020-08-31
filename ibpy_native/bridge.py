@@ -5,7 +5,9 @@ IB API.
 import asyncio
 import datetime
 import threading
-from typing import Optional
+from typing import List, Optional
+
+from deprecated import sphinx
 
 from ibapi import contract as ib_contract
 
@@ -83,6 +85,12 @@ class IBBridge:
 
     ## Interacts with IB APIs
     # Contracts
+    @sphinx.deprecated(
+        version='0.2',
+        reason="Function will be removed in the future if it's not compatible "
+                "with the updates. Suggest to retrieve the contracts by using "
+                "function `search_detailed_contract(contract)` instead."
+    )
     async def get_us_stock_contract(self, symbol: str) -> ib_contract.Contract:
         """Resolve the IB US stock contract.
 
@@ -114,6 +122,12 @@ class IBBridge:
 
         return result
 
+    @sphinx.deprecated(
+        version='0.2',
+        reason="Function will be removed in the future if it's not compatible "
+                "with the updates. Suggest to retrieve the contracts by using "
+                "function `search_detailed_contract(contract)` instead."
+    )
     async def get_us_future_contract(
             self, symbol: str, contract_month: Optional[str] = None
         ) -> ib_contract.Contract:
@@ -161,6 +175,33 @@ class IBBridge:
             raise err
 
         return result
+
+    async def search_detailed_contracts(self, contract: ib_contract.Contract) \
+        -> List[ib_contract.ContractDetails]:
+        """Search the contracts with complete details from IB's database.
+
+        Args:
+            contract (:obj:`ibapi.contract.Contract): `Contract` object with
+                partially completed info
+                    - e.g. symbol, currency, etc...
+
+        Returns:
+            List[ibapi.contract.ContractDetails]: Fully fledged IB contract(s)
+                with detailed info.
+
+        Raises:
+            ibpy_native.error.IBError: If
+                - no result is found with the contract provided;
+                - there's any error returned from IB.
+        """
+        try:
+            res: List[ib_contract.ContractDetails] = await self._client\
+                .resolve_contracts(req_id=self._wrapper.next_req_id,
+                                   contract=contract)
+        except error.IBError as err:
+            raise err
+
+        return  res
 
     # Historical data
     async def get_earliest_data_point(

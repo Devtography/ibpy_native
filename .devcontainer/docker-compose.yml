@@ -1,0 +1,29 @@
+version: '3.8'
+services:
+    docker-host:
+        image: qoomon/docker-host
+        container_name: ibpy_native.host
+        deploy:
+            resources:
+                limits:
+                    memory: 8M
+        cap_add: [ 'NET_ADMIN', 'NET_RAW' ]
+        restart: on-failure
+        networks:
+            - ibpy
+    ibpy:
+        depends_on: [ docker-host ]
+        image: devtography/pyvim:py3.7
+        container_name: ibpy_native
+        volumes:
+            - ../:/workspace
+        working_dir: /workspace
+        stdin_open: true
+        tty: true
+        environment:
+            - IB_HOST=docker-host
+        networks:
+            - ibpy
+networks:
+    ibpy:
+        name: ibpy_default

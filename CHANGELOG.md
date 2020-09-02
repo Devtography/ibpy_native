@@ -6,6 +6,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.2.0] - 2020-09-02
+`v0.2.0` is a minor release refactored most of the project to adopt async/await
+syntax, added support of streaming live "tick-by-tick" data from IB, and
+restructured the project.
+
+### Added
+- Module `ibpy_native.utils.datatype` to hold `Enum` or `TypedDict` for types of
+  function arguments or return objects.
+- Listener to receive system notifications from IB (via
+  `ibpy_native.interfaces.listeners.NotificationListener`) in public class
+  `ibpy_native.bridge.IBBridge`.
+  - Corresponding setter `set_on_notify_listener(listener)`.
+- Function `ibpy_native.bridge.IBBridge.search_detailed_contracts(contract)` to
+  search for contracts with complete details from IB's database. This newly
+  implemented function is recommended to replace the deprecated functions
+  `get_us_stock_contract(symbol)` & `get_us_future_contract(symbol, contract_month)`
+  in `IBBridge`.
+- Feature of streaming live "tick-by-tick" data from IB via functions
+  `ibpy_native.bridge.IBBridge.stream_live_ticks(contract, listener, tick_type=ibpy_native.utils.datatype.LiveTicks.LAST)` and
+  `ibpy_native.bridge.IBBridge.stop_live_ticks_stream(stream_id)`.
+
+### Changed
+- Existing code to align the code style with 
+  [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html#s3.16-naming).
+- Module files location to group them in corresponding sub-packages.
+- Name of classes, variables, and functions to get rid of the prepended double
+  underscore and prepended single underscore for all non-public classes/members
+  to mark for internal usage.
+- Mechanism of internal queue management.
+- Minimum Python version requirement to `3.7` as some of the built-in feature of
+  `3.7` is being used in the project.
+
+### Deprecated
+- Function `ibpy_native.bridge.IBBridge.get_us_stock_contract(symbol)`.
+- Function `ibpy_native.bridge.IBBridge.get_us_future_contract(symbol, contract_month)`.
+- Script `cmd/fetch_us_historical_ticks.py`. This script might be updated to
+  work with the refactored functions in future release, but it's not usable for
+  now.
+
+### Removed
+- Argument `timeout` on all APIs implemented (use function 
+  `asyncio.wait_for(aw, timeout, *, loop=None)` for timeout instead if needed).
+
 ## [v0.1.4] - 2020-06-01
 `v0.1.4` is a hotfix release addressing the issue of various errors which will 
 be raised while fetching the historical ticks.
@@ -84,7 +127,8 @@ returns with `finished` mark as `True` unexpectedly while IB returns less than
 1000 records but there're more historical ticks those should be fetched 
 in next request.
 
-[Unreleased]: https://github.com/Devtography/ibpy_native/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/Devtography/ibpy_native/compare/v0.2.0...HEAD
+[v0.2.0]: https://github.com/Devtography/ibpy_native/compare/v0.2.0...v0.1.4
 [v0.1.4]: https://github.com/Devtography/ibpy_native/compare/v0.1.4...v0.1.3 
 [v0.1.3]: https://github.com/Devtography/ibpy_native/compare/v0.1.3...v0.1.2
 [v0.1.2]: https://github.com/Devtography/ibpy_native/compare/v0.1.2...v0.1.1

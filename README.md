@@ -1,5 +1,8 @@
 # IbPy Native - Interactive Brokers Native Python API
 
+A fully asynchronous framework for using the native Python version of
+Interactive Brokers API.
+
 ## Installation
 Install from PyPI
 ```sh
@@ -15,8 +18,9 @@ __*Always use the newest version while the project is still in alpha!*__
 
 ## Usage
 ```python
-import ibpy_native
 import pytz
+from ibapi import contract as ib_contract
+from ibpy_native import bridge as ibpy_bridge
 
 # Set the timezone to match the timezone specified in TWS or IB Gateway when login
 # Default timezone - 'America/New_York'
@@ -24,65 +28,55 @@ ibpy_native.IBBridge.set_timezone(pytz.timezone('America/New_York'))
 
 
 # Connect to a running TWS or IB Gateway instance
-bridge = ibpy_native.IBBridge(host='127.0.0.1', port=4001, client_id=1, auto_conn=True)
-```
+bridge = ibpy_bridge.IBBridge(
+    host='127.0.0.1', port=4001, client_id=1, auto_conn=True
+)
 
-An optional parameter `timeout` is available for all APIs implemented in 
-`IBBridge`. The timeout value is treated as `X` seconds, and the default timeout 
-time has been set to 10 seconds.
-
-```python
 # Search the US stock contract of Apple Inc.
-aapl = bridge.get_us_stock_contract(symbol='AAPL')
+aapl_contract = ib_contract.Contract()
+aapl_contract.symbol = 'AAPL'
+aapl_contract.secType = 'STK'
+aapl_contract.exchange = 'SMART'
+aapl_contract.currency = 'USD'
+
+# Sometimes just defining the `Contract` object yourself is enough to match an
+# unique contract on IB and make requests for the contract, but performing a
+# search can ensure you get the valid & unique contract to work with.
+search_results = await bridge.search_detailed_contracts(
+    contract=aapl_contract
+)
 
 # Ask for the earliest available data point of AAPL
-head_time = bridge.get_earliest_data_point(contract=aapl, data_type='TRADES')
-
-# Get all historical ticks of AAPL
-#
-# It's better to set the timeout value a bit long (e.g. 30~100s) as this API 
-# loops to request around 1000 historical ticks for each IB API request due to 
-# IB's limitation. IB will slow down the response time after the first 10~20 
-# requests, thus the default 10s timeout is likely to be insufficient to wait 
-# for the following API responses from IB.
-ticks = bridge.get_historical_ticks(contract=aapl, data_type='TRADES', timeout=100)
+head_timestamp = await bridge.get_earliest_data_point(
+    contract=search_results[0].contract
+)
 ```
-
-Scripts in `cmd` folder are designed provide instant access to some functions 
-implemented in `ibpy_native`. You can simply run the Python scripts in virtual 
-environment to make use of them.
-```sh
-# Make sure you are at root directory of the package before calling pipenv to 
-# run the script or enter the virtual environment, as it will load the .env 
-# file which adds the current directory path to PYTHONPATH.
-pipenv shell
-
-# e.g. fetch all historical ticks of YM 2020 MAR contract
-python cmd/fetch_us_historical_ticks.py YM fut 202003
-```
-Other options for the scripts can be found by using the `-h` or `--help` flags.
 
 ## System requirements
-- Python >= 3.5; Pervious versions are not supported (development is based on 
+- Python >= 3.7; Pervious versions are not supported (development is based on 
 Python 3.7.7)
 - _Included IB API version - `9.79.01`_
 
 ## Development status (a.k.a. Words from developers)
 Although the project is under the stage of active development, up until now
-(ver. 0.1.1) it focuses on retrieving historical ticks for stock & future
-contracts from IB. Other security types (e.g. options) may work but those are
-not yet tested.
+(`v0.2.0`) it focuses on working with FX, stock & future contracts from IB.
+Other security types (e.g. options) may work but those are not yet tested.
 
-Other features like retrieving account details, place & modify orders are
-planned to be implemented in the future, but there is no estimated timeline for 
-those atm, as the project is being developed alongside Devtography internal 
-algo-trading program. For now, the features will be developed and released when 
-needed.
+This project is not providing full features of IB API yet, but basic features 
+like retrieving data of contracts from IB, getting live & historical ticks are
+ready to be used. Remaining features like retrieving account details, place & 
+modify orders are planned to be implemented prior the first stable release 
+(`v1.0.0`), but there is no estimated timeline for those atm, as the project is
+being developed alongside Devtography internal algo-trading program, so as my
+daily job. For now, the features will be developed and released when needed.
 
 ## Contributions
 Contributions via pull requests are welcome and encouraged. If there's any 
 feature you think is missing, please don't hesitate to implement yourself and 
 make a pull request :)
+
+_Please follow the [Google Python Style Guide] as much as possible for all the
+code included in your pull request. Otherwise the pull request may be rejected._
 
 ## License
 Modules included in `ibpy_native`, except `ibapi` is licensed under the 
@@ -98,4 +92,5 @@ affiliated with IB. If you'd like to use `ibpy_native` in any commercial
 application/product, you must contact Interactive Brokers LLC for permission 
 of using IB API commercially.
 
+[Google Python Style Guide]: https://google.github.io/styleguide/pyguide.html
 [TWS API Non-Commercial License]: https://interactivebrokers.github.io/index.html

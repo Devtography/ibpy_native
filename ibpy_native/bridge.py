@@ -86,7 +86,7 @@ class IBBridge:
     ## Interacts with IB APIs
     # Contracts
     @sphinx.deprecated(
-        version='0.2',
+        version='0.2.0',
         reason="Function will be removed in the future if it's not compatible "
                 "with the updates. Suggest to retrieve the contracts by using "
                 "function `search_detailed_contract(contract)` instead."
@@ -123,7 +123,7 @@ class IBBridge:
         return result
 
     @sphinx.deprecated(
-        version='0.2',
+        version='0.2.0',
         reason="Function will be removed in the future if it's not compatible "
                 "with the updates. Suggest to retrieve the contracts by using "
                 "function `search_detailed_contract(contract)` instead."

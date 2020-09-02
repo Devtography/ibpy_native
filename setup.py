@@ -1,6 +1,6 @@
 # Always prefer setuptools over distutils
-from setuptools import setup, find_packages
 from os import path
+from setuptools import setup, find_packages
 
 here = path.abspath(path.dirname(__file__))
 
@@ -30,7 +30,7 @@ setup(
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version="0.1.4",  # Required
+    version="0.2.0",  # Required
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
@@ -74,7 +74,7 @@ setup(
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         # Indicate who your project is intended for
         "Intended Audience :: Developers",
         "Topic :: Software Development :: Libraries",
@@ -84,8 +84,6 @@ setup(
         # that you indicate whether you support Python 2, Python 3 or both.
         # These classifiers are *not* checked by 'pip install'. See instead
         # 'python_requires' below.
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
     ],
     # This field adds keywords for your project which will appear on the
@@ -102,20 +100,24 @@ setup(
     #
     #   py_modules=["my_module"],
     #
-    packages=find_packages(exclude=["contrib", "docs", "tests"]),  # Required
+    packages=find_packages(exclude=["cmd", "contrib", "docs", "tests", "tests.*"]),  # Required
     # Specify which Python versions you support. In contrast to the
     # 'Programming Language' classifiers above, 'pip install' will check this
     # and refuse to install the project if the version does not match. If you
     # do not support Python 2, you can simplify this to '>=3.5' or similar, see
     # https://packaging.python.org/guides/distributing-packages-using-setuptools/#python-requires
-    python_requires=">=3.5, <4",
+    python_requires=">=3.7",
     # This field lists other packages that your project depends on to run.
     # Any package you put here will be installed by pip when your project is
     # installed, so they must be valid existing projects.
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=["pytz==2020.1", "typing-extensions==3.7.4.2"],  # Optional
+    install_requires=[
+        "deprecated==1.2.10",
+        "pytz==2020.1",
+        "typing-extensions==3.7.4.3",
+    ],  # Optional
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
     # syntax, for example:

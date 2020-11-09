@@ -28,7 +28,9 @@ class IBBridge:
         self._port = port
         self._client_id = client_id
 
-        self._wrapper = ib_wrapper._IBWrapper(listener=notification_listener)
+        self._wrapper = ib_wrapper._IBWrapper(
+            notification_listener=notification_listener
+        )
         self._client = ib_client._IBClient(wrapper=self._wrapper)
 
         if auto_conn:

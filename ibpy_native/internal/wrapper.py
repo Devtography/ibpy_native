@@ -16,9 +16,15 @@ class _IBWrapper(wrapper.EWrapper):
 
     _req_queue: Dict[int, fq._FinishableQueue] = {}
 
-    def __init__(self,
-                 listener: Optional[listeners.NotificationListener] = None):
-        self._listener: Optional[listeners.NotificationListener] = listener
+    def __init__(
+            self,
+            notification_listener: Optional[
+                    listeners.NotificationListener
+                ] = None
+        ):
+        self._notification_listener: Optional[
+                listeners.NotificationListener
+            ] = notification_listener
 
         super().__init__()
 
@@ -85,7 +91,6 @@ class _IBWrapper(wrapper.EWrapper):
         """
         return self._req_queue[req_id] if req_id in self._req_queue else None
 
-    # Error handling
     def set_on_notify_listener(self, listener: listeners.NotificationListener):
         """Setter for optional `NotificationListener`.
 
@@ -93,8 +98,9 @@ class _IBWrapper(wrapper.EWrapper):
             listener (ibpy_native.interfaces.listeners.NotificationListener):
                 Listener for IB notifications.
         """
-        self._listener = listener
+        self._notification_listener = listener
 
+    # Error handling
     def error(self, reqId, errorCode, errorString):
         # override method
         err = error.IBError(rid=reqId, err_code=errorCode, err_str=errorString)
@@ -103,8 +109,11 @@ class _IBWrapper(wrapper.EWrapper):
         if reqId is not -1:
             self._req_queue[reqId].put(element=err)
         else:
-            if self._listener is not None:
-                self._listener.on_notify(msg_code=errorCode, msg=errorString)
+            if self._notification_listener is not None:
+                self._notification_listener.on_notify(
+                    msg_code=errorCode,
+                    msg=errorString
+                )
 
     # Get contract details
     def contractDetails(self, reqId, contractDetails):

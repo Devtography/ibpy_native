@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Union
 from ibapi import wrapper
 
 from ibpy_native import error
+from ibpy_native.interfaces import delegates
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import finishable_queue as fq
 
@@ -13,6 +14,9 @@ class _IBWrapper(wrapper.EWrapper):
     """The wrapper deals with the action coming back from the IB gateway or
     TWS instance.
     """
+
+    # Delegates
+    _account_list_delegate: Optional[delegates._AccountListDelegate] = None
 
     _req_queue: Dict[int, fq._FinishableQueue] = {}
 
@@ -90,6 +94,17 @@ class _IBWrapper(wrapper.EWrapper):
                 `_FinishableQueue` object.
         """
         return self._req_queue[req_id] if req_id in self._req_queue else None
+
+    # Setters
+    def set_account_list_delegate(self,
+                                  delegate: delegates._AccountListDelegate):
+        """Setter for optional `_AccountListDelegate`.
+
+        Args:
+            delegate (ibpy_native.interfaces.delegates._AccountListDelegate):
+                Delegate for managing IB account list.
+        """
+        self._account_list_delegate = delegate
 
     def set_on_notify_listener(self, listener: listeners.NotificationListener):
         """Setter for optional `NotificationListener`.

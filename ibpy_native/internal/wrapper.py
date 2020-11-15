@@ -130,6 +130,19 @@ class _IBWrapper(wrapper.EWrapper):
                     msg=errorString
                 )
 
+    # Accounts & portfolio
+    def managedAccounts(self, accountsList: str):
+        # override method
+        # Trim the spaces in `accountsList` received
+        trimmed = "".join(accountsList.split())
+        # Separate different account IDs into a list
+        account_list = trimmed.split(',')
+
+        if self._account_list_delegate is not None:
+            self._account_list_delegate.on_account_list_update(
+                account_list=account_list
+            )
+
     # Get contract details
     def contractDetails(self, reqId, contractDetails):
         # override method

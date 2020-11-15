@@ -1,7 +1,8 @@
 """Unit tests for module `ibpy_native.wrapper`."""
 # pylint: disable=protected-access
-import os
+import asyncio
 import enum
+import os
 import threading
 import unittest
 
@@ -90,6 +91,19 @@ class TestIBWrapper(unittest.TestCase):
         self._wrapper.error(reqId=-1, errorCode=1100, errorString="MOCK MSG")
 
         self.assertTrue(mock_listener.triggered)
+
+    @utils.async_test
+    async def test_managed_accounts(self):
+        """ Test overridden function `managedAccounts`."""
+        mock_delegate = utils.MockAccountListDelegate()
+
+        self._wrapper.set_account_list_delegate(delegate=mock_delegate)
+        self._client.reqManagedAccts()
+
+        await asyncio.sleep(1)
+
+        print(mock_delegate.accounts)
+        self.assertTrue(mock_delegate.accounts)
 
     @utils.async_test
     async def test_historical_ticks(self):

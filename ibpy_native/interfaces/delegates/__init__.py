@@ -1,2 +1,2 @@
 """Interfaces of delegates."""
-from .accounts import _AccountListDelegate
+from .account import _AccountListDelegate

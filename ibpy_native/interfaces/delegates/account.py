@@ -2,15 +2,16 @@
 import abc
 from typing import List
 
+from ibpy_native import account
+
 class _AccountListDelegate(metaclass=abc.ABCMeta):
     """Internal delegate protocol for accounts & portfolio related features."""
     @property
     @abc.abstractmethod
-    def accounts(self) -> List[str]:
-        """Abstract getter of a list of account IDs.
+    def accounts(self) -> List[account.Account]:
+        """Abstract getter of a list of `Account` instance.
 
-        This property should be implemented to return the internal account ID
-        list.
+        This property should be implemented to return the IB account list.
         """
         return NotImplemented
 

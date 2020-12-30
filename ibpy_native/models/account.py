@@ -1,4 +1,4 @@
-"""IB account related resources."""
+"""Models for IB account(s)."""
 from typing_extensions import Final
 
 class Account:

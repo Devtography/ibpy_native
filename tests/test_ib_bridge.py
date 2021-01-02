@@ -64,6 +64,14 @@ class TestIBBridge(unittest.TestCase):
             host=TEST_HOST, port=TEST_PORT, client_id=TEST_ID
         )
 
+    @utils.async_test
+    async def test_accounts_manager(self):
+        """Test if the `AccountsManager` is properly set up and has the
+        account(s) received from IB Gateway once logged in.
+        """
+        await asyncio.sleep(0.5) # Wait for the Gateway to return account ID(s).
+        self.assertTrue(self._bridge.accounts_manager.accounts)
+
     def test_set_timezone(self):
         """Test function `set_timezone`."""
         ibpy_native.IBBridge.set_timezone(tz=pytz.timezone('Asia/Hong_Kong'))

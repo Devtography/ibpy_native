@@ -11,6 +11,7 @@ from deprecated import sphinx
 
 from ibapi import contract as ib_contract
 
+from ibpy_native import account
 from ibpy_native import error
 from ibpy_native.interfaces import listeners
 from ibpy_native.internal import client as ib_client
@@ -19,22 +20,40 @@ from ibpy_native.utils import const
 from ibpy_native.utils import datatype as dt
 
 class IBBridge:
-    """Public class to bridge between `ibpy-native` & IB API"""
+    """Public class to bridge between `ibpy-native` & IB API."""
 
-    def __init__(self, host='127.0.0.1', port=4001, client_id=1, auto_conn=True,
-                 notification_listener: \
-                    Optional[listeners.NotificationListener] = None):
+    def __init__(
+            self, host: str = '127.0.0.1', port: int = 4001,
+            client_id: int = 1, auto_conn: bool = True,
+            notification_listener: \
+                    Optional[listeners.NotificationListener] = None,
+            accounts_manager: Optional[account.AccountsManager] = None
+        ):
         self._host = host
         self._port = port
         self._client_id = client_id
+        self._accounts_manager = (
+            account.AccountsManager() if accounts_manager is None
+            else accounts_manager
+        )
 
         self._wrapper = ib_wrapper._IBWrapper(
             notification_listener=notification_listener
         )
+        self._wrapper.set_account_list_delegate(delegate=self._accounts_manager)
+
         self._client = ib_client._IBClient(wrapper=self._wrapper)
 
         if auto_conn:
             self.connect()
+
+    # Properties
+    @property
+    def accounts_manager(self) -> account.AccountsManager:
+        """:obj:`account.AccountsManager`: Instance that stores & manages all IB
+        account(s) related data.
+        """
+        return self._accounts_manager
 
     # Setters
     @staticmethod

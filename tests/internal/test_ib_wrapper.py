@@ -102,7 +102,6 @@ class TestIBWrapper(unittest.TestCase):
 
         await asyncio.sleep(1)
 
-        print(mock_delegate.accounts)
         self.assertTrue(mock_delegate.accounts)
 
     @utils.async_test

@@ -1,7 +1,8 @@
 """Unit tests for module `ibpy_native.wrapper`."""
 # pylint: disable=protected-access
-import os
+import asyncio
 import enum
+import os
 import threading
 import unittest
 
@@ -59,6 +60,18 @@ class TestIBWrapper(unittest.TestCase):
         await f_queue.get()
         self.assertEqual(self._wrapper.next_req_id, 1)
 
+    def test_account_list_delegate(self):
+        """Test `_AccountListDelegate` implementation."""
+        mock_delegate = utils.MockAccountListDelegate()
+
+        self._wrapper.set_account_list_delegate(delegate=mock_delegate)
+        mock_delegate.on_account_list_update(
+            account_list=['DU0000140', 'DU0000141']
+        )
+
+        print(mock_delegate.accounts)
+        self.assertTrue(mock_delegate.accounts)
+
     def test_notification_listener(self):
         """Test notification listener approach."""
         class MockListener(listeners.NotificationListener):
@@ -78,6 +91,18 @@ class TestIBWrapper(unittest.TestCase):
         self._wrapper.error(reqId=-1, errorCode=1100, errorString="MOCK MSG")
 
         self.assertTrue(mock_listener.triggered)
+
+    @utils.async_test
+    async def test_managed_accounts(self):
+        """ Test overridden function `managedAccounts`."""
+        mock_delegate = utils.MockAccountListDelegate()
+
+        self._wrapper.set_account_list_delegate(delegate=mock_delegate)
+        self._client.reqManagedAccts()
+
+        await asyncio.sleep(1)
+
+        self.assertTrue(mock_delegate.accounts)
 
     @utils.async_test
     async def test_historical_ticks(self):

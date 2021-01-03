@@ -1,10 +1,13 @@
 """Utilities for making unittests easier to write."""
+# pylint: disable=protected-access
 import asyncio
 from typing import List, Union
 
 from ibapi import wrapper as ib_wrapper
 
 from ibpy_native import error
+from ibpy_native import models
+from ibpy_native.interfaces import delegates
 from ibpy_native.interfaces import listeners
 
 def async_test(fn):
@@ -16,6 +19,20 @@ def async_test(fn):
         return loop.run_until_complete(fn(*args, **kwargs))
 
     return wrapper
+
+class MockAccountListDelegate(delegates._AccountListDelegate):
+    """Mock accounts delegate"""
+
+    _account_list: List[models.Account] = []
+
+    @property
+    def accounts(self) -> List[models.Account]:
+        return self._account_list
+
+    def on_account_list_update(self, account_list: List[str]):
+        # self._account_list = account_list
+        for account_id in account_list:
+            self._account_list.append(models.Account(account_id))
 
 class MockLiveTicksListener(listeners.LiveTicksListener):
     """Mock notification listener"""

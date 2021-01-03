@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Union
 from ibapi import wrapper
 
 from ibpy_native import error
+from ibpy_native.interfaces import delegates
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import finishable_queue as fq
 
@@ -13,12 +14,18 @@ class _IBWrapper(wrapper.EWrapper):
     """The wrapper deals with the action coming back from the IB gateway or
     TWS instance.
     """
-
     _req_queue: Dict[int, fq._FinishableQueue] = {}
 
-    def __init__(self,
-                 listener: Optional[listeners.NotificationListener] = None):
-        self._listener: Optional[listeners.NotificationListener] = listener
+    def __init__(
+            self,
+            notification_listener: Optional[
+                listeners.NotificationListener] = None
+        ):
+        self._account_list_delegate: Optional[
+            delegates._AccountListDelegate] = None
+
+        self._notification_listener: Optional[
+                listeners.NotificationListener] = notification_listener
 
         super().__init__()
 
@@ -85,7 +92,17 @@ class _IBWrapper(wrapper.EWrapper):
         """
         return self._req_queue[req_id] if req_id in self._req_queue else None
 
-    # Error handling
+    # Setters
+    def set_account_list_delegate(self,
+                                  delegate: delegates._AccountListDelegate):
+        """Setter for optional `_AccountListDelegate`.
+
+        Args:
+            delegate (ibpy_native.interfaces.delegates._AccountListDelegate):
+                Delegate for managing IB account list.
+        """
+        self._account_list_delegate = delegate
+
     def set_on_notify_listener(self, listener: listeners.NotificationListener):
         """Setter for optional `NotificationListener`.
 
@@ -93,8 +110,9 @@ class _IBWrapper(wrapper.EWrapper):
             listener (ibpy_native.interfaces.listeners.NotificationListener):
                 Listener for IB notifications.
         """
-        self._listener = listener
+        self._notification_listener = listener
 
+    # Error handling
     def error(self, reqId, errorCode, errorString):
         # override method
         err = error.IBError(rid=reqId, err_code=errorCode, err_str=errorString)
@@ -103,8 +121,24 @@ class _IBWrapper(wrapper.EWrapper):
         if reqId is not -1:
             self._req_queue[reqId].put(element=err)
         else:
-            if self._listener is not None:
-                self._listener.on_notify(msg_code=errorCode, msg=errorString)
+            if self._notification_listener is not None:
+                self._notification_listener.on_notify(
+                    msg_code=errorCode,
+                    msg=errorString
+                )
+
+    # Accounts & portfolio
+    def managedAccounts(self, accountsList: str):
+        # override method
+        # Trim the spaces in `accountsList` received
+        trimmed = "".join(accountsList.split())
+        # Separate different account IDs into a list
+        account_list = trimmed.split(',')
+
+        if self._account_list_delegate is not None:
+            self._account_list_delegate.on_account_list_update(
+                account_list=account_list
+            )
 
     # Get contract details
     def contractDetails(self, reqId, contractDetails):

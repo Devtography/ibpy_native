@@ -14,21 +14,18 @@ class _IBWrapper(wrapper.EWrapper):
     """The wrapper deals with the action coming back from the IB gateway or
     TWS instance.
     """
-
-    # Delegates
-    _account_list_delegate: Optional[delegates._AccountListDelegate] = None
-
     _req_queue: Dict[int, fq._FinishableQueue] = {}
 
     def __init__(
             self,
             notification_listener: Optional[
-                    listeners.NotificationListener
-                ] = None
+                listeners.NotificationListener] = None
         ):
+        self._account_list_delegate: Optional[
+            delegates._AccountListDelegate] = None
+
         self._notification_listener: Optional[
-                listeners.NotificationListener
-            ] = notification_listener
+                listeners.NotificationListener] = notification_listener
 
         super().__init__()
 

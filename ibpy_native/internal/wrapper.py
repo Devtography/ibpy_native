@@ -3,6 +3,7 @@
 import queue
 from typing import Dict, List, Optional, Union
 
+from ibapi import contract as ib_contract
 from ibapi import wrapper
 
 from ibpy_native import error
@@ -127,7 +128,7 @@ class _IBWrapper(wrapper.EWrapper):
                     msg=errorString
                 )
 
-    # Accounts & portfolio
+    #region - Accounts & portfolio
     def managedAccounts(self, accountsList: str):
         # override method
         # Trim the spaces in `accountsList` received
@@ -139,6 +140,39 @@ class _IBWrapper(wrapper.EWrapper):
             self._account_list_delegate.on_account_list_update(
                 account_list=account_list
             )
+
+    #region - account updates
+    def updateAccountValue(self, key: str, val: str, currency: str,
+                           accountName: str):
+        # override method
+        super().updateAccountValue(key, val, currency, accountName)
+        print(f'Key: {key}\nValue: {val}\nCurrency: {currency}\n'
+              f'Account Name: {accountName}\n')
+
+    def updatePortfolio(self, contract: ib_contract.Contract, position: float,
+                        marketPrice: float, marketValue: float,
+                        averageCost: float, unrealizedPNL: float,
+                        realizedPNL: float, accountName: str):
+        # override method
+        print(contract)
+        print(f'Position: {position}\nMarket Price: {marketPrice}\n'
+              f'Market Value: {marketValue}\nAvg Cost: {averageCost}\n'
+              f'Unrealized P&L: {unrealizedPNL}\nRealized P&L: {realizedPNL}\n'
+              f'Account Name: {accountName}')
+
+    def updateAccountTime(self, timeStamp: str):
+        # override method
+        super().updateAccountTime(timeStamp)
+
+        print(timeStamp)
+
+    def accountDownloadEnd(self, accountName: str):
+        # override method
+        super().accountDownloadEnd(accountName)
+
+        print('end')
+    #endregion - account updates
+    #endregion - Accounts & portfolio
 
     # Get contract details
     def contractDetails(self, reqId, contractDetails):

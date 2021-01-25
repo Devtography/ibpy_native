@@ -1,9 +1,11 @@
 """IB account related resources."""
 # pylint: disable=protected-access
+import queue
 from typing import List, Optional
 
 from ibpy_native import models
 from ibpy_native.interfaces import delegates
+from ibpy_native.utils import finishable_queue as fq
 
 class AccountsManager(delegates._AccountListDelegate):
     """Class to manage all IB accounts under the same username logged-in on
@@ -12,6 +14,9 @@ class AccountsManager(delegates._AccountListDelegate):
     def __init__(self, accounts: Optional[List[models.Account]] = None):
         self._accounts: List[models.Account] = ([] if accounts is None
                                                 else accounts)
+        self._account_updates_queue: fq._FinishableQueue = fq._FinishableQueue(
+            queue_to_finish=queue.Queue()
+        )
 
     @property
     def accounts(self) -> List[models.Account]:
@@ -23,6 +28,13 @@ class AccountsManager(delegates._AccountListDelegate):
         """
         # Implements `delegates._AccountListDelegate`
         return self._accounts
+
+    @property
+    def account_updates_queue(self) -> fq._FinishableQueue:
+        """":obj:`ibpy_native.utils.finishable_queue._FinishableQueue`:
+        The queue that stores account updates data from IB Gateway.
+        """
+        return self._account_updates_queue
 
     def on_account_list_update(self, account_list: List[str]):
         """Callback function for internal API callback

@@ -40,7 +40,7 @@ class IBBridge:
         self._wrapper = ib_wrapper._IBWrapper(
             notification_listener=notification_listener
         )
-        self._wrapper.set_account_list_delegate(delegate=self._accounts_manager)
+        self._wrapper.set_account_management_delegate(delegate=self._accounts_manager)
 
         self._client = ib_client._IBClient(wrapper=self._wrapper)
 

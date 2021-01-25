@@ -22,7 +22,7 @@ def async_test(fn):
 
     return wrapper
 
-class MockAccountListDelegate(delegates._AccountListDelegate):
+class MockAccountManagementDelegate(delegates._AccountManagementDelegate):
     """Mock accounts delegate"""
 
     def __init__(self):

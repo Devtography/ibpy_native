@@ -289,11 +289,11 @@ class TestAccountAndPortfolioData(unittest.TestCase):
         setattr(cls.client, "_thread", thread)
 
     def setUp(self):
-        self.mock_delegate = utils.MockAccountListDelegate()
-        self.wrapper.set_account_list_delegate(self.mock_delegate)
+        self.mock_delegate = utils.MockAccountManagementDelegate()
+        self.wrapper.set_account_management_delegate(self.mock_delegate)
 
-    def test_account_list_delegate(self):
-        """Test `_AccountListDelegate` implementation."""
+    def test_account_management_delegate(self):
+        """Test `_AccountManagementDelegate` implementation."""
         self.mock_delegate.on_account_list_update(
             account_list=['DU0000140', 'DU0000141']
         )

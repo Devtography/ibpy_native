@@ -6,7 +6,7 @@ from typing import List
 from ibpy_native import models
 from ibpy_native.utils import finishable_queue as fq
 
-class _AccountListDelegate(metaclass=abc.ABCMeta):
+class _AccountManagementDelegate(metaclass=abc.ABCMeta):
     """Internal delegate protocol for accounts & portfolio related features."""
     @property
     @abc.abstractmethod

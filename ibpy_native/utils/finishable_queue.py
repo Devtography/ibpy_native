@@ -9,7 +9,8 @@ from typing import Iterator, Any
 # Queue status
 class _Status(enum.Enum):
     """Status codes for `_FinishableQueue`"""
-    STARTED = 103
+    INIT = 0
+    READY = 103
     ERROR = 500
     FINISHED = 200
     TIMEOUT = 408
@@ -26,16 +27,13 @@ class _FinishableQueue():
     def __init__(self, queue_to_finish: queue.Queue):
         self._lock = threading.Lock()
         self._queue = queue_to_finish
-        self._status = _Status.STARTED
+        self._status = _Status.INIT
 
     @property
     def status(self) -> _Status:
-        """Get status of the finishable queue.
-
-        Returns:
-            ibpy_native.utils.finishable_queue._Status: Enum `_Status`
-                represents either the queue has been started, finished,
-                timeout, or encountered error.
+        """:obj:`ibpy_native.utils.finishable_queue._Status`: Status represents
+        wether the queue is newly initialised, ready for use, finished,
+        timeout, or encountered error.
         """
         return self._status
 
@@ -56,10 +54,14 @@ class _FinishableQueue():
         status is marked as either `TIMEOUT` or `FINISHED`
         """
         if self.finished:
-            self._status = _Status.STARTED
+            self._status = _Status.READY
 
     def put(self, element: Any):
         """Setter to put element to internal synchronised queue."""
+        if self._status is _Status.INIT:
+            with self._lock:
+                self._status = _Status.READY
+
         self._queue.put(element)
 
     async def get(self) -> list:

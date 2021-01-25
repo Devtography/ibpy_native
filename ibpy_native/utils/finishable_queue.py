@@ -2,6 +2,7 @@
 import asyncio
 import enum
 import queue
+import threading
 
 from typing import Iterator, Any
 
@@ -14,14 +15,16 @@ class _Status(enum.Enum):
     TIMEOUT = 408
 
 class _FinishableQueue():
-    """This class takes a built-in `Queue` object to handle the async tasks by
-    managing its' status based on elements retrieve from the `Queue` object.
+    """Thread-safe class that takes a built-in `queue.Queue` object to handle
+    the async tasks by managing its' status based on elements retrieve from the
+    `Queue` object.
 
     Args:
         queue_to_finish (:obj:`queue.Queue`): queue object assigned to handle
             the async task
     """
     def __init__(self, queue_to_finish: queue.Queue):
+        self._lock = threading.Lock()
         self._queue = queue_to_finish
         self._status = _Status.STARTED
 
@@ -75,10 +78,12 @@ class _FinishableQueue():
             )
 
             if current_element is _Status.FINISHED:
-                self._status = _Status.FINISHED
+                with self._lock:
+                    self._status = _Status.FINISHED
             else:
                 if isinstance(current_element, BaseException):
-                    self._status = _Status.ERROR
+                    with self._lock:
+                        self._status = _Status.ERROR
 
                 contents_of_queue.append(current_element)
 
@@ -96,8 +101,10 @@ class _FinishableQueue():
             )
 
             if current_element is _Status.FINISHED:
-                self._status = current_element
+                with self._lock:
+                    self._status = current_element
             elif isinstance(current_element, BaseException):
-                self._status = _Status.ERROR
+                with self._lock:
+                    self._status = _Status.ERROR
 
             yield current_element

@@ -8,6 +8,7 @@ import unittest
 
 from ibapi import wrapper as ib_wrapper
 
+from ibpy_native import models
 from ibpy_native.interfaces import listeners
 from ibpy_native.internal import client as ibpy_client
 from ibpy_native.internal import wrapper as ibpy_wrapper
@@ -61,18 +62,6 @@ class TestIBWrapper(unittest.TestCase):
         await f_queue.get()
         self.assertEqual(self._wrapper.next_req_id, 1)
 
-    def test_account_list_delegate(self):
-        """Test `_AccountListDelegate` implementation."""
-        mock_delegate = utils.MockAccountListDelegate()
-
-        self._wrapper.set_account_list_delegate(delegate=mock_delegate)
-        mock_delegate.on_account_list_update(
-            account_list=['DU0000140', 'DU0000141']
-        )
-
-        print(mock_delegate.accounts)
-        self.assertTrue(mock_delegate.accounts)
-
     def test_notification_listener(self):
         """Test notification listener approach."""
         class MockListener(listeners.NotificationListener):
@@ -92,50 +81,6 @@ class TestIBWrapper(unittest.TestCase):
         self._wrapper.error(reqId=-1, errorCode=1100, errorString="MOCK MSG")
 
         self.assertTrue(mock_listener.triggered)
-
-    #region - IB account related
-    @utils.async_test
-    async def test_managed_accounts(self):
-        """Test overridden function `managedAccounts`."""
-        mock_delegate = utils.MockAccountListDelegate()
-
-        self._wrapper.set_account_list_delegate(delegate=mock_delegate)
-        self._client.reqManagedAccts()
-
-        await asyncio.sleep(1)
-
-        self.assertTrue(mock_delegate.accounts)
-
-    #region - account updates
-    @utils.async_test
-    async def test_update_account_value(self):
-        """Test overridden function `updateAccountValue`."""
-        await self._start_account_updates()
-
-        await self._cancel_account_updates()
-
-    @utils.async_test
-    async def test_update_portfolio(self):
-        """Test overridden function `updatePortfolio`."""
-        await self._start_account_updates()
-
-        await self._cancel_account_updates()
-
-    @utils.async_test
-    async def test_update_account_time(self):
-        """Test overridden function `updateAccountTime`."""
-        await self._start_account_updates()
-
-        await self._cancel_account_updates()
-
-    @utils.async_test
-    async def test_account_download_end(self):
-        """Test overridden function `accountDownloadEnd`"""
-        await self._start_account_updates()
-
-        await self._cancel_account_updates()
-    #endregion - account updates
-    #endregion - IB account related
 
     # Historical market data
     @utils.async_test
@@ -321,14 +266,98 @@ class TestIBWrapper(unittest.TestCase):
     def tearDownClass(cls):
         cls._client.disconnect()
 
+class TestAccountAndPortfolioData(unittest.TestCase):
+    """Unit tests for account and portfolio data related callbacks & functions
+    in class `ibpy_native.internal.wrapper._IBWrapper`.
+
+    Connection with IB Gateway is required for this test suit.
+    """
+    @classmethod
+    def setUpClass(cls):
+        cls.wrapper = ibpy_wrapper._IBWrapper()
+        cls.client = ibpy_client._IBClient(cls.wrapper)
+
+        cls.client.connect(
+            os.getenv('IB_HOST', '127.0.0.1'),
+            int(os.getenv('IB_PORT', '4002')),
+            1001
+        )
+
+        thread = threading.Thread(target=cls.client.run)
+        thread.start()
+
+        setattr(cls.client, "_thread", thread)
+
+    def setUp(self):
+        self.mock_delegate = utils.MockAccountListDelegate()
+        self.wrapper.set_account_list_delegate(self.mock_delegate)
+
+    def test_account_list_delegate(self):
+        """Test `_AccountListDelegate` implementation."""
+        self.mock_delegate.on_account_list_update(
+            account_list=['DU0000140', 'DU0000141']
+        )
+
+        self.assertTrue(self.mock_delegate.accounts)
+
+    @utils.async_test
+    async def test_managed_accounts(self):
+        """Test overridden function `managedAccounts`."""
+        self.client.reqManagedAccts()
+
+        await asyncio.sleep(1)
+
+        self.assertTrue(self.mock_delegate.accounts)
+
+    #region - account updates
+    @utils.async_test
+    async def test_update_account_value(self):
+        """Test overridden function `updateAccountValue`."""
+        await self._start_account_updates()
+        await self._cancel_account_updates()
+
+        result: list = await self.mock_delegate.account_updates_queue.get()
+        self.assertTrue(
+            any(isinstance(data, models.RawAccountValueData) for data in result)
+        )
+
+    @utils.async_test
+    async def test_update_portfolio(self):
+        """Test overridden function `updatePortfolio`."""
+        await self._start_account_updates()
+        await self._cancel_account_updates()
+
+        result: list = await self.mock_delegate.account_updates_queue.get()
+        self.assertTrue(
+            any(isinstance(data, models.RawPortfolioData) for data in result)
+        )
+
+    @utils.async_test
+    async def test_update_account_time(self):
+        """Test overridden function `updateAccountTime`."""
+        await self._start_account_updates()
+        await self._cancel_account_updates()
+
+        result: list = await self.mock_delegate.account_updates_queue.get()
+        self.assertRegex(
+            next(data for data in result if isinstance(data, str)),
+            r"\d{2}:\d{2}"
+        )
+    #endregion - account updates
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.client.disconnect()
+
     #region - Private functions
     async def _start_account_updates(self):
-        self._client.reqAccountUpdates(subscribe=True,
-                                       acctCode=os.getenv("IB_ACC_ID", ""))
+        self.client.reqAccountUpdates(subscribe=True,
+                                      acctCode=os.getenv("IB_ACC_ID", ""))
         await asyncio.sleep(1)
 
     async def _cancel_account_updates(self):
-        self._client.reqAccountUpdates(subscribe=False,
-                                       acctCode=os.getenv("IB_ACC_ID", ""))
+        self.client.reqAccountUpdates(subscribe=False,
+                                      acctCode=os.getenv("IB_ACC_ID", ""))
         await asyncio.sleep(0.5)
+        self.mock_delegate.account_updates_queue.put(fq._Status.FINISHED)
     #endregion

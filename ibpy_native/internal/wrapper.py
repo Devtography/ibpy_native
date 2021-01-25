@@ -7,6 +7,7 @@ from ibapi import contract as ib_contract
 from ibapi import wrapper
 
 from ibpy_native import error
+from ibpy_native import models
 from ibpy_native.interfaces import delegates
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import finishable_queue as fq
@@ -128,6 +129,7 @@ class _IBWrapper(wrapper.EWrapper):
                     msg=errorString
                 )
 
+    #region - Override functions from `wrapper.EWrapper`
     #region - Accounts & portfolio
     def managedAccounts(self, accountsList: str):
         # override method
@@ -144,33 +146,28 @@ class _IBWrapper(wrapper.EWrapper):
     #region - account updates
     def updateAccountValue(self, key: str, val: str, currency: str,
                            accountName: str):
-        # override method
-        super().updateAccountValue(key, val, currency, accountName)
-        print(f'Key: {key}\nValue: {val}\nCurrency: {currency}\n'
-              f'Account Name: {accountName}\n')
+        if self._account_list_delegate:
+            data = models.RawAccountValueData(
+                account=accountName, currency=currency, key=key, val=val
+            )
+            self._account_list_delegate.account_updates_queue.put(data)
 
     def updatePortfolio(self, contract: ib_contract.Contract, position: float,
                         marketPrice: float, marketValue: float,
                         averageCost: float, unrealizedPNL: float,
                         realizedPNL: float, accountName: str):
-        # override method
-        print(contract)
-        print(f'Position: {position}\nMarket Price: {marketPrice}\n'
-              f'Market Value: {marketValue}\nAvg Cost: {averageCost}\n'
-              f'Unrealized P&L: {unrealizedPNL}\nRealized P&L: {realizedPNL}\n'
-              f'Account Name: {accountName}')
+        if self._account_list_delegate:
+            data = models.RawPortfolioData(
+                account=accountName, contract=contract,
+                market_price=marketPrice, market_val=marketValue,
+                avg_cost=averageCost, unrealised_pnl=unrealizedPNL,
+                realised_pnl=realizedPNL
+            )
+            self._account_list_delegate.account_updates_queue.put(data)
 
     def updateAccountTime(self, timeStamp: str):
-        # override method
-        super().updateAccountTime(timeStamp)
-
-        print(timeStamp)
-
-    def accountDownloadEnd(self, accountName: str):
-        # override method
-        super().accountDownloadEnd(accountName)
-
-        print('end')
+        if self._account_list_delegate:
+            self._account_list_delegate.account_updates_queue.put(timeStamp)
     #endregion - account updates
     #endregion - Accounts & portfolio
 
@@ -246,6 +243,7 @@ class _IBWrapper(wrapper.EWrapper):
         record.price = midPoint
 
         self._handle_live_ticks(req_id=reqId, tick=record)
+    #endregion - Override functions from `wrapper.EWrapper`
 
     ## Private functions
     def __init_req_queue(self, req_id: int):

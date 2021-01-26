@@ -14,6 +14,7 @@ class Account:
         self._lock = threading.Lock()
 
         self._account_id = account_id
+        self._account_ready = False
         self._account_values: Dict[str, Union[str, Dict[str, str]]] = {}
         self._destroy_flag = False
 
@@ -21,6 +22,18 @@ class Account:
     def account_id(self) -> str:
         """str: Account ID received from IB Gateway."""
         return self._account_id
+
+    @property
+    def account_ready(self) -> bool:
+        """bool: If false, the account value stored can be out of date or
+        incorrect.
+        """
+        return self._account_ready
+
+    @account_ready.setter
+    def account_ready(self, status: bool):
+        with self._lock:
+            self._account_ready = status
 
     @property
     def destroy_flag(self) -> bool:

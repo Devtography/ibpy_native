@@ -1,5 +1,8 @@
 """Models for IB account(s)."""
 import dataclasses
+import threading
+from typing import Dict, Optional, Union
+
 from typing_extensions import final, Final
 
 from ibapi import contract as ib_contract
@@ -14,6 +17,9 @@ class Account:
     _destroy_flag: bool = False
 
     def __init__(self, account_id: str):
+        self._lock = threading.Lock()
+        self._account_values: Dict[str, Union[str, Dict[str, str]]] = {}
+
         self.account_id = account_id
 
     @property
@@ -26,6 +32,45 @@ class Account:
                 account instance if it's the case.
         """
         return self._destroy_flag
+
+    def get_account_value(self, key: str, currency: str = "") -> Optional[str]:
+        """Returns the value of specified account's information.
+
+        Args:
+            key (str): The account info to retrieve.
+            currency (:obj:`str`, optional): The currency on which the value
+                is expressed. Defaults to empty string.
+
+        Returns:
+            :obj:`str`, optional: Value of specified account's information.
+                `None` if no info found with the specified `key` & `currency`.
+        """
+        if key in self._account_values:
+            if currency in self._account_values[key]:
+                return self._account_values[key] if (
+                    isinstance(self._account_values[key], str)
+                ) else self._account_values[key][currency]
+
+        return None
+
+    def update_account_value(self, key: str, currency: str = "", val: str = ""):
+        """Thread-safe setter function to update the account value.
+
+        Args:
+            key (str): The value being updated.
+            currency (:obj:`str`, optional): The currency on which the value
+                is expressed. Defaults to empty string.
+            val (:obj:`str`, optional): Up-to-date value. Defaults to empty
+                string.
+        """
+        with self._lock:
+            if not currency:
+                self._account_values[key] = val
+            else:
+                if key not in self._account_values:
+                    self._account_values[key]: Dict[str, str] = {}
+
+                self._account_values[key][currency] = val
 
     def destory(self):
         """Marks the instance will be destoried and no further action should be

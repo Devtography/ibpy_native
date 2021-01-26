@@ -13,14 +13,13 @@ class Account:
     Attributes:
         account_id (:obj:`Final[str]`): Account ID received from IB Gateway.
     """
-    account_id: Final[str]
-    _destroy_flag: bool = False
-
     def __init__(self, account_id: str):
         self._lock = threading.Lock()
-        self._account_values: Dict[str, Union[str, Dict[str, str]]] = {}
 
-        self.account_id = account_id
+        self._account_values: Dict[str, Union[str, Dict[str, str]]] = {}
+        self._destroy_flag = False
+
+        self.account_id: Final[str] = account_id
 
     @property
     def destory_flag(self) -> bool:
@@ -76,7 +75,8 @@ class Account:
         """Marks the instance will be destoried and no further action should be
         performed on this instance.
         """
-        self._destroy_flag = True
+        with self._lock:
+            self._destroy_flag = True
 
 @final
 @dataclasses.dataclass

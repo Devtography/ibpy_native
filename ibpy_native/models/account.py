@@ -3,23 +3,24 @@ import dataclasses
 import threading
 from typing import Dict, Optional, Union
 
-from typing_extensions import final, Final
+from typing_extensions import final
 
 from ibapi import contract as ib_contract
 
 class Account:
-    """Model class for individual IB account.
+    """Model class for individual IB account."""
 
-    Attributes:
-        account_id (:obj:`Final[str]`): Account ID received from IB Gateway.
-    """
     def __init__(self, account_id: str):
         self._lock = threading.Lock()
 
+        self._account_id = account_id
         self._account_values: Dict[str, Union[str, Dict[str, str]]] = {}
         self._destroy_flag = False
 
-        self.account_id: Final[str] = account_id
+    @property
+    def account_id(self) -> str:
+        """str: Account ID received from IB Gateway."""
+        return self._account_id
 
     @property
     def destroy_flag(self) -> bool:

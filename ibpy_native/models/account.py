@@ -22,8 +22,8 @@ class Account:
         self.account_id: Final[str] = account_id
 
     @property
-    def destory_flag(self) -> bool:
-        """Flag to indicate if this account instance is going to be destoried.
+    def destroy_flag(self) -> bool:
+        """Flag to indicate if this account instance is going to be destroyed.
 
         Returns:
             bool: `True` if the corresponding account on IB is no longer

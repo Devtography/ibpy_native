@@ -45,6 +45,7 @@ class RawPortfolioData:
     """
     account: str
     contract: ib_contract.Contract
+    position: float
     market_price: float
     market_val: float
     avg_cost: float

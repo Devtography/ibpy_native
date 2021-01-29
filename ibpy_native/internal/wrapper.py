@@ -160,9 +160,9 @@ class _IBWrapper(wrapper.EWrapper):
         if self._ac_man_delegate:
             data = models.RawPortfolioData(
                 account=accountName, contract=contract,
-                market_price=marketPrice, market_val=marketValue,
-                avg_cost=averageCost, unrealised_pnl=unrealizedPNL,
-                realised_pnl=realizedPNL
+                position=position, market_price=marketPrice,
+                market_val=marketValue, avg_cost=averageCost,
+                unrealised_pnl=unrealizedPNL, realised_pnl=realizedPNL
             )
             self._ac_man_delegate.account_updates_queue.put(data)
 

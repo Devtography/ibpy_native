@@ -1,14 +1,9 @@
 """Models for IB account(s)."""
-# pylint: disable=protected-access, too-many-instance-attributes
-import dataclasses
-import datetime
 import threading
 from typing import Dict, Optional, Union
 
-from typing_extensions import final
-
-from ibapi import contract as ib_contract
-from ibpy_native.internal import client as ib_client
+from ibpy_native.models import portfolio
+from ibpy_native.models import raw_data
 
 class Account:
     """Model class for individual IB account."""
@@ -19,6 +14,8 @@ class Account:
         self._account_id = account_id
         self._account_ready = False
         self._account_values: Dict[str, Union[str, Dict[str, str]]] = {}
+        self._portfolio: Dict[int, portfolio.Position] = {}
+
         self._destroy_flag = False
 
     @property
@@ -37,6 +34,15 @@ class Account:
     def account_ready(self, status: bool):
         with self._lock:
             self._account_ready = status
+
+    @property
+    def positions(self) -> Dict[int, portfolio.Position]:
+        """:obj:`dict` of :obj:`ibpy_native.models.account.Position`:
+        Dictionary of positions held by the account this instance representing.
+        Using the unique IB contract identifier
+        (`ibapi.contract.Contract.ConId`) as key.
+        """
+        return self._portfolio
 
     @property
     def destroy_flag(self) -> bool:
@@ -87,6 +93,38 @@ class Account:
                     self._account_values[key]: Dict[str, str] = {}
 
                 self._account_values[key][currency] = val
+
+    def update_portfolio(self, contract_id: int,
+                         data: raw_data.RawPortfolioData):
+        """Thread-safe setter function to update the positions held by the
+        account the instance is representing.
+
+        Args:
+            contract_id (int): The unique IB contract identifier of the contract
+                of which a position is held.
+            data (:obj:`ibpy_native.models.RawPortfolioData`): The raw profolio
+                data received from IB Gateway.
+        """
+        with self._lock:
+            if contract_id in self._portfolio:
+                position: portfolio.Position = self._portfolio[contract_id]
+                # Updates the existing position object stored in dictionary
+                position.contract = data.contract
+                position.position = data.position
+                position.market_price = data.market_price
+                position.market_value = data.market_val
+                position.avg_cost = data.avg_cost
+                position.unrealised_pnl = data.unrealised_pnl
+                position.realised_pnl = data.realised_pnl
+            else:
+                position = portfolio.Position(contract=data.contract,
+                                              pos=data.position,
+                                              mk_price=data.market_price,
+                                              mk_val=data.market_val,
+                                              avg_cost=data.avg_cost,
+                                              un_pnl=data.unrealised_pnl,
+                                              r_pnl=data.realised_pnl)
+                self._portfolio[contract_id] = position
 
     def destory(self):
         """Marks the instance will be destoried and no further action should be

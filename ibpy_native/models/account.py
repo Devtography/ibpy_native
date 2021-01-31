@@ -1,4 +1,5 @@
 """Models for IB account(s)."""
+import datetime
 import threading
 from typing import Dict, Optional, Union
 
@@ -15,6 +16,7 @@ class Account:
         self._account_ready = False
         self._account_values: Dict[str, Union[str, Dict[str, str]]] = {}
         self._portfolio: Dict[int, portfolio.Position] = {}
+        self._last_update: Optional[datetime.time] = None
 
         self._destroy_flag = False
 
@@ -43,6 +45,18 @@ class Account:
         (`ibapi.contract.Contract.ConId`) as key.
         """
         return self._portfolio
+
+    @property
+    def last_update_time(self) -> Optional[datetime.time]:
+        """:obj:`datetime.time`, optional: The last update system time
+        for the account values. `None` if update time is not yet received from
+        IB Gateway.
+        """
+        return self._last_update
+
+    @last_update_time.setter
+    def last_update_time(self, val: datetime.time):
+        self._last_update = val
 
     @property
     def destroy_flag(self) -> bool:

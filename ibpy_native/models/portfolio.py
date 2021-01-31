@@ -2,6 +2,7 @@
 # pylint: disable=too-many-instance-attributes
 import datetime
 import threading
+from typing import Optional
 
 from typing_extensions import final
 
@@ -33,7 +34,7 @@ class Position:
         self._avg_cost = avg_cost
         self._un_pnl = un_pnl
         self._r_pnl = r_pnl
-        self._last_update = datetime.datetime.now()
+        self._last_update: Optional[datetime.time] = None
 
     @property
     def contract(self) -> ib_contract.Contract:
@@ -103,19 +104,14 @@ class Position:
             self._r_pnl = val
 
     @property
-    def last_update_time(self) -> datetime.datetime:
-        """:obj:`datetime.datetime`: The last time on which the position data
-        was updated.
-
-        Note:
-            This property will always be converted to an aware object
-            based on the timezone set via `ibpy_native.bridge.IBBridge.`.
+    def last_update_time(self) -> Optional[datetime.time]:
+        """:obj:`datetime.time`: The last time on which the position data
+        was updated. `None` if the update time is not yet received from IB
+        Gateway.
         """
         return self._last_update
 
     @last_update_time.setter
-    def last_update_time(self, val: datetime.datetime):
-        # converted = ib_client._IBClient.TZ.localize(dt=val)
-
+    def last_update_time(self, val: datetime.time):
         with self._lock:
             self._last_update = val

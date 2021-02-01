@@ -1,10 +1,14 @@
 """IB account related resources."""
 # pylint: disable=protected-access
+import asyncio
+import datetime
+import re
 import queue
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from ibpy_native import models
 from ibpy_native.interfaces import delegates
+from ibpy_native.internal import client as ib_client
 from ibpy_native.utils import finishable_queue as fq
 
 class AccountsManager(delegates._AccountManagementDelegate):
@@ -76,3 +80,94 @@ class AccountsManager(delegates._AccountManagementDelegate):
         else:
             for acc_id in account_list:
                 self._accounts.append(models.Account(account_id=acc_id))
+
+    async def sub_account_updates(self, account_id: str):
+        """Subscribes to account updates.
+
+        Args:
+            account_id (str): The account to subscribe for updates.
+        """
+        try:
+            # Check if the specified account ID is associated with one of the
+            # accounts being managed by this account manager.
+            account = next(ac for ac in self._accounts
+                           if ac.account_id == account_id)
+        except StopIteration:
+            return
+
+        await self._prevent_multi_account_updates()
+
+        last_elm: Optional[Union[models.RawAccountValueData,
+                                 models.RawPortfolioData]] = None
+
+        async for elm in self._account_updates_queue.stream():
+            if isinstance(elm, (models.RawAccountValueData,
+                                models.RawPortfolioData)):
+                if elm.account is not account_id:
+                    # Skip the current element incase the data received doesn't
+                    # belong to the account specified, which shouldn't happen
+                    # at all but just in case.
+                    continue
+
+                if isinstance(elm, models.RawAccountValueData):
+                    self._update_account_value(account=account, data=elm)
+                elif isinstance(elm, models.RawPortfolioData):
+                    account.update_portfolio(contract_id=elm.contract.conId,
+                                             data=elm)
+            elif isinstance(elm, str):
+                if last_elm is None:
+                    # This case should not happen as the account update time
+                    # is always received after the updated data.
+                    continue
+
+                if re.fullmatch(r"\d{2}:\d{2}", elm):
+                    time = datetime.datetime.strptime(elm, "%H:%M").time()
+                    time = time.replace(tzinfo=ib_client._IBClient.TZ)
+
+                    if isinstance(last_elm, (str, models.RawAccountValueData)):
+                        # This timestamp represents the last update system time
+                        # of the account values updated.
+                        account.last_update_time = time
+                    elif isinstance(last_elm, models.RawPortfolioData):
+                        # This timestamp represents the last update system time
+                        # of the portfolio data updated.
+                        account.positions[
+                            last_elm.contract.conId
+                        ].last_update_time = time
+            else:
+                # In case if there's any unexpected element being passed
+                # into this queue.
+                continue
+
+            last_elm = elm
+
+    def unsub_account_updates(self):
+        """Unsubscribes to account updates."""
+        self._account_updates_queue.put(fq._Status.FINISHED)
+
+    #region - Private functions
+    async def _prevent_multi_account_updates(self):
+        """Prevent multi subscriptions of account updates by verifying the
+        `self._account_updates_queue` is finished or not as the API
+        `ibapi.EClient.reqAccountUpdates` is designed as only one account at a
+        time can be subscribed at a time.
+        """
+        if self._account_updates_queue.status is fq._Status.INIT:
+            # Returns as no account updates request has been made before.
+            return
+
+        if not self._account_updates_queue.finished:
+            self.unsub_account_updates()
+
+            while not self._account_updates_queue.finished:
+                await asyncio.sleep(0.1)
+
+    def _update_account_value(self, account: models.Account,
+                              data: models.RawAccountValueData):
+        if data.key == "AccountReady":
+            account.account_ready = (data.val == "true")
+        else:
+            account.update_account_value(key=data.key,
+                                         currency=data.currency,
+                                         val=data.val)
+    #endregion - Private functions

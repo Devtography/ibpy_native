@@ -141,7 +141,7 @@ class AccountsManager(delegates._AccountManagementDelegate):
 
             last_elm = elm
 
-    def unsub_account_updates(self):
+    async def unsub_account_updates(self):
         """Unsubscribes to account updates."""
         self._account_updates_queue.put(fq._Status.FINISHED)
 

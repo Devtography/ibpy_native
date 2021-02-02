@@ -24,7 +24,6 @@ def async_test(fn):
 
 class MockAccountManagementDelegate(delegates._AccountManagementDelegate):
     """Mock accounts delegate"""
-
     def __init__(self):
         self._account_list: List[models.Account] = []
         self._account_updates_queue: fq._FinishableQueue = fq._FinishableQueue(
@@ -42,6 +41,12 @@ class MockAccountManagementDelegate(delegates._AccountManagementDelegate):
     def on_account_list_update(self, account_list: List[str]):
         for account_id in account_list:
             self._account_list.append(models.Account(account_id))
+
+    async def sub_account_updates(self, account_id: str):
+        pass
+
+    async def unsub_account_updates(self):
+        pass
 
 class MockLiveTicksListener(listeners.LiveTicksListener):
     """Mock notification listener"""

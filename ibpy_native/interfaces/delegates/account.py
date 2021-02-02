@@ -37,3 +37,20 @@ class _AccountManagementDelegate(metaclass=abc.ABCMeta):
                 updated from IB.
         """
         return NotImplemented
+
+    @abc.abstractmethod
+    async def sub_account_updates(self, account_id: str):
+        """Abstract function to start receiving account updates from IB
+        Gateway.
+
+        Args:
+            account_id (str): The account to subscribe for updates.
+        """
+        return NotImplemented
+
+    @abc.abstractmethod
+    async def unsub_account_updates(self):
+        """Abstract function to stop receiving account updates from IB Gateway
+        from an on-going account updates subscription.
+        """
+        return NotImplemented

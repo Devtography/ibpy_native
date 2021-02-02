@@ -2,7 +2,7 @@
 # pylint: disable=protected-access
 import asyncio
 import queue
-from typing import List, Union
+from typing import Dict, List, Union
 
 from ibapi import wrapper as ib_wrapper
 
@@ -25,13 +25,13 @@ def async_test(fn):
 class MockAccountManagementDelegate(delegates._AccountManagementDelegate):
     """Mock accounts delegate"""
     def __init__(self):
-        self._account_list: List[models.Account] = []
+        self._account_list: Dict[str, models.Account] = []
         self._account_updates_queue: fq._FinishableQueue = fq._FinishableQueue(
             queue_to_finish=queue.Queue()
         )
 
     @property
-    def accounts(self) -> List[models.Account]:
+    def accounts(self) -> Dict[str, models.Account]:
         return self._account_list
 
     @property
@@ -42,7 +42,7 @@ class MockAccountManagementDelegate(delegates._AccountManagementDelegate):
         for account_id in account_list:
             self._account_list.append(models.Account(account_id))
 
-    async def sub_account_updates(self, account_id: str):
+    async def sub_account_updates(self, account: models.Account):
         pass
 
     async def unsub_account_updates(self):

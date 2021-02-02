@@ -4,7 +4,7 @@ import asyncio
 import datetime
 import re
 import queue
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from ibpy_native import models
 from ibpy_native.interfaces import delegates
@@ -14,21 +14,24 @@ from ibpy_native.utils import finishable_queue as fq
 class AccountsManager(delegates._AccountManagementDelegate):
     """Class to manage all IB accounts under the same username logged-in on
     IB Gateway.
+
+    Args:
+        accounts (:obj:`Dict[str, ibpy_native.models.Account]`, optional):
+            Pre-populated accounts dictionary intended for test only. Defaults
+            to `None`.
     """
-    def __init__(self, accounts: Optional[List[models.Account]] = None):
-        self._accounts: List[models.Account] = ([] if accounts is None
-                                                else accounts)
+    def __init__(self, accounts: Optional[Dict[str, models.Account]]=None):
+        self._accounts: Dict[str, models.Account] = ({} if accounts is None
+                                                     else accounts)
         self._account_updates_queue: fq._FinishableQueue = fq._FinishableQueue(
             queue_to_finish=queue.Queue()
         )
 
     @property
-    def accounts(self) -> List[models.Account]:
-        """List of IB account(s) available under the same username logged in
-        on the IB Gateway.
-
-        Returns:
-            List[ibpy_native.account.Account]: List of available IB account(s).
+    def accounts(self) -> Dict[str, models.Account]:
+        """:obj:`Dict[str, ibpy_native.models.Account]`: Dictionary of IB
+        account(s) available under the same username logged in on the IB
+        Gateway. Account IDs are used as keys.
         """
         # Implements `delegates._AccountListDelegate`
         return self._accounts
@@ -54,47 +57,38 @@ class AccountsManager(delegates._AccountManagementDelegate):
         """
         # Implements `delegates._AccountListDelegate`
         if self._accounts:
-            # Deep clone the existing account list for operation as modification
-            # while iterating a list will cause unexpected result.
-            copied_list = self._accounts.copy()
+            # Deep clone the existing account dict for operation as modification
+            # while iterating a iteratable will cause unexpected result.
+            copied_dict: [str, models.Account] = self._accounts.copy()
 
-            for account in self._accounts:
-                if account.account_id not in account_list:
-                    # Terminates action(s) or subscription(s) on account in
-                    # existing account list but not the newly received list.
-                    copied_list.remove(account)
+            for acc_id in self._accounts:
+                if acc_id not in account_list:
+                    del copied_dict[acc_id]
 
             for acc_id in account_list:
-                if not any(ac.account_id == acc_id for ac in copied_list):
+                # if not any(ac.account_id == acc_id for ac in copied_dict):
+                if acc_id not in copied_dict:
                     # Adds account appears in received list but not existing
-                    # list to the account list so it can be managed by this
-                    # framework.
-                    copied_list.append(models.Account(account_id=acc_id))
+                    # account dict so it can be managed by this framework.
+                    copied_dict[acc_id] = models.Account(account_id=acc_id)
 
-            # Clears the list in instance scope then extends it instead of
+            # Clears the dict in instance scope then updates it instead of
             # reassigning its' pointer to the deep cloned list as the original
             # list may be referencing by the user via public property
             # `accounts`.
             self._accounts.clear()
-            self._accounts.extend(copied_list)
+            self._accounts.update(copied_dict)
         else:
             for acc_id in account_list:
-                self._accounts.append(models.Account(account_id=acc_id))
+                self._accounts[acc_id] = models.Account(account_id=acc_id)
 
-    async def sub_account_updates(self, account_id: str):
+    async def sub_account_updates(self, account: models.Account):
         """Subscribes to account updates.
 
         Args:
-            account_id (str): The account to subscribe for updates.
+            account (:obj:`ibpy_native.models.Account`): The account to
+                subscribe for updates.
         """
-        try:
-            # Check if the specified account ID is associated with one of the
-            # accounts being managed by this account manager.
-            account = next(ac for ac in self._accounts
-                           if ac.account_id == account_id)
-        except StopIteration:
-            return
-
         await self._prevent_multi_account_updates()
 
         last_elm: Optional[Union[models.RawAccountValueData,
@@ -103,7 +97,7 @@ class AccountsManager(delegates._AccountManagementDelegate):
         async for elm in self._account_updates_queue.stream():
             if isinstance(elm, (models.RawAccountValueData,
                                 models.RawPortfolioData)):
-                if elm.account is not account_id:
+                if elm.account != account.account_id:
                     # Skip the current element incase the data received doesn't
                     # belong to the account specified, which shouldn't happen
                     # at all but just in case.

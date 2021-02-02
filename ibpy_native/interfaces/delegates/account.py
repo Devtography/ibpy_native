@@ -1,7 +1,7 @@
 """Internal delegate module for accounts & portfolio related features."""
 # pylint: disable=protected-access
 import abc
-from typing import List
+from typing import Dict, List
 
 from ibpy_native import models
 from ibpy_native.utils import finishable_queue as fq
@@ -10,7 +10,7 @@ class _AccountManagementDelegate(metaclass=abc.ABCMeta):
     """Internal delegate protocol for accounts & portfolio related features."""
     @property
     @abc.abstractmethod
-    def accounts(self) -> List[models.Account]:
+    def accounts(self) -> Dict[str, models.Account]:
         """Abstract getter of a list of `Account` instance.
 
         This property should be implemented to return the IB account list.
@@ -39,12 +39,13 @@ class _AccountManagementDelegate(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    async def sub_account_updates(self, account_id: str):
+    async def sub_account_updates(self, account: models.Account):
         """Abstract function to start receiving account updates from IB
         Gateway.
 
         Args:
-            account_id (str): The account to subscribe for updates.
+            account (:obj:`ibpy_native.models.Account`): The account to
+                subscribe for updates.
         """
         return NotImplemented
 

@@ -30,18 +30,20 @@ class TestAccountsManager(unittest.TestCase):
         )
 
         self.assertEqual(len(self._manager.accounts), 2)
-        self.assertEqual(self._manager.accounts[0].account_id, _MOCK_AC_140)
-        self.assertEqual(self._manager.accounts[1].account_id, _MOCK_AC_141)
+        self.assertEqual(self._manager.accounts[_MOCK_AC_140].account_id,
+                         _MOCK_AC_140)
+        self.assertEqual(self._manager.accounts[_MOCK_AC_141].account_id,
+                         _MOCK_AC_141)
 
     def test_on_account_list_update_existing_list(self):
-        """Test the implementation of function `on_account_list_update` with an
+        """Test the implementation of function `on_account_list_update` with
         non empty account list in the `AccountsManager` instance.
         """
         # Prepends data into account list for test.
         self._manager = account.AccountsManager(
-            accounts=[models.Account(account_id=_MOCK_AC_140),
-                      models.Account(account_id=_MOCK_AC_142),
-                      models.Account(account_id=_MOCK_AC_143)]
+            accounts={_MOCK_AC_140: models.Account(account_id=_MOCK_AC_140),
+                      _MOCK_AC_142: models.Account(account_id=_MOCK_AC_142),
+                      _MOCK_AC_143: models.Account(account_id=_MOCK_AC_143)}
         )
 
         self._manager.on_account_list_update(
@@ -49,8 +51,10 @@ class TestAccountsManager(unittest.TestCase):
         )
 
         self.assertEqual(len(self._manager.accounts), 2)
-        self.assertEqual(self._manager.accounts[0].account_id, _MOCK_AC_140)
-        self.assertEqual(self._manager.accounts[1].account_id, _MOCK_AC_141)
+        with self.assertRaises(KeyError):
+            _ = self._manager.accounts[_MOCK_AC_142]
+        with self.assertRaises(KeyError):
+            _ = self._manager.accounts[_MOCK_AC_143]
 
     @utils.async_test
     async def test_sub_account_updates(self):
@@ -58,7 +62,8 @@ class TestAccountsManager(unittest.TestCase):
         self._manager.on_account_list_update(account_list=[_MOCK_AC_140])
 
         updates_receiver = asyncio.create_task(
-            self._manager.sub_account_updates(account_id=_MOCK_AC_140)
+            self._manager.sub_account_updates(
+                account=self._manager.accounts[_MOCK_AC_140])
         )
         asyncio.create_task(self._simulate_account_updates(
             account_id=_MOCK_AC_140))
@@ -68,25 +73,27 @@ class TestAccountsManager(unittest.TestCase):
         # Assert account value
         self.assertEqual(
             "25000",
-            self._manager.accounts[0].get_account_value(key="AvailableFunds",
+            self._manager.accounts[_MOCK_AC_140].get_account_value(key="AvailableFunds",
                 currency="BASE")
         )
         self.assertEqual(datetime.time(hour=10, minute=10,
                                        tzinfo=ib_client._IBClient.TZ),
-                         self._manager.accounts[0].last_update_time)
+                         self._manager.accounts[_MOCK_AC_140].last_update_time)
 
         # Assert portfolio data
-        self.assertEqual(8, self._manager.accounts[0].positions[0].avg_cost)
-        self.assertEqual(datetime.time(hour=10, minute=7,
-                                       tzinfo=ib_client._IBClient.TZ),
-                        self._manager.accounts[0].positions[0].last_update_time)
+        self.assertEqual(
+            8, self._manager.accounts[_MOCK_AC_140].positions[0].avg_cost)
+        self.assertEqual(
+            datetime.time(hour=10, minute=7, tzinfo=ib_client._IBClient.TZ),
+            self._manager.accounts[_MOCK_AC_140].positions[0].last_update_time
+        )
         self.assertEqual(20689,
-                         (self._manager.accounts[0].positions[412888950]
-                          .market_price))
+                         (self._manager.accounts[_MOCK_AC_140]
+                          .positions[412888950].market_price))
         self.assertEqual(datetime.time(hour=10, minute=11,
                                        tzinfo=ib_client._IBClient.TZ),
-                        (self._manager.accounts[0].positions[412888950]
-                         .last_update_time))
+                         (self._manager.accounts[_MOCK_AC_140]
+                          .positions[412888950].last_update_time))
 
     #region - Private functions
     async def _simulate_account_updates(self, account_id: str):

@@ -11,8 +11,9 @@ from deprecated import sphinx
 
 from ibapi import contract as ib_contract
 
-from ibpy_native import account
+from ibpy_native import account as ib_account
 from ibpy_native import error
+from ibpy_native import models
 from ibpy_native.interfaces import listeners
 from ibpy_native.internal import client as ib_client
 from ibpy_native.internal import wrapper as ib_wrapper
@@ -27,20 +28,21 @@ class IBBridge:
             client_id: int = 1, auto_conn: bool = True,
             notification_listener: \
                     Optional[listeners.NotificationListener] = None,
-            accounts_manager: Optional[account.AccountsManager] = None
+            accounts_manager: Optional[ib_account.AccountsManager] = None
         ):
         self._host = host
         self._port = port
         self._client_id = client_id
         self._accounts_manager = (
-            account.AccountsManager() if accounts_manager is None
+            ib_account.AccountsManager() if accounts_manager is None
             else accounts_manager
         )
 
         self._wrapper = ib_wrapper._IBWrapper(
             notification_listener=notification_listener
         )
-        self._wrapper.set_account_management_delegate(delegate=self._accounts_manager)
+        self._wrapper.set_account_management_delegate(
+            delegate=self._accounts_manager)
 
         self._client = ib_client._IBClient(wrapper=self._wrapper)
 
@@ -49,7 +51,7 @@ class IBBridge:
 
     # Properties
     @property
-    def accounts_manager(self) -> account.AccountsManager:
+    def accounts_manager(self) -> ib_account.AccountsManager:
         """:obj:`account.AccountsManager`: Instance that stores & manages all IB
         account(s) related data.
         """
@@ -104,7 +106,35 @@ class IBBridge:
         """
         self._client.disconnect()
 
-    ## Interacts with IB APIs
+    #region - Interacts with IB APIs
+    #region - IB account related
+    async def sub_account_updates(self, account: models.Account):
+        """Subscribes to account updates from IB.
+
+        Args:
+            account (:obj:`models.Account`): Account object retrieved from
+                `AccountsManager`.
+        """
+        asyncio.create_task(self._accounts_manager.sub_account_updates(
+            account=account))
+        self._client.reqAccountUpdates(subscribe=True,
+                                       acctCode=account.account_id)
+
+    async def unsub_account_updates(self,
+                                    account: Optional[models.Account]=None):
+        """Stop receiving account updates from IB.
+
+        Args:
+            account (:obj:`models.Account`, optional): Account that's currently
+                subscribed for account updates.
+        """
+        self._client.reqAccountUpdates(
+            subscribe=False,
+            acctCode="" if account is None else account.account_id
+        )
+        await self._accounts_manager.unsub_account_updates()
+    #endregion - IB account related
+
     # Contracts
     @sphinx.deprecated(
         version='0.2.0',
@@ -467,3 +497,4 @@ class IBBridge:
             self._client.cancel_live_ticks_stream(req_id=stream_id)
         except error.IBError as err:
             raise err
+    #endregion - Interacts with IB APIs

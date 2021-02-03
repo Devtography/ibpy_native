@@ -13,7 +13,7 @@ import ibpy_native
 from ibpy_native import error
 from ibpy_native.interfaces import listeners
 from ibpy_native.internal import client as ibpy_client
-from ibpy_native.utils import datatype as dt
+from ibpy_native.utils import datatype as dt, finishable_queue as fq
 
 from tests.toolkit import sample_contracts
 from tests.toolkit import utils
@@ -102,6 +102,25 @@ class TestIBBridge(unittest.TestCase):
         self._bridge._wrapper.error(
             reqId=-1, errorCode=1100, errorString="MOCK MSG"
         )
+
+    #region - IB account related
+    @utils.async_test
+    async def test_account_updates(self):
+        """Test functions `sub_acccount_updates` & `unsub_account_updates`."""
+        await asyncio.sleep(0.5)
+        account = self._bridge.accounts_manager.accounts[os.getenv("IB_ACC_ID")]
+
+        await self._bridge.sub_account_updates(account=account)
+        await asyncio.sleep(0.5)
+        await self._bridge.unsub_account_updates(account=account)
+        await asyncio.sleep(0.5)
+
+        self.assertTrue(account.account_ready)
+        self.assertEqual(
+            self._bridge.accounts_manager.account_updates_queue.status,
+            fq._Status.FINISHED
+        )
+    #endregion - IB account related
 
     @utils.async_test
     async def test_get_us_stock_contract(self):

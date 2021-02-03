@@ -7,8 +7,6 @@ import datetime
 import threading
 from typing import List, Optional
 
-from deprecated import sphinx
-
 from ibapi import contract as ib_contract
 
 from ibpy_native import account as ib_account
@@ -140,97 +138,6 @@ class IBBridge:
     #endregion - IB account related
 
     # Contracts
-    @sphinx.deprecated(
-        version='0.2.0',
-        reason="Function will be removed in the future if it's not compatible "
-                "with the updates. Suggest to retrieve the contracts by using "
-                "function `search_detailed_contract(contract)` instead."
-    )
-    async def get_us_stock_contract(self, symbol: str) -> ib_contract.Contract:
-        """Resolve the IB US stock contract.
-
-        Args:
-            symbol (:obj:`str`): Symbol of the target instrument.
-
-        Returns:
-            ibapi.contract.Contract: Corresponding `Contract` object returned
-                from IB.
-
-        Raises:
-            ibpy_native.error.IBError: If there is connection issue, or it
-                failed to get additional contract details for the specified
-                symbol.
-        """
-
-        contract = ib_contract.Contract()
-        contract.currency = 'USD'
-        contract.exchange = 'SMART'
-        contract.secType = 'STK'
-        contract.symbol = symbol
-
-        try:
-            result = await self._client.resolve_contract(
-                req_id=self._wrapper.next_req_id, contract=contract
-            )
-        except error.IBError as err:
-            raise err
-
-        return result
-
-    @sphinx.deprecated(
-        version='0.2.0',
-        reason="Function will be removed in the future if it's not compatible "
-                "with the updates. Suggest to retrieve the contracts by using "
-                "function `search_detailed_contract(contract)` instead."
-    )
-    async def get_us_future_contract(
-            self, symbol: str, contract_month: Optional[str] = None
-        ) -> ib_contract.Contract:
-        """Search the US future contract from IB.
-
-        Args:
-            symbol (:obj:`str`): Symbol of the target instrument.
-            contract_month (:obj:`str`, optional): Contract month for the
-                target future contract in format - "YYYYMM". Defaults to None.
-
-        Returns:
-            ibapi.contract.Contract: Corresponding `Contract` object returned
-                from IB. The current on going contract will be returned if
-                `contract_month` is left as `None`.
-
-        Raises:
-            ibpy_native.error.IBError: If there is connection related issue,
-                or it failed to get additional contract details for the
-                specified symbol.
-        """
-        include_expired = False
-
-        if contract_month is None:
-            contract_month = ''
-        else:
-            if len(contract_month) != 6 or not contract_month.isdecimal():
-                raise ValueError(
-                    "Value of argument `contract_month` should be in format of "
-                    "'YYYYMM'"
-                )
-            include_expired = True
-
-        contract = ib_contract.Contract()
-        contract.currency = 'USD'
-        contract.secType = 'FUT'
-        contract.includeExpired = include_expired
-        contract.symbol = symbol
-        contract.lastTradeDateOrContractMonth = contract_month
-
-        try:
-            result = await self._client.resolve_contract(
-                req_id=self._wrapper.next_req_id, contract=contract
-            )
-        except error.IBError as err:
-            raise err
-
-        return result
-
     async def search_detailed_contracts(self, contract: ib_contract.Contract) \
         -> List[ib_contract.ContractDetails]:
         """Search the contracts with complete details from IB's database.

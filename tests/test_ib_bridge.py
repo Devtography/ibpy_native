@@ -7,8 +7,6 @@ import unittest
 
 import pytz
 
-from ibapi import contract as ib_contract
-
 import ibpy_native
 from ibpy_native import error
 from ibpy_native.interfaces import listeners
@@ -133,23 +131,6 @@ class TestIBBridge(unittest.TestCase):
             fq._Status.FINISHED
         )
     #endregion - IB account related
-
-    @utils.async_test
-    async def test_get_us_stock_contract(self):
-        """Test function `get_us_stock_contract`."""
-        contract = await self._bridge.get_us_stock_contract(symbol='AAPL')
-
-        self.assertIsInstance(contract, ib_contract.Contract)
-
-    @utils.async_test
-    async def test_get_us_future_contract(self):
-        """Test function `get_us_future_contract`."""
-        contract = await self._bridge.get_us_future_contract(symbol='MYM')
-        self.assertIsInstance(contract, ib_contract.Contract)
-
-        with self.assertRaises(ValueError):
-            await self._bridge.get_us_future_contract(symbol='MYM',
-                                                      contract_month='abcd')
 
     @utils.async_test
     async def test_search_detailed_contracts(self):

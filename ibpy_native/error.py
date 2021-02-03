@@ -19,7 +19,7 @@ class IBError(Exception):
     """Error object to handle the error retruns from IB."""
 
     def __init__(self, rid: int, err_code: int, err_str: str,
-                 err_extra: Any = None):
+                 err_extra: Any=None):
         self.rid = rid
         self.err_code = err_code
         self.err_str = err_str
@@ -29,7 +29,7 @@ class IBError(Exception):
 
     def __str__(self):
         # override method
-        error_msg = "IB error id %d errorcode %d string %s" \
-            % (self.rid, self.err_code, self.err_str)
+        error_msg = ("IB error id %d errorcode %d string %s"
+                     % (self.rid, self.err_code, self.err_str))
 
         return error_msg

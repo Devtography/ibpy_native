@@ -108,6 +108,10 @@ class IBBridge:
 
     #region - Interacts with IB APIs
     #region - IB account related
+    def req_managed_accounts(self):
+        """Fetch the accounts handle by the username logged in on IB Gateway."""
+        self._client.reqManagedAccts()
+
     async def sub_account_updates(self, account: models.Account):
         """Subscribes to account updates from IB.
 

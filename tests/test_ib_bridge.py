@@ -105,6 +105,18 @@ class TestIBBridge(unittest.TestCase):
 
     #region - IB account related
     @utils.async_test
+    async def test_req_managed_accounts(self):
+        """Test function `req_managed_accounts`."""
+        await asyncio.sleep(0.5)
+        # Clean up the already filled dict.
+        self._bridge.accounts_manager.accounts.clear()
+
+        self._bridge.req_managed_accounts()
+
+        await asyncio.sleep(0.5)
+        self.assertTrue(self._bridge.accounts_manager.accounts)
+
+    @utils.async_test
     async def test_account_updates(self):
         """Test functions `sub_acccount_updates` & `unsub_account_updates`."""
         await asyncio.sleep(0.5)

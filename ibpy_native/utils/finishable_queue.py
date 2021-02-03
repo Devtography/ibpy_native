@@ -2,37 +2,38 @@
 import asyncio
 import enum
 import queue
+import threading
 
 from typing import Iterator, Any
 
 # Queue status
 class _Status(enum.Enum):
     """Status codes for `_FinishableQueue`"""
-    STARTED = 103
+    INIT = 0
+    READY = 103
     ERROR = 500
     FINISHED = 200
     TIMEOUT = 408
 
 class _FinishableQueue():
-    """This class takes a built-in `Queue` object to handle the async tasks by
-    managing its' status based on elements retrieve from the `Queue` object.
+    """Thread-safe class that takes a built-in `queue.Queue` object to handle
+    the async tasks by managing its' status based on elements retrieve from the
+    `Queue` object.
 
     Args:
         queue_to_finish (:obj:`queue.Queue`): queue object assigned to handle
             the async task
     """
     def __init__(self, queue_to_finish: queue.Queue):
+        self._lock = threading.Lock()
         self._queue = queue_to_finish
-        self._status = _Status.STARTED
+        self._status = _Status.INIT
 
     @property
     def status(self) -> _Status:
-        """Get status of the finishable queue.
-
-        Returns:
-            ibpy_native.utils.finishable_queue._Status: Enum `_Status`
-                represents either the queue has been started, finished,
-                timeout, or encountered error.
+        """:obj:`ibpy_native.utils.finishable_queue._Status`: Status represents
+        wether the queue is newly initialised, ready for use, finished,
+        timeout, or encountered error.
         """
         return self._status
 
@@ -53,10 +54,14 @@ class _FinishableQueue():
         status is marked as either `TIMEOUT` or `FINISHED`
         """
         if self.finished:
-            self._status = _Status.STARTED
+            self._status = _Status.READY
 
     def put(self, element: Any):
         """Setter to put element to internal synchronised queue."""
+        if self._status is _Status.INIT:
+            with self._lock:
+                self._status = _Status.READY
+
         self._queue.put(element)
 
     async def get(self) -> list:
@@ -75,10 +80,12 @@ class _FinishableQueue():
             )
 
             if current_element is _Status.FINISHED:
-                self._status = _Status.FINISHED
+                with self._lock:
+                    self._status = _Status.FINISHED
             else:
                 if isinstance(current_element, BaseException):
-                    self._status = _Status.ERROR
+                    with self._lock:
+                        self._status = _Status.ERROR
 
                 contents_of_queue.append(current_element)
 
@@ -96,8 +103,10 @@ class _FinishableQueue():
             )
 
             if current_element is _Status.FINISHED:
-                self._status = current_element
+                with self._lock:
+                    self._status = current_element
             elif isinstance(current_element, BaseException):
-                self._status = _Status.ERROR
+                with self._lock:
+                    self._status = _Status.ERROR
 
             yield current_element

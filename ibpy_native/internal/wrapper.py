@@ -3,9 +3,11 @@
 import queue
 from typing import Dict, List, Optional, Union
 
+from ibapi import contract as ib_contract
 from ibapi import wrapper
 
 from ibpy_native import error
+from ibpy_native import models
 from ibpy_native.interfaces import delegates
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import finishable_queue as fq
@@ -21,8 +23,8 @@ class _IBWrapper(wrapper.EWrapper):
         ):
         self._req_queue: Dict[int, fq._FinishableQueue] = {}
 
-        self._account_list_delegate: Optional[
-            delegates._AccountListDelegate] = None
+        self._ac_man_delegate: Optional[
+            delegates._AccountManagementDelegate] = None
 
         self._notification_listener: Optional[
                 listeners.NotificationListener] = notification_listener
@@ -93,15 +95,16 @@ class _IBWrapper(wrapper.EWrapper):
         return self._req_queue[req_id] if req_id in self._req_queue else None
 
     # Setters
-    def set_account_list_delegate(self,
-                                  delegate: delegates._AccountListDelegate):
+    def set_account_management_delegate(self,
+                                        delegate: delegates
+                                            ._AccountManagementDelegate):
         """Setter for optional `_AccountListDelegate`.
 
         Args:
             delegate (ibpy_native.interfaces.delegates._AccountListDelegate):
                 Delegate for managing IB account list.
         """
-        self._account_list_delegate = delegate
+        self._ac_man_delegate = delegate
 
     def set_on_notify_listener(self, listener: listeners.NotificationListener):
         """Setter for optional `NotificationListener`.
@@ -127,7 +130,8 @@ class _IBWrapper(wrapper.EWrapper):
                     msg=errorString
                 )
 
-    # Accounts & portfolio
+    #region - Override functions from `wrapper.EWrapper`
+    #region - Accounts & portfolio
     def managedAccounts(self, accountsList: str):
         # override method
         # Trim the spaces in `accountsList` received
@@ -135,10 +139,38 @@ class _IBWrapper(wrapper.EWrapper):
         # Separate different account IDs into a list
         account_list = trimmed.split(',')
 
-        if self._account_list_delegate is not None:
-            self._account_list_delegate.on_account_list_update(
+        if self._ac_man_delegate is not None:
+            self._ac_man_delegate.on_account_list_update(
                 account_list=account_list
             )
+
+    #region - account updates
+    def updateAccountValue(self, key: str, val: str, currency: str,
+                           accountName: str):
+        if self._ac_man_delegate:
+            data = models.RawAccountValueData(
+                account=accountName, currency=currency, key=key, val=val
+            )
+            self._ac_man_delegate.account_updates_queue.put(data)
+
+    def updatePortfolio(self, contract: ib_contract.Contract, position: float,
+                        marketPrice: float, marketValue: float,
+                        averageCost: float, unrealizedPNL: float,
+                        realizedPNL: float, accountName: str):
+        if self._ac_man_delegate:
+            data = models.RawPortfolioData(
+                account=accountName, contract=contract,
+                position=position, market_price=marketPrice,
+                market_val=marketValue, avg_cost=averageCost,
+                unrealised_pnl=unrealizedPNL, realised_pnl=realizedPNL
+            )
+            self._ac_man_delegate.account_updates_queue.put(data)
+
+    def updateAccountTime(self, timeStamp: str):
+        if self._ac_man_delegate:
+            self._ac_man_delegate.account_updates_queue.put(timeStamp)
+    #endregion - account updates
+    #endregion - Accounts & portfolio
 
     # Get contract details
     def contractDetails(self, reqId, contractDetails):
@@ -212,6 +244,7 @@ class _IBWrapper(wrapper.EWrapper):
         record.price = midPoint
 
         self._handle_live_ticks(req_id=reqId, tick=record)
+    #endregion - Override functions from `wrapper.EWrapper`
 
     ## Private functions
     def __init_req_queue(self, req_id: int):

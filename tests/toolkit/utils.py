@@ -1,7 +1,8 @@
 """Utilities for making unittests easier to write."""
 # pylint: disable=protected-access
 import asyncio
-from typing import List, Union
+import queue
+from typing import Dict, List, Union
 
 from ibapi import wrapper as ib_wrapper
 
@@ -9,6 +10,7 @@ from ibpy_native import error
 from ibpy_native import models
 from ibpy_native.interfaces import delegates
 from ibpy_native.interfaces import listeners
+from ibpy_native.utils import finishable_queue as fq
 
 def async_test(fn):
     # pylint: disable=invalid-name
@@ -20,19 +22,31 @@ def async_test(fn):
 
     return wrapper
 
-class MockAccountListDelegate(delegates._AccountListDelegate):
+class MockAccountManagementDelegate(delegates._AccountManagementDelegate):
     """Mock accounts delegate"""
-
-    _account_list: List[models.Account] = []
+    def __init__(self):
+        self._account_list: Dict[str, models.Account] = []
+        self._account_updates_queue: fq._FinishableQueue = fq._FinishableQueue(
+            queue_to_finish=queue.Queue()
+        )
 
     @property
-    def accounts(self) -> List[models.Account]:
+    def accounts(self) -> Dict[str, models.Account]:
         return self._account_list
 
+    @property
+    def account_updates_queue(self) -> fq._FinishableQueue:
+        return self._account_updates_queue
+
     def on_account_list_update(self, account_list: List[str]):
-        # self._account_list = account_list
         for account_id in account_list:
             self._account_list.append(models.Account(account_id))
+
+    async def sub_account_updates(self, account: models.Account):
+        pass
+
+    async def unsub_account_updates(self):
+        pass
 
 class MockLiveTicksListener(listeners.LiveTicksListener):
     """Mock notification listener"""

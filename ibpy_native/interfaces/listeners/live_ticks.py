@@ -12,7 +12,7 @@ class LiveTicksListener(base._BaseListener):
     @abc.abstractmethod
     def on_tick_receive(self, req_id: int, tick: Union[
             wrapper.HistoricalTick, wrapper.HistoricalTickBidAsk,
-            wrapper.HistoricalTickLast
+            wrapper.HistoricalTickLast,
         ]):
         """Callback on receives new live tick records.
 

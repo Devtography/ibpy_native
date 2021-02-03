@@ -92,11 +92,11 @@ class AccountsManager(delegates._AccountManagementDelegate):
         await self._prevent_multi_account_updates()
 
         last_elm: Optional[Union[models.RawAccountValueData,
-                                 models.RawPortfolioData]] = None
+                                 models.RawPortfolioData,]] = None
 
         async for elm in self._account_updates_queue.stream():
             if isinstance(elm, (models.RawAccountValueData,
-                                models.RawPortfolioData)):
+                                models.RawPortfolioData,)):
                 if elm.account != account.account_id:
                     # Skip the current element incase the data received doesn't
                     # belong to the account specified, which shouldn't happen

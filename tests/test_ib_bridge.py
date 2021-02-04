@@ -16,9 +16,11 @@ from ibpy_native.utils import datatype as dt, finishable_queue as fq
 from tests.toolkit import sample_contracts
 from tests.toolkit import utils
 
+#region - Constants
 TEST_HOST = os.getenv("IB_HOST", "127.0.0.1")
 TEST_PORT = int(os.getenv("IB_PORT", "4002"))
 TEST_ID = 1001
+#endregion - Constants
 
 class TestIBBridgeConn(unittest.TestCase):
     """Test cases for connection related functions in `IBBridge`."""
@@ -157,6 +159,7 @@ class TestIBBridge(unittest.TestCase):
         )
         self.assertEqual(datetime.datetime(2008, 12, 29, 7, 0), head_bid)
 
+    #region - Historical ticks
     @utils.async_test
     async def test_get_historical_ticks(self):
         """Test function `get_historical_ticks`."""
@@ -201,7 +204,9 @@ class TestIBBridge(unittest.TestCase):
             await self._bridge.get_historical_ticks(
                 contract=sample_contracts.us_stock(), attempts=0
             )
+    #endregion - Historical ticks
 
+    #region - Live ticks
     @utils.async_test
     async def test_stream_live_ticks(self):
         """Test function `stream_live_ticks`."""
@@ -238,6 +243,7 @@ class TestIBBridge(unittest.TestCase):
         """Test functions `stop_live_ticks_stream` for the error cases."""
         with self.assertRaises(error.IBError):
             self._bridge.stop_live_ticks_stream(stream_id=9999999)
+    #endregion - Live ticks
 
     @classmethod
     def tearDownClass(cls):

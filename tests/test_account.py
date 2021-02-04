@@ -12,10 +12,12 @@ from ibpy_native.utils import finishable_queue as fq
 
 from tests.toolkit import utils
 
+#region - Constants
 _MOCK_AC_140: str = "DU0000140"
 _MOCK_AC_141: str = "DU0000141"
 _MOCK_AC_142: str = "DU0000142"
 _MOCK_AC_143: str = "DU0000143"
+#endregion - Constants
 
 class TestAccountsManager(unittest.TestCase):
     """Unit tests for class `AccountsManager`."""
@@ -43,7 +45,7 @@ class TestAccountsManager(unittest.TestCase):
         self._manager = account.AccountsManager(
             accounts={_MOCK_AC_140: models.Account(account_id=_MOCK_AC_140),
                       _MOCK_AC_142: models.Account(account_id=_MOCK_AC_142),
-                      _MOCK_AC_143: models.Account(account_id=_MOCK_AC_143)}
+                      _MOCK_AC_143: models.Account(account_id=_MOCK_AC_143),}
         )
 
         self._manager.on_account_list_update(

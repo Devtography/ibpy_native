@@ -1,7 +1,6 @@
 """Unit tests for module `ibpy_native.wrapper`."""
 # pylint: disable=protected-access
 import asyncio
-import enum
 import os
 import threading
 import unittest
@@ -17,15 +16,16 @@ from ibpy_native.utils import finishable_queue as fq
 from tests.toolkit import sample_contracts
 from tests.toolkit import utils
 
-class Const(enum.IntEnum):
-    """Predefined constants for `TestIBWrapper`."""
-    RID_RESOLVE_CONTRACT = 43
-    RID_FETCH_HISTORICAL_TICKS = 18001
-    RID_REQ_TICK_BY_TICK_DATA_ALL_LAST = 19001
-    RID_REQ_TICK_BY_TICK_DATA_LAST = 19002
-    RID_REQ_TICK_BY_TICK_DATA_MIDPOINT = 19003
-    RID_REQ_TICK_BY_TICK_DATA_BIDASK = 19004
-    QUEUE_MAX_WAIT_SEC = 10
+#region - Constants
+# Predefined constants for `TestIBWrapper`.
+_RID_RESOLVE_CONTRACT = 43
+_RID_FETCH_HISTORICAL_TICKS = 18001
+_RID_REQ_TICK_BY_TICK_DATA_ALL_LAST = 19001
+_RID_REQ_TICK_BY_TICK_DATA_LAST = 19002
+_RID_REQ_TICK_BY_TICK_DATA_MIDPOINT = 19003
+_RID_REQ_TICK_BY_TICK_DATA_BIDASK = 19004
+_QUEUE_MAX_WAIT_SEC = 10
+#endregion - Constants
 
 class TestIBWrapper(unittest.TestCase):
     """Unit tests for class `_IBWrapper`."""
@@ -46,7 +46,7 @@ class TestIBWrapper(unittest.TestCase):
 
         setattr(cls._client, "_thread", thread)
 
-    # _IBWrapper specifics
+    #region - _IBWrapper specifics
     @utils.async_test
     async def test_next_req_id(self):
         """Test retrieval of next usable request ID."""
@@ -81,19 +81,20 @@ class TestIBWrapper(unittest.TestCase):
         self._wrapper.error(reqId=-1, errorCode=1100, errorString="MOCK MSG")
 
         self.assertTrue(mock_listener.triggered)
+    #endregion - _IBWrapper specifics
 
-    # Historical market data
+    #region - Historical ticks
     @utils.async_test
     async def test_historical_ticks(self):
         """Test overridden function `historicalTicks`."""
         end_time = "20200327 16:30:00"
 
         f_queue = self._wrapper.get_request_queue(
-            req_id=Const.RID_FETCH_HISTORICAL_TICKS
+            req_id=_RID_FETCH_HISTORICAL_TICKS
         )
 
         self._client.reqHistoricalTicks(
-            reqId=Const.RID_FETCH_HISTORICAL_TICKS.value,
+            reqId=_RID_FETCH_HISTORICAL_TICKS,
             contract=sample_contracts.gbp_usd_fx(),
             startDateTime="", endDateTime=end_time,
             numberOfTicks=1000, whatToShow="MIDPOINT", useRth=1,
@@ -112,11 +113,11 @@ class TestIBWrapper(unittest.TestCase):
         end_time = "20200327 16:30:00"
 
         f_queue = self._wrapper.get_request_queue(
-            req_id=Const.RID_FETCH_HISTORICAL_TICKS
+            req_id=_RID_FETCH_HISTORICAL_TICKS
         )
 
         self._client.reqHistoricalTicks(
-            reqId=Const.RID_FETCH_HISTORICAL_TICKS.value,
+            reqId=_RID_FETCH_HISTORICAL_TICKS,
             contract=sample_contracts.gbp_usd_fx(),
             startDateTime="", endDateTime=end_time,
             numberOfTicks=1000, whatToShow="BID_ASK", useRth=1,
@@ -135,11 +136,11 @@ class TestIBWrapper(unittest.TestCase):
         end_time = "20200327 16:30:00"
 
         f_queue = self._wrapper.get_request_queue(
-            req_id=Const.RID_FETCH_HISTORICAL_TICKS
+            req_id=_RID_FETCH_HISTORICAL_TICKS
         )
 
         self._client.reqHistoricalTicks(
-            reqId=Const.RID_FETCH_HISTORICAL_TICKS.value,
+            reqId=_RID_FETCH_HISTORICAL_TICKS,
             contract=sample_contracts.gbp_usd_fx(),
             startDateTime="", endDateTime=end_time,
             numberOfTicks=1000, whatToShow="TRADES", useRth=1,
@@ -151,16 +152,18 @@ class TestIBWrapper(unittest.TestCase):
         self.assertEqual(f_queue.status, fq._Status.FINISHED)
         self.assertEqual(len(result), 2)
         self.assertIsInstance(result[0], ib_wrapper.ListOfHistoricalTickLast)
+    #endregion - Historical ticks
 
+    #region - Tick by tick data (Live ticks)
     @utils.async_test
     async def test_tick_by_tick_all_last(self):
         """Test overridden function `tickByTickAllLast`."""
         f_queue = self._wrapper.get_request_queue(
-            req_id=Const.RID_REQ_TICK_BY_TICK_DATA_ALL_LAST
+            req_id=_RID_REQ_TICK_BY_TICK_DATA_ALL_LAST
         )
 
         self._client.reqTickByTickData(
-            reqId=Const.RID_REQ_TICK_BY_TICK_DATA_ALL_LAST.value,
+            reqId=_RID_REQ_TICK_BY_TICK_DATA_ALL_LAST,
             contract=sample_contracts.us_future(),
             tickType="AllLast",
             numberOfTicks=0,
@@ -174,7 +177,7 @@ class TestIBWrapper(unittest.TestCase):
 
             if ele is not fq._Status.FINISHED:
                 self._client.cancelTickByTickData(
-                    reqId=Const.RID_REQ_TICK_BY_TICK_DATA_ALL_LAST.value
+                    reqId=_RID_REQ_TICK_BY_TICK_DATA_ALL_LAST
                 )
 
                 f_queue.put(element=fq._Status.FINISHED)
@@ -184,11 +187,11 @@ class TestIBWrapper(unittest.TestCase):
         """Test overridden function `tickByTickAllLast` with tick type `Last`.
         """
         f_queue = self._wrapper.get_request_queue(
-            req_id=Const.RID_REQ_TICK_BY_TICK_DATA_LAST
+            req_id=_RID_REQ_TICK_BY_TICK_DATA_LAST
         )
 
         self._client.reqTickByTickData(
-            reqId=Const.RID_REQ_TICK_BY_TICK_DATA_LAST.value,
+            reqId=_RID_REQ_TICK_BY_TICK_DATA_LAST,
             contract=sample_contracts.us_future(),
             tickType="Last",
             numberOfTicks=0,
@@ -202,7 +205,7 @@ class TestIBWrapper(unittest.TestCase):
 
             if ele is not fq._Status.FINISHED:
                 self._client.cancelTickByTickData(
-                    reqId=Const.RID_REQ_TICK_BY_TICK_DATA_LAST.value
+                    reqId=_RID_REQ_TICK_BY_TICK_DATA_LAST
                 )
 
                 f_queue.put(element=fq._Status.FINISHED)
@@ -212,11 +215,11 @@ class TestIBWrapper(unittest.TestCase):
     async def test_tick_by_tick_bid_ask(self):
         """Test overridden function `tickByTickBidAsk`."""
         f_queue = self._wrapper.get_request_queue(
-            req_id=Const.RID_REQ_TICK_BY_TICK_DATA_BIDASK
+            req_id=_RID_REQ_TICK_BY_TICK_DATA_BIDASK
         )
 
         self._client.reqTickByTickData(
-            reqId=Const.RID_REQ_TICK_BY_TICK_DATA_BIDASK.value,
+            reqId=_RID_REQ_TICK_BY_TICK_DATA_BIDASK,
             contract=sample_contracts.gbp_usd_fx(),
             tickType="BidAsk",
             numberOfTicks=0,
@@ -230,7 +233,7 @@ class TestIBWrapper(unittest.TestCase):
 
             if ele is not fq._Status.FINISHED:
                 self._client.cancelTickByTickData(
-                    reqId=Const.RID_REQ_TICK_BY_TICK_DATA_BIDASK.value
+                    reqId=_RID_REQ_TICK_BY_TICK_DATA_BIDASK
                 )
 
                 f_queue.put(element=fq._Status.FINISHED)
@@ -239,11 +242,11 @@ class TestIBWrapper(unittest.TestCase):
     async def test_tick_by_tick_mid_point(self):
         """Test overridden function `tickByTickMidPoint`."""
         f_queue = self._wrapper.get_request_queue(
-            req_id=Const.RID_REQ_TICK_BY_TICK_DATA_MIDPOINT
+            req_id=_RID_REQ_TICK_BY_TICK_DATA_MIDPOINT
         )
 
         self._client.reqTickByTickData(
-            reqId=Const.RID_REQ_TICK_BY_TICK_DATA_MIDPOINT.value,
+            reqId=_RID_REQ_TICK_BY_TICK_DATA_MIDPOINT,
             contract=sample_contracts.gbp_usd_fx(),
             tickType="MidPoint",
             numberOfTicks=0,
@@ -257,10 +260,11 @@ class TestIBWrapper(unittest.TestCase):
 
             if ele is not fq._Status.FINISHED:
                 self._client.cancelTickByTickData(
-                    reqId=Const.RID_REQ_TICK_BY_TICK_DATA_MIDPOINT.value
+                    reqId=_RID_REQ_TICK_BY_TICK_DATA_MIDPOINT
                 )
 
                 f_queue.put(element=fq._Status.FINISHED)
+    #endregion - Tick by tick data (Live ticks)
 
     @classmethod
     def tearDownClass(cls):
@@ -360,4 +364,4 @@ class TestAccountAndPortfolioData(unittest.TestCase):
                                       acctCode=os.getenv("IB_ACC_ID", ""))
         await asyncio.sleep(0.5)
         self.mock_delegate.account_updates_queue.put(fq._Status.FINISHED)
-    #endregion
+    #endregion - Private functions

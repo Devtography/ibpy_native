@@ -59,7 +59,7 @@ class MockLiveTicksListener(listeners.LiveTicksListener):
     def on_tick_receive(self, req_id: int,
                         tick: Union[ib_wrapper.HistoricalTick,
                                     ib_wrapper.HistoricalTickBidAsk,
-                                    ib_wrapper.HistoricalTickLast]):
+                                    ib_wrapper.HistoricalTickLast,]):
         print(tick)
         self.ticks.append(tick)
 

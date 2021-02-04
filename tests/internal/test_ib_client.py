@@ -2,7 +2,6 @@
 # pylint: disable=protected-access
 import asyncio
 import datetime
-import enum
 import os
 import threading
 import unittest
@@ -22,17 +21,18 @@ from ibpy_native.utils import finishable_queue as fq
 from tests.toolkit import sample_contracts
 from tests.toolkit import utils
 
-class Const(enum.IntEnum):
-    """Predefined request IDs for tests in `TestIBClient`."""
-    RID_RESOLVE_CONTRACT = 43
-    RID_RESOLVE_CONTRACTS = 44
-    RID_RESOLVE_HEAD_TIMESTAMP = 14001
-    RID_RESOLVE_HEAD_TIMESTAMP_EPOCH = 14002
-    RID_FETCH_HISTORICAL_TICKS = 18001
-    RID_FETCH_HISTORICAL_TICKS_ERR = 18002
-    RID_STREAM_LIVE_TICKS = 19001
-    RID_CANCEL_LIVE_TICKS_STREAM = 19002
-    RID_CANCEL_LIVE_TICKS_STREAM_ERR = 19003
+#region - Constants
+# Predefined request IDs for tests in `TestIBClient`.
+_RID_RESOLVE_CONTRACT = 43
+_RID_RESOLVE_CONTRACTS = 44
+_RID_RESOLVE_HEAD_TIMESTAMP = 14001
+_RID_RESOLVE_HEAD_TIMESTAMP_EPOCH = 14002
+_RID_FETCH_HISTORICAL_TICKS = 18001
+_RID_FETCH_HISTORICAL_TICKS_ERR = 18002
+_RID_STREAM_LIVE_TICKS = 19001
+_RID_CANCEL_LIVE_TICKS_STREAM = 19002
+_RID_CANCEL_LIVE_TICKS_STREAM_ERR = 19003
+#endregion - Constants
 
 class TestIBClient(unittest.TestCase):
     """Unit tests for class `_IBClient`."""
@@ -55,16 +55,16 @@ class TestIBClient(unittest.TestCase):
 
         setattr(cls._client, "_thread", thread)
 
+    #region - Contract
     @utils.async_test
     async def test_resolve_contract(self):
         """Test function `resolve_contract`."""
         resolved_contract = await self._client.resolve_contract(
-            req_id=Const.RID_RESOLVE_CONTRACT.value,
+            req_id=_RID_RESOLVE_CONTRACT,
             contract=sample_contracts.gbp_usd_fx()
         )
 
         self.assertIsNotNone(resolved_contract)
-        print(resolved_contract)
 
     @utils.async_test
     async def test_resolve_contracts(self):
@@ -72,37 +72,38 @@ class TestIBClient(unittest.TestCase):
         contract: ib_contract.Contract = sample_contracts.us_future()
         contract.lastTradeDateOrContractMonth = ""
 
-        res: List[ib_contract.ContractDetails] = await self._client\
-            .resolve_contracts(req_id=Const.RID_RESOLVE_CONTRACTS.value,
-                               contract=contract)
+        res: List[ib_contract.ContractDetails] = (
+            await self._client.resolve_contracts(req_id=_RID_RESOLVE_CONTRACTS,
+                                                 contract=contract)
+        )
 
         self.assertTrue(res)
         self.assertGreater(len(res), 1)
+    #endregion - Contract
 
     @utils.async_test
     async def test_resolve_head_timestamp(self):
         """Test function `resolve_head_timestamp`."""
         head_timestamp = await self._client.resolve_head_timestamp(
-            req_id=Const.RID_RESOLVE_HEAD_TIMESTAMP.value,
+            req_id=_RID_RESOLVE_HEAD_TIMESTAMP,
             contract=sample_contracts.us_future(),
             show=dt.EarliestDataPoint.BID
         )
 
-        print(head_timestamp)
-
         self.assertIsNotNone(head_timestamp)
         self.assertIsInstance(head_timestamp, int)
 
+    #region - Historical ticks
     @utils.async_test
     async def test_fetch_historical_ticks(self):
         """Test function `fetch_historical_ticks`."""
         data = await self._client.fetch_historical_ticks(
-            req_id=Const.RID_FETCH_HISTORICAL_TICKS.value,
+            req_id=_RID_FETCH_HISTORICAL_TICKS,
             contract=sample_contracts.gbp_usd_fx(),
-            start=ibpy_client._IBClient.TZ.localize(datetime\
-                .datetime(2020, 4, 29, 10, 30, 0)),
-            end=ibpy_client._IBClient.TZ.localize(datetime\
-                .datetime(2020, 4, 29, 10, 35, 0)),
+            start=ibpy_client._IBClient.TZ.localize(
+                datetime.datetime(2020, 4, 29, 10, 30, 0)),
+            end=ibpy_client._IBClient.TZ.localize(
+                datetime.datetime(2020, 4, 29, 10, 35, 0)),
             show=dt.HistoricalTicks.MIDPOINT
         )
 
@@ -112,12 +113,12 @@ class TestIBClient(unittest.TestCase):
         self.assertIsInstance(data["ticks"][0], ib_wrapper.HistoricalTick)
 
         data = await self._client.fetch_historical_ticks(
-            req_id=Const.RID_FETCH_HISTORICAL_TICKS.value,
+            req_id=_RID_FETCH_HISTORICAL_TICKS,
             contract=sample_contracts.gbp_usd_fx(),
-            start=ibpy_client._IBClient.TZ.localize(datetime\
-                .datetime(2020, 4, 29, 10, 30, 0)),
-            end=ibpy_client._IBClient.TZ.localize(datetime\
-                .datetime(2020, 4, 29, 10, 35, 0)),
+            start=ibpy_client._IBClient.TZ.localize(
+                datetime.datetime(2020, 4, 29, 10, 30, 0)),
+            end=ibpy_client._IBClient.TZ.localize(
+                datetime.datetime(2020, 4, 29, 10, 35, 0)),
             show=dt.HistoricalTicks.BID_ASK
         )
 
@@ -132,35 +133,37 @@ class TestIBClient(unittest.TestCase):
         # Timezone of start & end are not identical
         with self.assertRaises(ValueError):
             await self._client.fetch_historical_ticks(
-                req_id=Const.RID_FETCH_HISTORICAL_TICKS_ERR.value,
+                req_id=_RID_FETCH_HISTORICAL_TICKS_ERR,
                 contract=sample_contracts.gbp_usd_fx(),
-                start=datetime.datetime.now()\
-                    .astimezone(pytz.timezone("Asia/Hong_Kong")),
-                end=datetime.datetime.now()\
-                    .astimezone(pytz.timezone("America/New_York"))
+                start=datetime.datetime.now().astimezone(
+                    pytz.timezone("Asia/Hong_Kong")),
+                end=datetime.datetime.now().astimezone(
+                    pytz.timezone("America/New_York"))
             )
 
         # Invalid contract object
         with self.assertRaises(error.IBError):
             await self._client.fetch_historical_ticks(
-                req_id=Const.RID_FETCH_HISTORICAL_TICKS_ERR.value,
+                req_id=_RID_FETCH_HISTORICAL_TICKS_ERR,
                 contract=ib_contract.Contract(),
-                start=datetime.datetime(2020, 5, 20, 3, 20, 0)\
-                    .astimezone(ibpy_client._IBClient.TZ),
+                start=datetime.datetime(2020, 5, 20, 3, 20, 0).astimezone(
+                    ibpy_client._IBClient.TZ),
                 end=datetime.datetime.now().astimezone(ibpy_client._IBClient.TZ)
             )
+    #endregion - Historical ticks
 
+    #region - Live ticks
     @utils.async_test
     async def test_stream_live_ticks(self):
         """Test function `stream_live_ticks`."""
         async def cancel_req():
             await asyncio.sleep(5)
             self._client.cancelTickByTickData(
-                reqId=Const.RID_STREAM_LIVE_TICKS.value
+                reqId=_RID_STREAM_LIVE_TICKS
             )
 
             queue = self._wrapper.get_request_queue_no_throw(
-                req_id=Const.RID_STREAM_LIVE_TICKS
+                req_id=_RID_STREAM_LIVE_TICKS
             )
             queue.put(element=fq._Status.FINISHED)
 
@@ -168,7 +171,7 @@ class TestIBClient(unittest.TestCase):
 
         stream = asyncio.create_task(
             self._client.stream_live_ticks(
-                req_id=Const.RID_STREAM_LIVE_TICKS.value,
+                req_id=_RID_STREAM_LIVE_TICKS,
                 contract=sample_contracts.gbp_usd_fx(),
                 listener=listener,
                 tick_type=dt.LiveTicks.BID_ASK
@@ -195,14 +198,14 @@ class TestIBClient(unittest.TestCase):
         async def cancel_req():
             await asyncio.sleep(3)
             self._client.cancel_live_ticks_stream(
-                req_id=Const.RID_CANCEL_LIVE_TICKS_STREAM.value
+                req_id=_RID_CANCEL_LIVE_TICKS_STREAM
             )
 
         listener = utils.MockLiveTicksListener()
 
         stream = asyncio.create_task(
             self._client.stream_live_ticks(
-                req_id=Const.RID_CANCEL_LIVE_TICKS_STREAM.value,
+                req_id=_RID_CANCEL_LIVE_TICKS_STREAM,
                 contract=sample_contracts.gbp_usd_fx(),
                 listener=listener,
                 tick_type=dt.LiveTicks.BID_ASK
@@ -229,8 +232,9 @@ class TestIBClient(unittest.TestCase):
         """
         with self.assertRaises(error.IBError):
             self._client.cancel_live_ticks_stream(
-                req_id=Const.RID_CANCEL_LIVE_TICKS_STREAM_ERR.value
+                req_id=_RID_CANCEL_LIVE_TICKS_STREAM_ERR
             )
+    #endregion - Live ticks
 
     @classmethod
     def tearDownClass(cls):

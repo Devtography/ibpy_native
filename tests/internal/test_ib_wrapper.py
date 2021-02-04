@@ -36,8 +36,8 @@ class TestIBWrapper(unittest.TestCase):
         cls._client = ibpy_client._IBClient(cls._wrapper)
 
         cls._client.connect(
-            os.getenv('IB_HOST', '127.0.0.1'),
-            int(os.getenv('IB_PORT', '4002')),
+            os.getenv("IB_HOST", "127.0.0.1"),
+            int(os.getenv("IB_PORT", "4002")),
             1001
         )
 
@@ -162,7 +162,7 @@ class TestIBWrapper(unittest.TestCase):
         self._client.reqTickByTickData(
             reqId=Const.RID_REQ_TICK_BY_TICK_DATA_ALL_LAST.value,
             contract=sample_contracts.us_future(),
-            tickType='AllLast',
+            tickType="AllLast",
             numberOfTicks=0,
             ignoreSize=True
         )
@@ -190,7 +190,7 @@ class TestIBWrapper(unittest.TestCase):
         self._client.reqTickByTickData(
             reqId=Const.RID_REQ_TICK_BY_TICK_DATA_LAST.value,
             contract=sample_contracts.us_future(),
-            tickType='Last',
+            tickType="Last",
             numberOfTicks=0,
             ignoreSize=True
         )
@@ -218,7 +218,7 @@ class TestIBWrapper(unittest.TestCase):
         self._client.reqTickByTickData(
             reqId=Const.RID_REQ_TICK_BY_TICK_DATA_BIDASK.value,
             contract=sample_contracts.gbp_usd_fx(),
-            tickType='BidAsk',
+            tickType="BidAsk",
             numberOfTicks=0,
             ignoreSize=True
         )
@@ -245,7 +245,7 @@ class TestIBWrapper(unittest.TestCase):
         self._client.reqTickByTickData(
             reqId=Const.RID_REQ_TICK_BY_TICK_DATA_MIDPOINT.value,
             contract=sample_contracts.gbp_usd_fx(),
-            tickType='MidPoint',
+            tickType="MidPoint",
             numberOfTicks=0,
             ignoreSize=True
         )
@@ -278,8 +278,8 @@ class TestAccountAndPortfolioData(unittest.TestCase):
         cls.client = ibpy_client._IBClient(cls.wrapper)
 
         cls.client.connect(
-            os.getenv('IB_HOST', '127.0.0.1'),
-            int(os.getenv('IB_PORT', '4002')),
+            os.getenv("IB_HOST", "127.0.0.1"),
+            int(os.getenv("IB_PORT", "4002")),
             1001
         )
 
@@ -295,7 +295,7 @@ class TestAccountAndPortfolioData(unittest.TestCase):
     def test_account_management_delegate(self):
         """Test `_AccountManagementDelegate` implementation."""
         self.mock_delegate.on_account_list_update(
-            account_list=['DU0000140', 'DU0000141']
+            account_list=["DU0000140", "DU0000141"]
         )
 
         self.assertTrue(self.mock_delegate.accounts)

@@ -12,10 +12,10 @@ from ibpy_native.utils import finishable_queue as fq
 
 from tests.toolkit import utils
 
-_MOCK_AC_140: str = 'DU0000140'
-_MOCK_AC_141: str = 'DU0000141'
-_MOCK_AC_142: str = 'DU0000142'
-_MOCK_AC_143: str = 'DU0000143'
+_MOCK_AC_140: str = "DU0000140"
+_MOCK_AC_141: str = "DU0000141"
+_MOCK_AC_142: str = "DU0000142"
+_MOCK_AC_143: str = "DU0000143"
 
 class TestAccountsManager(unittest.TestCase):
     """Unit tests for class `AccountsManager`."""

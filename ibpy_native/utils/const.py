@@ -7,7 +7,7 @@ class _IB:
     """Constants use across the project."""
 
     # Defined constants
-    TIME_FMT: Final[str] = '%Y%m%d %H:%M:%S' #IB time format
+    TIME_FMT: Final[str] = "%Y%m%d %H:%M:%S" #IB time format
 
     # Messages
     MSG_TIMEOUT: Final[str] = (

@@ -8,16 +8,16 @@ from ibapi import wrapper
 @enum.unique
 class EarliestDataPoint(enum.Enum):
     """Data type options defined for earliest data point."""
-    BID = 'BID'
-    ASK = 'ASK'
-    TRADES = 'TRADES'
+    BID = "BID"
+    ASK = "ASK"
+    TRADES = "TRADES"
 
 @enum.unique
 class HistoricalTicks(enum.Enum):
     """Data type options defined for fetching historical ticks."""
-    BID_ASK = 'BID_ASK'
-    MIDPOINT = 'MIDPOINT'
-    TRADES = 'TRADES'
+    BID_ASK = "BID_ASK"
+    MIDPOINT = "MIDPOINT"
+    TRADES = "TRADES"
 
 class HistoricalTicksResult(TypedDict):
     """Use to type hint the returns of `IBBridge.get_historical_ticks`."""
@@ -31,7 +31,7 @@ class HistoricalTicksResult(TypedDict):
 @enum.unique
 class LiveTicks(enum.Enum):
     """Data types defined for live tick data."""
-    ALL_LAST = 'AllLast'
-    BID_ASK = 'BidAsk'
-    MIDPOINT = 'MidPoint'
-    LAST = 'Last'
+    ALL_LAST = "AllLast"
+    BID_ASK = "BidAsk"
+    MIDPOINT = "MidPoint"
+    LAST = "Last"

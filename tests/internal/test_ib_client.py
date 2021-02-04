@@ -39,14 +39,14 @@ class TestIBClient(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        ibpy_client._IBClient.TZ = pytz.timezone('America/New_York')
+        ibpy_client._IBClient.TZ = pytz.timezone("America/New_York")
 
         cls._wrapper = ibpy_wrapper._IBWrapper()
         cls._client = ibpy_client._IBClient(cls._wrapper)
 
         cls._client.connect(
-            os.getenv('IB_HOST', '127.0.0.1'),
-            int(os.getenv('IB_PORT', '4002')),
+            os.getenv("IB_HOST", "127.0.0.1"),
+            int(os.getenv("IB_PORT", "4002")),
             1001
         )
 
@@ -70,7 +70,7 @@ class TestIBClient(unittest.TestCase):
     async def test_resolve_contracts(self):
         """Test function `resolve_contracts`."""
         contract: ib_contract.Contract = sample_contracts.us_future()
-        contract.lastTradeDateOrContractMonth = ''
+        contract.lastTradeDateOrContractMonth = ""
 
         res: List[ib_contract.ContractDetails] = await self._client\
             .resolve_contracts(req_id=Const.RID_RESOLVE_CONTRACTS.value,
@@ -106,10 +106,10 @@ class TestIBClient(unittest.TestCase):
             show=dt.HistoricalTicks.MIDPOINT
         )
 
-        self.assertIsInstance(data['ticks'], list)
-        self.assertTrue(data['completed'])
-        self.assertTrue(data['ticks'])
-        self.assertIsInstance(data['ticks'][0], ib_wrapper.HistoricalTick)
+        self.assertIsInstance(data["ticks"], list)
+        self.assertTrue(data["completed"])
+        self.assertTrue(data["ticks"])
+        self.assertIsInstance(data["ticks"][0], ib_wrapper.HistoricalTick)
 
         data = await self._client.fetch_historical_ticks(
             req_id=Const.RID_FETCH_HISTORICAL_TICKS.value,
@@ -121,10 +121,10 @@ class TestIBClient(unittest.TestCase):
             show=dt.HistoricalTicks.BID_ASK
         )
 
-        self.assertIsInstance(data['ticks'], list)
-        self.assertTrue(data['completed'])
-        self.assertTrue(data['ticks'])
-        self.assertIsInstance(data['ticks'][0], ib_wrapper.HistoricalTickBidAsk)
+        self.assertIsInstance(data["ticks"], list)
+        self.assertTrue(data["completed"])
+        self.assertTrue(data["ticks"])
+        self.assertIsInstance(data["ticks"][0], ib_wrapper.HistoricalTickBidAsk)
 
     @utils.async_test
     async def test_fetch_historical_ticks_err(self):
@@ -135,9 +135,9 @@ class TestIBClient(unittest.TestCase):
                 req_id=Const.RID_FETCH_HISTORICAL_TICKS_ERR.value,
                 contract=sample_contracts.gbp_usd_fx(),
                 start=datetime.datetime.now()\
-                    .astimezone(pytz.timezone('Asia/Hong_Kong')),
+                    .astimezone(pytz.timezone("Asia/Hong_Kong")),
                 end=datetime.datetime.now()\
-                    .astimezone(pytz.timezone('America/New_York'))
+                    .astimezone(pytz.timezone("America/New_York"))
             )
 
         # Invalid contract object

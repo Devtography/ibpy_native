@@ -16,8 +16,8 @@ from ibpy_native.utils import datatype as dt, finishable_queue as fq
 from tests.toolkit import sample_contracts
 from tests.toolkit import utils
 
-TEST_HOST = os.getenv('IB_HOST', '127.0.0.1')
-TEST_PORT = int(os.getenv('IB_PORT', '4002'))
+TEST_HOST = os.getenv("IB_HOST", "127.0.0.1")
+TEST_PORT = int(os.getenv("IB_PORT", "4002"))
 TEST_ID = 1001
 
 class TestIBBridgeConn(unittest.TestCase):
@@ -72,15 +72,15 @@ class TestIBBridge(unittest.TestCase):
 
     def test_set_timezone(self):
         """Test function `set_timezone`."""
-        ibpy_native.IBBridge.set_timezone(tz=pytz.timezone('Asia/Hong_Kong'))
+        ibpy_native.IBBridge.set_timezone(tz=pytz.timezone("Asia/Hong_Kong"))
 
         self.assertEqual(ibpy_client._IBClient.TZ,
-                         pytz.timezone('Asia/Hong_Kong'))
+                         pytz.timezone("Asia/Hong_Kong"))
 
         # Reset timezone to New York
-        ibpy_native.IBBridge.set_timezone(tz=pytz.timezone('America/New_York'))
+        ibpy_native.IBBridge.set_timezone(tz=pytz.timezone("America/New_York"))
         self.assertEqual(ibpy_client._IBClient.TZ,
-                         pytz.timezone('America/New_York'))
+                         pytz.timezone("America/New_York"))
 
     def test_set_on_notify_listener(self):
         """Test notification listener supports."""
@@ -136,7 +136,7 @@ class TestIBBridge(unittest.TestCase):
     async def test_search_detailed_contracts(self):
         """Test function `search_detailed_contracts`."""
         contract = sample_contracts.us_future()
-        contract.lastTradeDateOrContractMonth = ''
+        contract.lastTradeDateOrContractMonth = ""
 
         res = await self._bridge.search_detailed_contracts(contract=contract)
         self.assertGreater(len(res), 1)
@@ -166,8 +166,8 @@ class TestIBBridge(unittest.TestCase):
             end=datetime.datetime(2020, 3, 16, 9, 50)
         )
 
-        self.assertTrue(result['ticks'])
-        self.assertTrue(result['completed'])
+        self.assertTrue(result["ticks"])
+        self.assertTrue(result["completed"])
 
     @utils.async_test
     async def test_get_historical_ticks_err(self):
@@ -176,7 +176,7 @@ class TestIBBridge(unittest.TestCase):
         with self.assertRaises(ValueError):
             await self._bridge.get_historical_ticks(
                 contract=sample_contracts.us_stock(),
-                end=pytz.timezone('Asia/Hong_Kong').localize(
+                end=pytz.timezone("Asia/Hong_Kong").localize(
                     datetime.datetime(2020, 4, 28)
                 )
             )

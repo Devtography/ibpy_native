@@ -165,7 +165,7 @@ class TestIBClient(unittest.TestCase):
             queue = self._wrapper.get_request_queue_no_throw(
                 req_id=_RID_STREAM_LIVE_TICKS
             )
-            queue.put(element=fq._Status.FINISHED)
+            queue.put(element=fq.Status.FINISHED)
 
         listener = utils.MockLiveTicksListener()
 
@@ -228,7 +228,7 @@ class TestIBClient(unittest.TestCase):
     @utils.async_test
     async def test_cancel_live_ticks_stream_err(self):
         """Test function `cancel_live_ticks_stream` with request ID that has no
-        `_FinishableQueue` associated with.
+        `FinishableQueue` associated with.
         """
         with self.assertRaises(error.IBError):
             self._client.cancel_live_ticks_stream(

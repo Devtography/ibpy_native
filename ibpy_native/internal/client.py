@@ -79,7 +79,7 @@ class _IBClient(ib_client.EClient):
         res = await f_queue.get()
 
         if res:
-            if f_queue.status is fq._Status.ERROR:
+            if f_queue.status is fq.Status.ERROR:
                 if isinstance(res[-1], error.IBError):
                     raise res[-1]
 
@@ -133,7 +133,7 @@ class _IBClient(ib_client.EClient):
         )
 
         if res:
-            if f_queue.status is fq._Status.ERROR:
+            if f_queue.status is fq.Status.ERROR:
                 if isinstance(res[-1], error.IBError):
                     raise res[-1]
 
@@ -188,7 +188,7 @@ class _IBClient(ib_client.EClient):
         self.cancelHeadTimeStamp(reqId=req_id)
 
         if res:
-            if f_queue.status is fq._Status.ERROR:
+            if f_queue.status is fq.Status.ERROR:
                 if isinstance(res[-1], error.IBError):
                     raise res[-1]
 
@@ -288,7 +288,7 @@ class _IBClient(ib_client.EClient):
                                  ib_wrapper.HistoricalTickLast,]],
                       bool,] = await f_queue.get()
 
-            if res and f_queue.status is fq._Status.ERROR:
+            if res and f_queue.status is fq.Status.ERROR:
                 # Response received and internal queue reports error
                 if isinstance(res[-1], error.IBError):
                     if all_ticks:
@@ -419,7 +419,7 @@ class _IBClient(ib_client.EClient):
                 listener.on_tick_receive(req_id=req_id, tick=elm)
             elif isinstance(elm, error.IBError):
                 listener.on_err(err=elm)
-            elif elm is fq._Status.FINISHED:
+            elif elm is fq.Status.FINISHED:
                 listener.on_finish(req_id=req_id)
 
     def cancel_live_ticks_stream(self, req_id: int):
@@ -429,7 +429,7 @@ class _IBClient(ib_client.EClient):
             req_id (int): Request ID (ticker ID in IB API).
 
         Raises:
-            ibpy_native.error.IBError: If there's no `_FinishableQueue` object
+            ibpy_native.error.IBError: If there's no `FinishableQueue` object
                 associated with the specified `req_id` found in the internal
                 `_IBWrapper` object.
         """
@@ -437,7 +437,7 @@ class _IBClient(ib_client.EClient):
 
         if f_queue is not None:
             self.cancelTickByTickData(reqId=req_id)
-            f_queue.put(element=fq._Status.FINISHED)
+            f_queue.put(element=fq.Status.FINISHED)
         else:
             raise error.IBError(
                 rid=req_id, err_code=error.IBErrorCode.RES_NOT_FOUND,
@@ -504,7 +504,7 @@ class _IBClient(ib_client.EClient):
     def _unknown_error(self, req_id: int, extra: Any = None):
         """Constructs `IBError` with error code `UNKNOWN`
 
-        For siturations which internal `_FinishableQueue` reports error status
+        For siturations which internal `FinishableQueue` reports error status
         but not exception received.
 
         Args:

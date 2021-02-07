@@ -130,7 +130,7 @@ class TestIBBridge(unittest.TestCase):
         self.assertTrue(account.account_ready)
         self.assertEqual(
             self._bridge.accounts_manager.account_updates_queue.status,
-            fq._Status.FINISHED
+            fq.Status.FINISHED
         )
     #endregion - IB account related
 

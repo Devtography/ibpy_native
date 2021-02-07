@@ -23,7 +23,7 @@ class AccountsManager(delegates._AccountManagementDelegate):
     def __init__(self, accounts: Optional[Dict[str, models.Account]]=None):
         self._accounts: Dict[str, models.Account] = ({} if accounts is None
                                                      else accounts)
-        self._account_updates_queue: fq._FinishableQueue = fq._FinishableQueue(
+        self._account_updates_queue: fq.FinishableQueue = fq.FinishableQueue(
             queue_to_finish=queue.Queue()
         )
 
@@ -37,8 +37,8 @@ class AccountsManager(delegates._AccountManagementDelegate):
         return self._accounts
 
     @property
-    def account_updates_queue(self) -> fq._FinishableQueue:
-        """":obj:`ibpy_native.utils.finishable_queue._FinishableQueue`:
+    def account_updates_queue(self) -> fq.FinishableQueue:
+        """":obj:`ibpy_native.utils.finishable_queue.FinishableQueue`:
         The queue that stores account updates data from IB Gateway.
         """
         return self._account_updates_queue
@@ -137,7 +137,7 @@ class AccountsManager(delegates._AccountManagementDelegate):
 
     async def unsub_account_updates(self):
         """Unsubscribes to account updates."""
-        self._account_updates_queue.put(fq._Status.FINISHED)
+        self._account_updates_queue.put(fq.Status.FINISHED)
 
     #region - Private functions
     async def _prevent_multi_account_updates(self):
@@ -146,7 +146,7 @@ class AccountsManager(delegates._AccountManagementDelegate):
         `ibapi.EClient.reqAccountUpdates` is designed as only one account at a
         time can be subscribed at a time.
         """
-        if self._account_updates_queue.status is fq._Status.INIT:
+        if self._account_updates_queue.status is fq.Status.INIT:
             # Returns as no account updates request has been made before.
             return
 

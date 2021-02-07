@@ -25,7 +25,7 @@ class _IBWrapper(wrapper.EWrapper):
         self,
         notification_listener: Optional[listeners.NotificationListener]=None
     ):
-        self._req_queue: Dict[int, fq._FinishableQueue] = {}
+        self._req_queue: Dict[int, fq.FinishableQueue] = {}
 
         self._ac_man_delegate: Optional[
             delegates._AccountManagementDelegate] = None
@@ -40,8 +40,8 @@ class _IBWrapper(wrapper.EWrapper):
         """The next usable request ID (ticker ID in IB API).
 
         Finds the next available request ID by looking up if there's any
-        finished `_FinishableQueue` in internal queue dictionary `__req_queue`.
-        If so, returns the ID of the first finished `_FinishableQueue` found.
+        finished `FinishableQueue` in internal queue dictionary `__req_queue`.
+        If so, returns the ID of the first finished `FinishableQueue` found.
         Returns the last ID in `__req_queue` + 1 if otherwise.
 
         Returns:
@@ -60,7 +60,7 @@ class _IBWrapper(wrapper.EWrapper):
         return usable_id + 1
 
     #region - Getters
-    def get_request_queue(self, req_id: int) -> fq._FinishableQueue:
+    def get_request_queue(self, req_id: int) -> fq.FinishableQueue:
         """Initialise queue or returns the existing queue with ID `req_id`.
 
         Args:
@@ -68,12 +68,12 @@ class _IBWrapper(wrapper.EWrapper):
                 queue.
 
         Returns:
-            :obj:`ibpy_native.utils.finishable_queue._FinishableQueue`:
+            :obj:`ibpy_native.utils.finishable_queue.FinishableQueue`:
                 The newly initialised queue or the already existed queue
                 associated to the `req_id`.
 
         Raises:
-            ibpy_native.error.IBError: If `_FinishableQueue` associated with
+            ibpy_native.error.IBError: If `FinishableQueue` associated with
                 `req_id` is being used by other tasks.
         """
         try:
@@ -84,7 +84,7 @@ class _IBWrapper(wrapper.EWrapper):
         return self._req_queue[req_id]
 
     def get_request_queue_no_throw(self, req_id: int) -> Optional[
-        fq._FinishableQueue
+        fq.FinishableQueue
     ]:
         """Returns the existing queue with ID `req_id`.
 
@@ -93,10 +93,10 @@ class _IBWrapper(wrapper.EWrapper):
                 queue.
 
         Returns:
-            :obj:`Optional[ibpy_native.utils.finishable_queue._FinishableQueue]`:
-                The existing `_FinishableQueue` associated to the specified
+            :obj:`Optional[ibpy_native.utils.finishable_queue.FinishableQueue]`:
+                The existing `FinishableQueue` associated to the specified
                 `req_id`. `None` if `req_id` doesn't match with any existing
-                `_FinishableQueue` object.
+                `FinishableQueue` object.
         """
         return self._req_queue[req_id] if req_id in self._req_queue else None
     #endregion - Getters
@@ -183,14 +183,14 @@ class _IBWrapper(wrapper.EWrapper):
         self._req_queue[reqId].put(element=contractDetails)
 
     def contractDetailsEnd(self, reqId):
-        self._req_queue[reqId].put(element=fq._Status.FINISHED)
+        self._req_queue[reqId].put(element=fq.Status.FINISHED)
     #endregion - Get contract details
 
     # Get earliest data point for a given instrument and data
     def headTimestamp(self, reqId: int, headTimestamp: str):
         # override method
         self._req_queue[reqId].put(element=headTimestamp)
-        self._req_queue[reqId].put(element=fq._Status.FINISHED)
+        self._req_queue[reqId].put(element=fq.Status.FINISHED)
 
     #region - Fetch historical tick data
     def historicalTicks(self, reqId: int,
@@ -249,12 +249,12 @@ class _IBWrapper(wrapper.EWrapper):
 
     #region - Private functions
     def __init_req_queue(self, req_id: int):
-        """Initials a new `_FinishableQueue` if there's no object at
+        """Initials a new `FinishableQueue` if there's no object at
         `self.__req_queue[req_id]`; Resets the queue status to its' initial
         status.
 
         Raises:
-            ibpy_native.error.IBError: If a `_FinishableQueue` already exists at
+            ibpy_native.error.IBError: If a `FinishableQueue` already exists at
                 `self.__req_queue[req_id]` and it's not finished.
         """
         if req_id in self._req_queue:
@@ -267,7 +267,7 @@ class _IBWrapper(wrapper.EWrapper):
                             "currently in use"
                 )
         else:
-            self._req_queue[req_id] = fq._FinishableQueue(queue.Queue())
+            self._req_queue[req_id] = fq.FinishableQueue(queue.Queue())
 
     def _handle_historical_ticks_results(
         self, req_id: int,
@@ -282,7 +282,7 @@ class _IBWrapper(wrapper.EWrapper):
         """
         self._req_queue[req_id].put(element=ticks)
         self._req_queue[req_id].put(element=done)
-        self._req_queue[req_id].put(element=fq._Status.FINISHED)
+        self._req_queue[req_id].put(element=fq.Status.FINISHED)
 
     def _handle_live_ticks(self, req_id: int,
                            tick: Union[wrapper.HistoricalTick,

@@ -132,5 +132,5 @@ class TestAccountsManager(unittest.TestCase):
         )
         self._manager.account_updates_queue.put("10:11")
 
-        self._manager.account_updates_queue.put(fq._Status.FINISHED)
+        self._manager.account_updates_queue.put(fq.Status.FINISHED)
     #endregion - Private functions

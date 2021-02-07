@@ -1,5 +1,4 @@
 """Internal delegate module for accounts & portfolio related features."""
-# pylint: disable=protected-access
 import abc
 from typing import Dict, List
 
@@ -19,11 +18,11 @@ class _AccountManagementDelegate(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def account_updates_queue(self) -> fq._FinishableQueue:
+    def account_updates_queue(self) -> fq.FinishableQueue:
         """Abstract getter of the queue designed to handle account updates
         data from IB gateway.
 
-        This property should be implemented to return the `_FinishableQueue`
+        This property should be implemented to return the `FinishableQueue`
         object.
         """
         return NotImplemented

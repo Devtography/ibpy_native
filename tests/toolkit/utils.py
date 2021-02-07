@@ -26,7 +26,7 @@ class MockAccountManagementDelegate(delegates._AccountManagementDelegate):
     """Mock accounts delegate"""
     def __init__(self):
         self._account_list: Dict[str, models.Account] = []
-        self._account_updates_queue: fq._FinishableQueue = fq._FinishableQueue(
+        self._account_updates_queue: fq.FinishableQueue = fq.FinishableQueue(
             queue_to_finish=queue.Queue()
         )
 
@@ -35,7 +35,7 @@ class MockAccountManagementDelegate(delegates._AccountManagementDelegate):
         return self._account_list
 
     @property
-    def account_updates_queue(self) -> fq._FinishableQueue:
+    def account_updates_queue(self) -> fq.FinishableQueue:
         return self._account_updates_queue
 
     def on_account_list_update(self, account_list: List[str]):

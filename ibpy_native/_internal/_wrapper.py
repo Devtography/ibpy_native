@@ -77,7 +77,7 @@ class IBWrapper(wrapper.EWrapper):
                 `req_id` is being used by other tasks.
         """
         try:
-            self.__init_req_queue(req_id=req_id)
+            self._init_req_queue(req_id=req_id)
         except error.IBError as err:
             raise err
 
@@ -248,7 +248,7 @@ class IBWrapper(wrapper.EWrapper):
     #endregion - Override functions from `wrapper.EWrapper`
 
     #region - Private functions
-    def __init_req_queue(self, req_id: int):
+    def _init_req_queue(self, req_id: int):
         """Initials a new `FinishableQueue` if there's no object at
         `self.__req_queue[req_id]`; Resets the queue status to its' initial
         status.

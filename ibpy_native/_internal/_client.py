@@ -11,9 +11,9 @@ from ibapi import contract as ib_contract
 from ibapi import wrapper as ib_wrapper
 
 from ibpy_native import error
+from ibpy_native._internal import _const
 from ibpy_native._internal import _wrapper as ibpy_wrapper
 from ibpy_native.interfaces import listeners
-from ibpy_native.utils import const
 from ibpy_native.utils import datatype as dt
 from ibpy_native.utils import finishable_queue as fq
 
@@ -278,7 +278,7 @@ class IBClient(ib_client.EClient):
         while not finished:
             self.reqHistoricalTicks(
                 reqId=req_id, contract=contract, startDateTime="",
-                endDateTime=next_end_time.strftime(const._IB.TIME_FMT),
+                endDateTime=next_end_time.strftime(_const.TIME_FMT),
                 numberOfTicks=1000, whatToShow=show.value, useRth=0,
                 ignoreSize=False, miscOptions=[]
             )
@@ -338,7 +338,7 @@ class IBClient(ib_client.EClient):
                 print(
                     f"{len(all_ticks)} ticks fetched ("
                     f"{len(processed_result['ticks'])} new ticks); Next end "
-                    f"time - {next_end_time.strftime(const._IB.TIME_FMT)}"
+                    f"time - {next_end_time.strftime(_const.TIME_FMT)}"
                 )
 
                 if next_end_time.timestamp() <= real_start_time.timestamp():

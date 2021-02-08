@@ -7,8 +7,8 @@ import queue
 from typing import Dict, List, Optional, Union
 
 from ibpy_native import models
+from ibpy_native._internal import client as ib_client
 from ibpy_native.interfaces import delegates
-from ibpy_native.internal import client as ib_client
 from ibpy_native.utils import finishable_queue as fq
 
 class AccountsManager(delegates.AccountsManagementDelegate):

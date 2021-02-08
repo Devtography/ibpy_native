@@ -12,9 +12,9 @@ from ibapi import contract as ib_contract
 from ibpy_native import account as ib_account
 from ibpy_native import error
 from ibpy_native import models
+from ibpy_native._internal import client as ib_client
+from ibpy_native._internal import wrapper as ib_wrapper
 from ibpy_native.interfaces import listeners
-from ibpy_native.internal import client as ib_client
-from ibpy_native.internal import wrapper as ib_wrapper
 from ibpy_native.utils import const
 from ibpy_native.utils import datatype as dt
 

@@ -8,9 +8,9 @@ import unittest
 from ibapi import wrapper as ib_wrapper
 
 from ibpy_native import models
+from ibpy_native._internal import client as ibpy_client
+from ibpy_native._internal import wrapper as ibpy_wrapper
 from ibpy_native.interfaces import listeners
-from ibpy_native.internal import client as ibpy_client
-from ibpy_native.internal import wrapper as ibpy_wrapper
 from ibpy_native.utils import finishable_queue as fq
 
 from tests.toolkit import sample_contracts
@@ -272,7 +272,7 @@ class TestIBWrapper(unittest.TestCase):
 
 class TestAccountAndPortfolioData(unittest.TestCase):
     """Unit tests for account and portfolio data related callbacks & functions
-    in class `ibpy_native.internal.wrapper._IBWrapper`.
+    in class `ibpy_native._internal.wrapper._IBWrapper`.
 
     Connection with IB Gateway is required for this test suit.
     """

@@ -7,7 +7,7 @@ import unittest
 from ibapi import contract as ib_contract
 from ibpy_native import account
 from ibpy_native import models
-from ibpy_native.internal import client as ib_client
+from ibpy_native._internal import client as ib_client
 from ibpy_native.utils import finishable_queue as fq
 
 from tests.toolkit import utils

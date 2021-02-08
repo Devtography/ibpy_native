@@ -11,8 +11,8 @@ from ibapi import contract as ib_contract
 from ibapi import wrapper as ib_wrapper
 
 from ibpy_native import error
+from ibpy_native._internal import wrapper as ibpy_wrapper
 from ibpy_native.interfaces import listeners
-from ibpy_native.internal import wrapper as ibpy_wrapper
 from ibpy_native.utils import const
 from ibpy_native.utils import datatype as dt
 from ibpy_native.utils import finishable_queue as fq
@@ -34,7 +34,7 @@ class _IBClient(ib_client.EClient):
             at login. Defaults to "America/New_York".
 
     Args:
-        wrapper (:obj:`ibpy_native.internal.wrapper._IBWrapper`): The wrapper
+        wrapper (:obj:`ibpy_native._internal.wrapper._IBWrapper`): The wrapper
             object to handle messages return from IB Gateway.
     """
     # Static variable to define the timezone

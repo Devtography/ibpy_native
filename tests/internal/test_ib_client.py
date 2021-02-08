@@ -13,8 +13,8 @@ from ibapi import contract as ib_contract
 from ibapi import wrapper as ib_wrapper
 
 from ibpy_native import error
-from ibpy_native.internal import client as ibpy_client
-from ibpy_native.internal import wrapper as ibpy_wrapper
+from ibpy_native._internal import client as ibpy_client
+from ibpy_native._internal import wrapper as ibpy_wrapper
 from ibpy_native.utils import datatype as dt
 from ibpy_native.utils import finishable_queue as fq
 

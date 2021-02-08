@@ -12,9 +12,9 @@ from ibapi import contract as ib_contract
 from ibpy_native import account as ib_account
 from ibpy_native import error
 from ibpy_native import models
+from ibpy_native._internal import _client
 from ibpy_native._internal import _global
-from ibpy_native._internal import _client as ib_client
-from ibpy_native._internal import _wrapper as ib_wrapper
+from ibpy_native._internal import _wrapper
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import datatype as dt
 
@@ -52,14 +52,14 @@ class IBBridge:
             else accounts_manager
         )
 
-        self._wrapper = ib_wrapper.IBWrapper(
+        self._wrapper = _wrapper.IBWrapper(
             notification_listener=notification_listener
         )
         self._wrapper.set_account_management_delegate(
             delegate=self._accounts_manager
         )
 
-        self._client = ib_client.IBClient(wrapper=self._wrapper)
+        self._client = _client.IBClient(wrapper=self._wrapper)
 
         if auto_conn:
             self.connect()

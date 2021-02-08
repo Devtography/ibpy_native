@@ -13,8 +13,9 @@ from ibapi import contract as ib_contract
 from ibapi import wrapper as ib_wrapper
 
 from ibpy_native import error
-from ibpy_native._internal import _client as ibpy_client
-from ibpy_native._internal import _wrapper as ibpy_wrapper
+from ibpy_native._internal import _client
+from ibpy_native._internal import _global
+from ibpy_native._internal import _wrapper
 from ibpy_native.utils import datatype as dt
 from ibpy_native.utils import finishable_queue as fq
 
@@ -39,10 +40,10 @@ class TestIBClient(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        ibpy_client.IBClient.TZ = pytz.timezone("America/New_York")
+        _global.TZ = pytz.timezone("America/New_York")
 
-        cls._wrapper = ibpy_wrapper.IBWrapper()
-        cls._client = ibpy_client.IBClient(cls._wrapper)
+        cls._wrapper = _wrapper.IBWrapper()
+        cls._client = _client.IBClient(cls._wrapper)
 
         cls._client.connect(
             os.getenv("IB_HOST", "127.0.0.1"),
@@ -100,9 +101,9 @@ class TestIBClient(unittest.TestCase):
         data = await self._client.fetch_historical_ticks(
             req_id=_RID_FETCH_HISTORICAL_TICKS,
             contract=sample_contracts.gbp_usd_fx(),
-            start=ibpy_client.IBClient.TZ.localize(
+            start=_global.TZ.localize(
                 datetime.datetime(2020, 4, 29, 10, 30, 0)),
-            end=ibpy_client.IBClient.TZ.localize(
+            end=_global.TZ.localize(
                 datetime.datetime(2020, 4, 29, 10, 35, 0)),
             show=dt.HistoricalTicks.MIDPOINT
         )
@@ -115,9 +116,9 @@ class TestIBClient(unittest.TestCase):
         data = await self._client.fetch_historical_ticks(
             req_id=_RID_FETCH_HISTORICAL_TICKS,
             contract=sample_contracts.gbp_usd_fx(),
-            start=ibpy_client.IBClient.TZ.localize(
+            start=_global.TZ.localize(
                 datetime.datetime(2020, 4, 29, 10, 30, 0)),
-            end=ibpy_client.IBClient.TZ.localize(
+            end=_global.TZ.localize(
                 datetime.datetime(2020, 4, 29, 10, 35, 0)),
             show=dt.HistoricalTicks.BID_ASK
         )
@@ -147,8 +148,8 @@ class TestIBClient(unittest.TestCase):
                 req_id=_RID_FETCH_HISTORICAL_TICKS_ERR,
                 contract=ib_contract.Contract(),
                 start=datetime.datetime(2020, 5, 20, 3, 20, 0).astimezone(
-                    ibpy_client.IBClient.TZ),
-                end=datetime.datetime.now().astimezone(ibpy_client.IBClient.TZ)
+                    _global.TZ),
+                end=datetime.datetime.now().astimezone(_global.TZ)
             )
     #endregion - Historical ticks
 

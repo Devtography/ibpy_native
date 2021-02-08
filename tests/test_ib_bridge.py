@@ -9,7 +9,7 @@ import pytz
 
 import ibpy_native
 from ibpy_native import error
-from ibpy_native._internal import _client as ibpy_client
+from ibpy_native._internal import _client
 from ibpy_native._internal import _global
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import datatype as dt, finishable_queue as fq
@@ -211,7 +211,7 @@ class TestIBBridge(unittest.TestCase):
     @utils.async_test
     async def test_stream_live_ticks(self):
         """Test function `stream_live_ticks`."""
-        client: ibpy_client.IBClient = self._bridge._client
+        client: _client.IBClient = self._bridge._client
         listener = utils.MockLiveTicksListener()
 
         req_id = await self._bridge.stream_live_ticks(

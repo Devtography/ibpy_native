@@ -11,7 +11,7 @@ from ibapi import wrapper as ib_wrapper
 
 from ibpy_native import error
 from ibpy_native._internal import _global
-from ibpy_native._internal import _wrapper as ibpy_wrapper
+from ibpy_native._internal import _wrapper
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import datatype as dt
 from ibpy_native.utils import finishable_queue as fq
@@ -31,7 +31,7 @@ class IBClient(ib_client.EClient):
         wrapper (:obj:`ibpy_native._internal._wrapper.IBWrapper`): The wrapper
             object to handle messages return from IB Gateway.
     """
-    def __init__(self, wrapper: ibpy_wrapper.IBWrapper):
+    def __init__(self, wrapper: _wrapper.IBWrapper):
         self._wrapper = wrapper
         super().__init__(wrapper)
 

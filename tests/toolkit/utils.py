@@ -22,7 +22,7 @@ def async_test(fn):
 
     return wrapper
 
-class MockAccountManagementDelegate(delegates._AccountManagementDelegate):
+class MockAccountManagementDelegate(delegates.AccountsManagementDelegate):
     """Mock accounts delegate"""
     def __init__(self):
         self._account_list: Dict[str, models.Account] = []

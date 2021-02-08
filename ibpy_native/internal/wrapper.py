@@ -28,7 +28,7 @@ class _IBWrapper(wrapper.EWrapper):
         self._req_queue: Dict[int, fq.FinishableQueue] = {}
 
         self._ac_man_delegate: Optional[
-            delegates._AccountManagementDelegate] = None
+            delegates.AccountsManagementDelegate] = None
 
         self._notification_listener: Optional[
                 listeners.NotificationListener] = notification_listener
@@ -103,7 +103,7 @@ class _IBWrapper(wrapper.EWrapper):
 
     #region - Setters
     def set_account_management_delegate(
-        self, delegate: delegates._AccountManagementDelegate
+        self, delegate: delegates.AccountsManagementDelegate
     ):
         """Setter for optional `_AccountListDelegate`.
 

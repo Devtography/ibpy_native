@@ -11,7 +11,7 @@ from ibpy_native.interfaces import delegates
 from ibpy_native.internal import client as ib_client
 from ibpy_native.utils import finishable_queue as fq
 
-class AccountsManager(delegates._AccountManagementDelegate):
+class AccountsManager(delegates.AccountsManagementDelegate):
     """Class to manage all IB accounts under the same username logged-in on
     IB Gateway.
 

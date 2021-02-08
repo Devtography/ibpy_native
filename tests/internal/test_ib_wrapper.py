@@ -8,7 +8,7 @@ import unittest
 from ibapi import wrapper as ib_wrapper
 
 from ibpy_native import models
-from ibpy_native._internal import client as ibpy_client
+from ibpy_native._internal import _client as ibpy_client
 from ibpy_native._internal import wrapper as ibpy_wrapper
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import finishable_queue as fq
@@ -33,7 +33,7 @@ class TestIBWrapper(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._wrapper = ibpy_wrapper._IBWrapper()
-        cls._client = ibpy_client._IBClient(cls._wrapper)
+        cls._client = ibpy_client.IBClient(cls._wrapper)
 
         cls._client.connect(
             os.getenv("IB_HOST", "127.0.0.1"),
@@ -279,7 +279,7 @@ class TestAccountAndPortfolioData(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.wrapper = ibpy_wrapper._IBWrapper()
-        cls.client = ibpy_client._IBClient(cls.wrapper)
+        cls.client = ibpy_client.IBClient(cls.wrapper)
 
         cls.client.connect(
             os.getenv("IB_HOST", "127.0.0.1"),

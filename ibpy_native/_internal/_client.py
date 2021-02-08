@@ -18,13 +18,13 @@ from ibpy_native.utils import datatype as dt
 from ibpy_native.utils import finishable_queue as fq
 
 class _ProcessHistoricalTicksResult(TypedDict):
-    """Use for type hint the returns of `_IBClient.fetch_historical_ticks`."""
+    """Use for type hint the returns of `IBClient.fetch_historical_ticks`."""
     ticks: List[Union[ib_wrapper.HistoricalTick,
                       ib_wrapper.HistoricalTickBidAsk,
                       ib_wrapper.HistoricalTickLast,]]
     next_end_time: datetime.datetime
 
-class _IBClient(ib_client.EClient):
+class IBClient(ib_client.EClient):
     """The client calls the native methods from _IBWrapper instead of
     overriding native methods.
 
@@ -263,11 +263,11 @@ class _IBClient(ib_client.EClient):
         all_ticks: list = []
 
         real_start_time = (
-            _IBClient.TZ.localize(start) if start.tzinfo is None else start
+            IBClient.TZ.localize(start) if start.tzinfo is None else start
         )
 
         next_end_time = (
-            _IBClient.TZ.localize(end) if end.tzinfo is None else end
+            IBClient.TZ.localize(end) if end.tzinfo is None else end
         )
 
         finished = False

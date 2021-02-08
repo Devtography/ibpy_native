@@ -7,7 +7,7 @@ import queue
 from typing import Dict, List, Optional, Union
 
 from ibpy_native import models
-from ibpy_native._internal import client as ib_client
+from ibpy_native._internal import _client as ib_client
 from ibpy_native.interfaces import delegates
 from ibpy_native.utils import finishable_queue as fq
 
@@ -116,7 +116,7 @@ class AccountsManager(delegates.AccountsManagementDelegate):
 
                 if re.fullmatch(r"\d{2}:\d{2}", elm):
                     time = datetime.datetime.strptime(elm, "%H:%M").time()
-                    time = time.replace(tzinfo=ib_client._IBClient.TZ)
+                    time = time.replace(tzinfo=ib_client.IBClient.TZ)
 
                     if isinstance(last_elm, (str, models.RawAccountValueData)):
                         # This timestamp represents the last update system time

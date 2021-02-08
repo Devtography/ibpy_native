@@ -86,7 +86,7 @@ class TestIBClient(unittest.TestCase):
         """Test function `resolve_head_timestamp`."""
         head_timestamp = await self._client.resolve_head_timestamp(
             req_id=_RID_RESOLVE_HEAD_TIMESTAMP,
-            contract=sample_contracts.us_future(),
+            contract=sample_contracts.gbp_usd_fx(),
             show=dt.EarliestDataPoint.BID
         )
 

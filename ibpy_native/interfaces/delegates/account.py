@@ -29,7 +29,7 @@ class AccountsManagementDelegate(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def on_account_list_update(self, account_list: List[str]):
-        """Callback on `_IBWrapper.managedAccounts` is triggered by IB API.
+        """Callback on `IBWrapper.managedAccounts` is triggered by IB API.
 
         Args:
             account_list (:obj:`List[str]`): List of proceeded account IDs

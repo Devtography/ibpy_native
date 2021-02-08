@@ -45,7 +45,7 @@ class AccountsManager(delegates.AccountsManagementDelegate):
 
     def on_account_list_update(self, account_list: List[str]):
         """Callback function for internal API callback
-        `_IBWrapper.managedAccounts`.
+        `IBWrapper.managedAccounts`.
 
         Checks the existing account list for update(s) to the list. Terminates
         action(s) or subscription(s) on account(s) which is/are no longer

@@ -13,7 +13,7 @@ from ibpy_native import account as ib_account
 from ibpy_native import error
 from ibpy_native import models
 from ibpy_native._internal import _client as ib_client
-from ibpy_native._internal import wrapper as ib_wrapper
+from ibpy_native._internal import _wrapper as ib_wrapper
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import const
 from ibpy_native.utils import datatype as dt
@@ -52,7 +52,7 @@ class IBBridge:
             else accounts_manager
         )
 
-        self._wrapper = ib_wrapper._IBWrapper(
+        self._wrapper = ib_wrapper.IBWrapper(
             notification_listener=notification_listener
         )
         self._wrapper.set_account_management_delegate(

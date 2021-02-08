@@ -11,7 +11,7 @@ from ibapi import contract as ib_contract
 from ibapi import wrapper as ib_wrapper
 
 from ibpy_native import error
-from ibpy_native._internal import wrapper as ibpy_wrapper
+from ibpy_native._internal import _wrapper as ibpy_wrapper
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import const
 from ibpy_native.utils import datatype as dt
@@ -25,7 +25,7 @@ class _ProcessHistoricalTicksResult(TypedDict):
     next_end_time: datetime.datetime
 
 class IBClient(ib_client.EClient):
-    """The client calls the native methods from _IBWrapper instead of
+    """The client calls the native methods from IBWrapper instead of
     overriding native methods.
 
     Attributes:
@@ -34,13 +34,13 @@ class IBClient(ib_client.EClient):
             at login. Defaults to "America/New_York".
 
     Args:
-        wrapper (:obj:`ibpy_native._internal.wrapper._IBWrapper`): The wrapper
+        wrapper (:obj:`ibpy_native._internal._wrapper.IBWrapper`): The wrapper
             object to handle messages return from IB Gateway.
     """
     # Static variable to define the timezone
     TZ = pytz.timezone("America/New_York")
 
-    def __init__(self, wrapper: ibpy_wrapper._IBWrapper):
+    def __init__(self, wrapper: ibpy_wrapper.IBWrapper):
         self._wrapper = wrapper
         super().__init__(wrapper)
 
@@ -431,7 +431,7 @@ class IBClient(ib_client.EClient):
         Raises:
             ibpy_native.error.IBError: If there's no `FinishableQueue` object
                 associated with the specified `req_id` found in the internal
-                `_IBWrapper` object.
+                `IBWrapper` object.
         """
         f_queue = self._wrapper.get_request_queue_no_throw(req_id=req_id)
 

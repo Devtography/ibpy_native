@@ -9,7 +9,7 @@ from ibapi import contract as ib_contract
 @dataclasses.dataclass
 class RawAccountValueData:
     """Model class for account value updates received in callback
-    `ibpy_native._internal.wrapper.IBWrapper.updateAccountValue`.
+    `ibpy_native._internal._wrapper.IBWrapper.updateAccountValue`.
 
     Attributes:
         account (str): Account ID that the data belongs to.
@@ -30,7 +30,7 @@ class RawAccountValueData:
 @dataclasses.dataclass
 class RawPortfolioData:
     """Model class for portfolio updates received in callback
-    `ibpy_native._internal.wrapper.IBWrapper.updatePortfolio`.
+    `ibpy_native._internal._wrapper.IBWrapper.updatePortfolio`.
 
     Attributes:
         account (str): Account ID that the data belongs to.

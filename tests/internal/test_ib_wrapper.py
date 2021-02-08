@@ -9,7 +9,7 @@ from ibapi import wrapper as ib_wrapper
 
 from ibpy_native import models
 from ibpy_native._internal import _client as ibpy_client
-from ibpy_native._internal import wrapper as ibpy_wrapper
+from ibpy_native._internal import _wrapper as ibpy_wrapper
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import finishable_queue as fq
 
@@ -28,11 +28,11 @@ _QUEUE_MAX_WAIT_SEC = 10
 #endregion - Constants
 
 class TestIBWrapper(unittest.TestCase):
-    """Unit tests for class `_IBWrapper`."""
+    """Unit tests for class `IBWrapper`."""
 
     @classmethod
     def setUpClass(cls):
-        cls._wrapper = ibpy_wrapper._IBWrapper()
+        cls._wrapper = ibpy_wrapper.IBWrapper()
         cls._client = ibpy_client.IBClient(cls._wrapper)
 
         cls._client.connect(
@@ -46,7 +46,7 @@ class TestIBWrapper(unittest.TestCase):
 
         setattr(cls._client, "_thread", thread)
 
-    #region - _IBWrapper specifics
+    #region - IBWrapper specifics
     @utils.async_test
     async def test_next_req_id(self):
         """Test retrieval of next usable request ID."""
@@ -81,7 +81,7 @@ class TestIBWrapper(unittest.TestCase):
         self._wrapper.error(reqId=-1, errorCode=1100, errorString="MOCK MSG")
 
         self.assertTrue(mock_listener.triggered)
-    #endregion - _IBWrapper specifics
+    #endregion - IBWrapper specifics
 
     #region - Historical ticks
     @utils.async_test
@@ -272,13 +272,13 @@ class TestIBWrapper(unittest.TestCase):
 
 class TestAccountAndPortfolioData(unittest.TestCase):
     """Unit tests for account and portfolio data related callbacks & functions
-    in class `ibpy_native._internal.wrapper._IBWrapper`.
+    in class `ibpy_native._internal._wrapper.IBWrapper`.
 
     Connection with IB Gateway is required for this test suit.
     """
     @classmethod
     def setUpClass(cls):
-        cls.wrapper = ibpy_wrapper._IBWrapper()
+        cls.wrapper = ibpy_wrapper.IBWrapper()
         cls.client = ibpy_client.IBClient(cls.wrapper)
 
         cls.client.connect(

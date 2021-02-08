@@ -14,7 +14,7 @@ from ibapi import wrapper as ib_wrapper
 
 from ibpy_native import error
 from ibpy_native._internal import _client as ibpy_client
-from ibpy_native._internal import wrapper as ibpy_wrapper
+from ibpy_native._internal import _wrapper as ibpy_wrapper
 from ibpy_native.utils import datatype as dt
 from ibpy_native.utils import finishable_queue as fq
 
@@ -41,7 +41,7 @@ class TestIBClient(unittest.TestCase):
     def setUpClass(cls):
         ibpy_client.IBClient.TZ = pytz.timezone("America/New_York")
 
-        cls._wrapper = ibpy_wrapper._IBWrapper()
+        cls._wrapper = ibpy_wrapper.IBWrapper()
         cls._client = ibpy_client.IBClient(cls._wrapper)
 
         cls._client.connect(

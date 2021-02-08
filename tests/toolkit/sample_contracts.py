@@ -28,7 +28,7 @@ def us_future() -> ib_contract.Contract:
     contract.secType = "FUT"
     contract.exchange = "ECBOT"
     contract.currency = "USD"
-    contract.lastTradeDateOrContractMonth = "202009"
+    contract.lastTradeDateOrContractMonth = "202103"
 
     return contract
 

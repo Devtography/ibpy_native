@@ -12,7 +12,7 @@ from ibapi import contract as ib_contract
 from ibpy_native import account as ib_account
 from ibpy_native import error
 from ibpy_native import models
-from ibpy_native._internal import _const
+from ibpy_native._internal import _global
 from ibpy_native._internal import _client as ib_client
 from ibpy_native._internal import _wrapper as ib_wrapper
 from ibpy_native.interfaces import listeners
@@ -87,7 +87,7 @@ class IBBridge:
             tz (datetime.tzinfo): Timezone. Recommend to set this value via
                 `pytz.timezone(zone: str)`.
         """
-        ib_client.IBClient.TZ = tz
+        _global.TZ = tz
 
     def set_on_notify_listener(self, listener: listeners.NotificationListener):
         """Setter for optional `NotificationListener`.
@@ -222,7 +222,7 @@ class IBBridge:
         data_point = datetime.datetime.fromtimestamp(
             result
         ).astimezone(
-            ib_client.IBClient.TZ
+            _global.TZ
         )
 
         return data_point.replace(tzinfo=None)
@@ -276,7 +276,7 @@ class IBBridge:
                 attempt(s).
         """
         all_ticks = []
-        next_end_time = ib_client.IBClient.TZ.localize(dt=end)
+        next_end_time = _global.TZ.localize(dt=end)
 
         # Error checking
         if end.tzinfo is not None or (start is not None and
@@ -293,7 +293,7 @@ class IBBridge:
                         data_type is dt.HistoricalTicks.TRADES
                      ) else dt.EarliestDataPoint.BID
                 )
-            ).astimezone(tz=ib_client.IBClient.TZ)
+            ).astimezone(tz=_global.TZ)
         except error.IBError as err:
             raise err
 
@@ -302,21 +302,21 @@ class IBBridge:
                 raise ValueError(
                     "Specificed start time is earlier than the earliest "
                     "available datapoint - "
-                    f"{head_timestamp.strftime(_const.TIME_FMT)}"
+                    f"{head_timestamp.strftime(_global.TIME_FMT)}"
                 )
             if end.timestamp() < start.timestamp():
                 raise ValueError(
                     "Specificed end time cannot be earlier than start time"
                 )
 
-            start = ib_client.IBClient.TZ.localize(dt=start)
+            start = _global.TZ.localize(dt=start)
         else:
             start = head_timestamp
 
         if next_end_time.timestamp() < head_timestamp.timestamp():
             raise ValueError(
                 "Specificed end time is earlier than the earliest available "
-                f"datapoint - {head_timestamp.strftime(_const.TIME_FMT)}"
+                f"datapoint - {head_timestamp.strftime(_global.TIME_FMT)}"
             )
 
         if attempts < 1 and attempts != -1:
@@ -349,7 +349,7 @@ class IBBridge:
 
                 next_end_time = datetime.datetime.fromtimestamp(
                     res[0][0].time
-                ).astimezone(ib_client.IBClient.TZ)
+                ).astimezone(_global.TZ)
             except ValueError as err:
                 raise err
             except error.IBError as err:
@@ -371,7 +371,7 @@ class IBBridge:
                         # Updates the end time for next attempt
                         next_end_time = datetime.datetime.fromtimestamp(
                             all_ticks[0].time
-                        ).astimezone(ib_client.IBClient.TZ)
+                        ).astimezone(_global.TZ)
 
                     continue
 

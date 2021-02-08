@@ -3,7 +3,6 @@
 import datetime
 from typing import Any, List, Union
 
-import pytz
 from typing_extensions import TypedDict
 
 from ibapi import client as ib_client
@@ -11,7 +10,7 @@ from ibapi import contract as ib_contract
 from ibapi import wrapper as ib_wrapper
 
 from ibpy_native import error
-from ibpy_native._internal import _const
+from ibpy_native._internal import _global
 from ibpy_native._internal import _wrapper as ibpy_wrapper
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import datatype as dt
@@ -28,18 +27,10 @@ class IBClient(ib_client.EClient):
     """The client calls the native methods from IBWrapper instead of
     overriding native methods.
 
-    Attributes:
-        TZ: Class level timezone for all datetime related object. Timezone
-            should be aligned with the timezone specified in TWS/IB Gateway
-            at login. Defaults to "America/New_York".
-
     Args:
         wrapper (:obj:`ibpy_native._internal._wrapper.IBWrapper`): The wrapper
             object to handle messages return from IB Gateway.
     """
-    # Static variable to define the timezone
-    TZ = pytz.timezone("America/New_York")
-
     def __init__(self, wrapper: ibpy_wrapper.IBWrapper):
         self._wrapper = wrapper
         super().__init__(wrapper)
@@ -210,7 +201,7 @@ class IBClient(ib_client.EClient):
     async def fetch_historical_ticks(
         self, req_id: int, contract: ib_contract.Contract,
         start: datetime.datetime,
-        end: datetime.datetime=datetime.datetime.now().astimezone(TZ),
+        end: datetime.datetime=datetime.datetime.now().astimezone(_global.TZ),
         show: dt.HistoricalTicks=dt.HistoricalTicks.TRADES
     ) -> dt.HistoricalTicksResult:
         """Fetch the historical ticks data for a given instrument from IB.
@@ -263,11 +254,11 @@ class IBClient(ib_client.EClient):
         all_ticks: list = []
 
         real_start_time = (
-            IBClient.TZ.localize(start) if start.tzinfo is None else start
+            _global.TZ.localize(start) if start.tzinfo is None else start
         )
 
         next_end_time = (
-            IBClient.TZ.localize(end) if end.tzinfo is None else end
+            _global.TZ.localize(end) if end.tzinfo is None else end
         )
 
         finished = False
@@ -278,7 +269,7 @@ class IBClient(ib_client.EClient):
         while not finished:
             self.reqHistoricalTicks(
                 reqId=req_id, contract=contract, startDateTime="",
-                endDateTime=next_end_time.strftime(_const.TIME_FMT),
+                endDateTime=next_end_time.strftime(_global.TIME_FMT),
                 numberOfTicks=1000, whatToShow=show.value, useRth=0,
                 ignoreSize=False, miscOptions=[]
             )
@@ -338,7 +329,7 @@ class IBClient(ib_client.EClient):
                 print(
                     f"{len(all_ticks)} ticks fetched ("
                     f"{len(processed_result['ticks'])} new ticks); Next end "
-                    f"time - {next_end_time.strftime(_const.TIME_FMT)}"
+                    f"time - {next_end_time.strftime(_global.TIME_FMT)}"
                 )
 
                 if next_end_time.timestamp() <= real_start_time.timestamp():

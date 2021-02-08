@@ -7,7 +7,7 @@ import unittest
 from ibapi import contract as ib_contract
 from ibpy_native import account
 from ibpy_native import models
-from ibpy_native._internal import _client as ib_client
+from ibpy_native._internal import _global
 from ibpy_native.utils import finishable_queue as fq
 
 from tests.toolkit import utils
@@ -79,21 +79,21 @@ class TestAccountsManager(unittest.TestCase):
                 currency="BASE")
         )
         self.assertEqual(datetime.time(hour=10, minute=10,
-                                       tzinfo=ib_client.IBClient.TZ),
+                                       tzinfo=_global.TZ),
                          self._manager.accounts[_MOCK_AC_140].last_update_time)
 
         # Assert portfolio data
         self.assertEqual(
             8, self._manager.accounts[_MOCK_AC_140].positions[0].avg_cost)
         self.assertEqual(
-            datetime.time(hour=10, minute=7, tzinfo=ib_client.IBClient.TZ),
+            datetime.time(hour=10, minute=7, tzinfo=_global.TZ),
             self._manager.accounts[_MOCK_AC_140].positions[0].last_update_time
         )
         self.assertEqual(20689,
                          (self._manager.accounts[_MOCK_AC_140]
                           .positions[412888950].market_price))
         self.assertEqual(datetime.time(hour=10, minute=11,
-                                       tzinfo=ib_client.IBClient.TZ),
+                                       tzinfo=_global.TZ),
                          (self._manager.accounts[_MOCK_AC_140]
                           .positions[412888950].last_update_time))
 

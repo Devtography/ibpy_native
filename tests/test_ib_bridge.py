@@ -10,6 +10,7 @@ import pytz
 import ibpy_native
 from ibpy_native import error
 from ibpy_native._internal import _client as ibpy_client
+from ibpy_native._internal import _global
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import datatype as dt, finishable_queue as fq
 
@@ -76,12 +77,12 @@ class TestIBBridge(unittest.TestCase):
         """Test function `set_timezone`."""
         ibpy_native.IBBridge.set_timezone(tz=pytz.timezone("Asia/Hong_Kong"))
 
-        self.assertEqual(ibpy_client.IBClient.TZ,
+        self.assertEqual(_global.TZ,
                          pytz.timezone("Asia/Hong_Kong"))
 
         # Reset timezone to New York
         ibpy_native.IBBridge.set_timezone(tz=pytz.timezone("America/New_York"))
-        self.assertEqual(ibpy_client.IBClient.TZ,
+        self.assertEqual(_global.TZ,
                          pytz.timezone("America/New_York"))
 
     def test_set_on_notify_listener(self):

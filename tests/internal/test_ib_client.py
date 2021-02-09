@@ -49,8 +49,6 @@ class TestIBClient(unittest.TestCase):
         thread = threading.Thread(target=cls._client.run)
         thread.start()
 
-        setattr(cls._client, "_thread", thread)
-
     #region - Contract
     @utils.async_test
     async def test_resolve_contract(self):

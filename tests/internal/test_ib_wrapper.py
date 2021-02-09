@@ -39,8 +39,6 @@ class TestIBWrapper(unittest.TestCase):
         thread = threading.Thread(target=cls._client.run)
         thread.start()
 
-        setattr(cls._client, "_thread", thread)
-
     #region - IBWrapper specifics
     @utils.async_test
     async def test_next_req_id(self):
@@ -280,8 +278,6 @@ class TestAccountAndPortfolioData(unittest.TestCase):
 
         thread = threading.Thread(target=cls.client.run)
         thread.start()
-
-        setattr(cls.client, "_thread", thread)
 
     def setUp(self):
         self.mock_delegate = utils.MockAccountManagementDelegate()

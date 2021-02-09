@@ -116,8 +116,6 @@ class IBBridge:
             thread = threading.Thread(target=self._client.run)
             thread.start()
 
-            setattr(self._client, "_thread", thread)
-
     def disconnect(self):
         """Disconnect the bridge from the connected TWS/IB Gateway instance.
         """

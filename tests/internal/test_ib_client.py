@@ -100,7 +100,7 @@ class TestIBClient(unittest.TestCase):
         """Test function `fetch_historical_ticks`."""
         data = await self._client.fetch_historical_ticks(
             req_id=_RID_FETCH_HISTORICAL_TICKS,
-            contract=sample_contracts.gbp_usd_fx(),
+            contract=sample_contracts.us_stock(),
             start=_global.TZ.localize(
                 datetime.datetime(2020, 4, 29, 10, 30, 0)),
             end=_global.TZ.localize(
@@ -115,7 +115,7 @@ class TestIBClient(unittest.TestCase):
 
         data = await self._client.fetch_historical_ticks(
             req_id=_RID_FETCH_HISTORICAL_TICKS,
-            contract=sample_contracts.gbp_usd_fx(),
+            contract=sample_contracts.us_stock(),
             start=_global.TZ.localize(
                 datetime.datetime(2020, 4, 29, 10, 30, 0)),
             end=_global.TZ.localize(

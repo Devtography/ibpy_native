@@ -1,7 +1,6 @@
 """Unit tests for module `ibpy_native.wrapper`."""
 # pylint: disable=protected-access
 import asyncio
-import os
 import threading
 import unittest
 
@@ -35,11 +34,7 @@ class TestIBWrapper(unittest.TestCase):
         cls._wrapper = _wrapper.IBWrapper()
         cls._client = _client.IBClient(cls._wrapper)
 
-        cls._client.connect(
-            os.getenv("IB_HOST", "127.0.0.1"),
-            int(os.getenv("IB_PORT", "4002")),
-            1001
-        )
+        cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)
 
         thread = threading.Thread(target=cls._client.run)
         thread.start()
@@ -281,11 +276,7 @@ class TestAccountAndPortfolioData(unittest.TestCase):
         cls.wrapper = _wrapper.IBWrapper()
         cls.client = _client.IBClient(cls.wrapper)
 
-        cls.client.connect(
-            os.getenv("IB_HOST", "127.0.0.1"),
-            int(os.getenv("IB_PORT", "4002")),
-            1001
-        )
+        cls.client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)
 
         thread = threading.Thread(target=cls.client.run)
         thread.start()
@@ -356,12 +347,12 @@ class TestAccountAndPortfolioData(unittest.TestCase):
     #region - Private functions
     async def _start_account_updates(self):
         self.client.reqAccountUpdates(subscribe=True,
-                                      acctCode=os.getenv("IB_ACC_ID", ""))
+                                      acctCode=utils.IB_ACC_ID)
         await asyncio.sleep(1)
 
     async def _cancel_account_updates(self):
         self.client.reqAccountUpdates(subscribe=False,
-                                      acctCode=os.getenv("IB_ACC_ID", ""))
+                                      acctCode=utils.IB_ACC_ID)
         await asyncio.sleep(0.5)
         self.mock_delegate.account_updates_queue.put(fq.Status.FINISHED)
     #endregion - Private functions

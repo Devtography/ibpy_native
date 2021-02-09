@@ -1,6 +1,7 @@
 """Utilities for making unittests easier to write."""
 # pylint: disable=protected-access
 import asyncio
+import os
 import queue
 from typing import Dict, List, Union
 
@@ -12,6 +13,7 @@ from ibpy_native.interfaces import delegates
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import finishable_queue as fq
 
+#region - General utils
 def async_test(fn):
     # pylint: disable=invalid-name
     """Decorator for testing the async functions."""
@@ -21,6 +23,14 @@ def async_test(fn):
         return loop.run_until_complete(fn(*args, **kwargs))
 
     return wrapper
+#endregion - General utils
+
+#region - ibpy_native specific
+# Constants
+IB_HOST: str = os.getenv("IB_HOST", "127.0.0.1")
+IB_PORT: int = int(os.getenv("IB_PORT", "4002"))
+IB_CLIENT_ID: int = int(os.getenv("IB_CLIENT_ID", "1001"))
+IB_ACC_ID: str = os.getenv("IB_ACC_ID", "")
 
 class MockAccountManagementDelegate(delegates.AccountsManagementDelegate):
     """Mock accounts delegate"""
@@ -68,3 +78,4 @@ class MockLiveTicksListener(listeners.LiveTicksListener):
 
     def on_err(self, err: error.IBError):
         raise err
+#endregion - ibpy_native specific

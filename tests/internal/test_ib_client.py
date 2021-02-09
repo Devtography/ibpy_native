@@ -2,7 +2,6 @@
 # pylint: disable=protected-access
 import asyncio
 import datetime
-import os
 import threading
 import unittest
 from typing import List
@@ -45,11 +44,7 @@ class TestIBClient(unittest.TestCase):
         cls._wrapper = _wrapper.IBWrapper()
         cls._client = _client.IBClient(cls._wrapper)
 
-        cls._client.connect(
-            os.getenv("IB_HOST", "127.0.0.1"),
-            int(os.getenv("IB_PORT", "4002")),
-            1001
-        )
+        cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)
 
         thread = threading.Thread(target=cls._client.run)
         thread.start()

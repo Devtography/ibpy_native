@@ -17,20 +17,13 @@ from ibpy_native.utils import datatype as dt, finishable_queue as fq
 from tests.toolkit import sample_contracts
 from tests.toolkit import utils
 
-#region - Constants
-TEST_HOST = os.getenv("IB_HOST", "127.0.0.1")
-TEST_PORT = int(os.getenv("IB_PORT", "4002"))
-TEST_ID = 1001
-#endregion - Constants
-
 class TestIBBridgeConn(unittest.TestCase):
     """Test cases for connection related functions in `IBBridge`."""
 
     def test_init_auto_connect(self):
         """Test initialise `IBBridge` with `auto_conn=True`."""
-        bridge = ibpy_native.IBBridge(
-            host=TEST_HOST, port=TEST_PORT, client_id=TEST_ID
-        )
+        bridge = ibpy_native.IBBridge(host=utils.IB_HOST, port=utils.IB_PORT,
+                                      client_id=utils.IB_CLIENT_ID)
 
         self.assertTrue(bridge.is_connected())
 
@@ -38,9 +31,10 @@ class TestIBBridgeConn(unittest.TestCase):
 
     def test_init_manual_connect(self):
         """Test initialise `IBBridge` with `auto_conn=False`."""
-        bridge = ibpy_native.IBBridge(
-            host=TEST_HOST, port=TEST_PORT, client_id=TEST_ID, auto_conn=False
-        )
+        bridge = ibpy_native.IBBridge(host=utils.IB_HOST,
+                                      port=utils.IB_PORT,
+                                      client_id=utils.IB_CLIENT_ID,
+                                      auto_conn=False)
         bridge.connect()
 
         self.assertTrue(bridge.is_connected())
@@ -49,9 +43,10 @@ class TestIBBridgeConn(unittest.TestCase):
 
     def test_disconnect_without_connection(self):
         """Test function `disconnect` without an established connection."""
-        bridge = ibpy_native.IBBridge(
-            host=TEST_HOST, port=TEST_PORT, client_id=TEST_ID, auto_conn=False
-        )
+        bridge = ibpy_native.IBBridge(host=utils.IB_HOST,
+                                      port=utils.IB_PORT,
+                                      client_id=utils.IB_CLIENT_ID,
+                                      auto_conn=False)
         bridge.disconnect()
 
         self.assertFalse(bridge.is_connected())
@@ -62,7 +57,7 @@ class TestIBBridge(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._bridge = ibpy_native.IBBridge(
-            host=TEST_HOST, port=TEST_PORT, client_id=TEST_ID
+            host=utils.IB_HOST, port=utils.IB_PORT, client_id=utils.IB_CLIENT_ID
         )
 
     @utils.async_test

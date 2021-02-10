@@ -130,7 +130,8 @@ class IBWrapper(wrapper.EWrapper):
 
         # -1 indicates a notification and not true error condition
         if reqId is not -1:
-            self._req_queue[reqId].put(element=err)
+            if reqId in self._req_queue:
+                self._req_queue[reqId].put(element=err)
         else:
             if self._notification_listener is not None:
                 self._notification_listener.on_notify(

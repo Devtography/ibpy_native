@@ -50,7 +50,8 @@ def us_future_expired() -> ib_contract.Contract:
     contract.exchange = "ECBOT"
     contract.currency = "USD"
     # Targets the latest contract of last year
-    contract.lastTradeDateOrContractMonth = f"{datetime.datetime.now().year}12"
+    contract.lastTradeDateOrContractMonth = (
+        f"{datetime.datetime.now().year-1}12")
     contract.includeExpired = True
 
     return contract

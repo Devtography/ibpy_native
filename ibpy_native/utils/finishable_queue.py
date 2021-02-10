@@ -71,7 +71,7 @@ class FinishableQueue():
         contents_of_queue = []
         loop = asyncio.get_event_loop()
 
-        while not self.finished:
+        while not self.finished and self.status is not Status.ERROR:
             current_element = await loop.run_in_executor(
                 None, self._queue.get
             )
@@ -94,7 +94,7 @@ class FinishableQueue():
         """
         loop = asyncio.get_event_loop()
 
-        while not self.finished:
+        while not self.finished and self.status is not Status.ERROR:
             current_element = await loop.run_in_executor(
                 None, self._queue.get
             )

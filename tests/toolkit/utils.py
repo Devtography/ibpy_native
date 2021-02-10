@@ -32,7 +32,7 @@ IB_PORT: int = int(os.getenv("IB_PORT", "4002"))
 IB_CLIENT_ID: int = int(os.getenv("IB_CLIENT_ID", "1001"))
 IB_ACC_ID: str = os.getenv("IB_ACC_ID", "")
 
-class MockAccountManagementDelegate(delegates.AccountsManagementDelegate):
+class MockAccountsManagementDelegate(delegates.AccountsManagementDelegate):
     """Mock accounts delegate"""
     def __init__(self):
         self._account_list: Dict[str, models.Account] = []

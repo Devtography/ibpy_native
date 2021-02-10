@@ -102,14 +102,15 @@ class IBWrapper(wrapper.EWrapper):
     #endregion - Getters
 
     #region - Setters
-    def set_account_management_delegate(
+    def set_accounts_management_delegate(
         self, delegate: delegates.AccountsManagementDelegate
     ):
-        """Setter for optional `_AccountListDelegate`.
+        """Setter for optional `_AccountsManagementDelegate`.
 
         Args:
-            delegate (ibpy_native.interfaces.delegates._AccountListDelegate):
-                Delegate for managing IB account list.
+            delegate (ibpy_native.interfaces.delegates
+                ._AccountsManagementDelegate): Delegate for managing IB
+                account list.
         """
         self._ac_man_delegate = delegate
 

@@ -55,7 +55,7 @@ class IBBridge:
         self._wrapper = _wrapper.IBWrapper(
             notification_listener=notification_listener
         )
-        self._wrapper.set_account_management_delegate(
+        self._wrapper.set_accounts_management_delegate(
             delegate=self._accounts_manager
         )
 

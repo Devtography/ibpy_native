@@ -32,6 +32,17 @@ IB_PORT: int = int(os.getenv("IB_PORT", "4002"))
 IB_CLIENT_ID: int = int(os.getenv("IB_CLIENT_ID", "1001"))
 IB_ACC_ID: str = os.getenv("IB_ACC_ID", "")
 
+class MockNotificationListener(listeners.NotificationListener):
+    """Mock notification listener."""
+    def __init__(self):
+        self.msg_code = -1
+        self.msg = ""
+
+    def on_notify(self, msg_code: int, msg: str):
+        """Mock callback implementation."""
+        self.msg_code = msg_code
+        self.msg = msg
+
 class MockAccountsManagementDelegate(delegates.AccountsManagementDelegate):
     """Mock accounts delegate"""
     def __init__(self):

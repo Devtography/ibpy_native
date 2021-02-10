@@ -13,7 +13,6 @@ class Status(enum.Enum):
     READY = 103
     ERROR = 500
     FINISHED = 200
-    TIMEOUT = 408
 
 class FinishableQueue():
     """Thread-safe class that takes a built-in `queue.Queue` object to handle
@@ -45,9 +44,7 @@ class FinishableQueue():
         Returns:
             bool: True is task last associated is finished, False otherwise.
         """
-        return (self._status is Status.TIMEOUT
-                or self._status is Status.FINISHED
-                or self._status is Status.ERROR)
+        return self._status is Status.FINISHED
 
     def reset(self):
         """Reset the status to `STARTED` for reusing the queue if the

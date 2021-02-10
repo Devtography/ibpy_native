@@ -35,7 +35,7 @@ IB_ACC_ID: str = os.getenv("IB_ACC_ID", "")
 class MockAccountsManagementDelegate(delegates.AccountsManagementDelegate):
     """Mock accounts delegate"""
     def __init__(self):
-        self._account_list: Dict[str, models.Account] = []
+        self._account_list: Dict[str, models.Account] = {}
         self._account_updates_queue: fq.FinishableQueue = fq.FinishableQueue(
             queue_to_finish=queue.Queue()
         )
@@ -50,7 +50,7 @@ class MockAccountsManagementDelegate(delegates.AccountsManagementDelegate):
 
     def on_account_list_update(self, account_list: List[str]):
         for account_id in account_list:
-            self._account_list.append(models.Account(account_id))
+            self._account_list[account_id] = models.Account(account_id)
 
     async def sub_account_updates(self, account: models.Account):
         pass

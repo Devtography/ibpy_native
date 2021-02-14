@@ -66,6 +66,13 @@ class IBBridge:
 
     # Properties
     @property
+    def is_connected(self) -> bool:
+        """Check if the bridge is connected to a running & logged in TWS/IB
+        Gateway instance.
+        """
+        return self._client.isConnected()
+
+    @property
     def accounts_manager(self) -> ib_account.AccountsManager:
         """:obj:`ibpy_native.account.AccountsManager`: Instance that stores &
             manages all IB account(s) related data.
@@ -100,16 +107,10 @@ class IBBridge:
     #endregion - Setters
 
     #region - Connections
-    def is_connected(self) -> bool:
-        """Check if the bridge is connected to a running & logged in TWS/IB
-        Gateway instance.
-        """
-        return self._client.isConnected()
-
     def connect(self):
         """Connect the bridge to a running & logged in TWS/IB Gateway instance.
         """
-        if not self.is_connected():
+        if not self.is_connected:
             self._client.connect(host=self._host, port=self._port,
                                  clientId=self._client_id)
 

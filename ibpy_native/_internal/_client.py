@@ -158,8 +158,6 @@ class IBClient(ib_client.EClient):
             ibpy_native.error.IBError: If
                 - queue associated with `req_id` is being used by other tasks;
                 - there's any error returned from IB;
-                - no element found in received result;
-                - multiple elements found in received result.
         """
         try:
             f_queue = self._wrapper.get_request_queue(req_id=req_id)
@@ -229,10 +227,6 @@ class IBClient(ib_client.EClient):
                 - queue associated with `req_id` is being used by other tasks;
                 - there's any error returned from IB before any tick data is
                 fetched successfully;
-                - no result received from IB with no tick fetched in pervious
-                request(s);
-                - incorrect number of items (!= 2) found in the result received
-                from IB with no tick fetched in pervious request(s).
         """
         # Pre-process & error checking
         if type(start.tzinfo) is not type(end.tzinfo):
@@ -356,7 +350,6 @@ class IBClient(ib_client.EClient):
 
         all_ticks.reverse()
 
-        # return (all_ticks, finished)
         return {"ticks": all_ticks,
                 "completed": finished,}
 

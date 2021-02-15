@@ -4,6 +4,7 @@ import asyncio
 import datetime
 import threading
 import unittest
+from dateutil import relativedelta
 
 import pytz
 
@@ -106,9 +107,12 @@ class TestHistoricalData(unittest.TestCase):
 
     def setUp(self):
         self._req_id = self._wrapper.next_req_id
-        self._start = (datetime.datetime.now().astimezone(_global.TZ) -
-                       datetime.timedelta(minutes=5))
-        self._end = datetime.datetime.now().astimezone(_global.TZ)
+        self._end = (datetime.datetime.now() + relativedelta.relativedelta(
+            weekday=relativedelta.FR(-1))
+        ).replace(hour=12, minute=0).astimezone(_global.TZ)
+        self._start = (self._end - datetime.timedelta(minutes=5)).astimezone(
+            _global.TZ
+        )
 
     @utils.async_test
     async def test_resolve_head_timestamp(self):
@@ -351,10 +355,10 @@ class TestLiveData(unittest.TestCase):
     async def test_cancel_live_ticks_stream_err(self):
         """Test function `cancel_live_ticks_stream`.
 
-        * Should raise `IBError` as no queue is associated with `_req_id`.
+        * Should raise `IBError` as no queue is associated with ID `0`.
         """
         with self.assertRaises(error.IBError):
-            self._client.cancel_live_ticks_stream(req_id=self._req_id)
+            self._client.cancel_live_ticks_stream(req_id=0)
 
     @classmethod
     def tearDownClass(cls):

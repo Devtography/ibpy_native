@@ -7,6 +7,8 @@ import datetime
 import threading
 from typing import List, Optional
 
+from deprecated import sphinx
+
 from ibapi import contract as ib_contract
 
 from ibpy_native import account as ib_account
@@ -224,6 +226,11 @@ class IBBridge:
 
         return data_point.replace(tzinfo=None)
 
+    @sphinx.deprecated(
+        version="1.0.0",
+        reason="Function will be removed in next release. Use alternative "
+               "function `get_historical_ticks_v2` instead."
+    )
     async def get_historical_ticks(
         self, contract: ib_contract.Contract, start: datetime.datetime=None,
         end: datetime.datetime=datetime.datetime.now(),

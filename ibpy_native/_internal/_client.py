@@ -11,6 +11,7 @@ from ibapi import wrapper as ib_wrapper
 
 from ibpy_native import error
 from ibpy_native._internal import _global
+from ibpy_native._internal import _typing
 from ibpy_native._internal import _wrapper
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import datatype as dt
@@ -431,11 +432,8 @@ class IBClient(ib_client.EClient):
 
     #region - Private functions
     def _process_historical_ticks(
-        self, ticks: List[Union[ib_wrapper.HistoricalTick,
-                                ib_wrapper.HistoricalTickBidAsk,
-                                ib_wrapper.HistoricalTickLast,]],
-        start_time: datetime.datetime,
-        end_time: datetime.datetime
+        self, ticks: _typing.ResHistoricalTicks,
+        start_time: datetime.datetime, end_time: datetime.datetime
     ) -> _ProcessHistoricalTicksResult:
         """Processes the tick data returned from IB in function
         `fetch_historical_ticks`.

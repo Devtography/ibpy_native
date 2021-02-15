@@ -1,13 +1,14 @@
 """Code implementation of IB API resposes handling."""
 # pylint: disable=protected-access
 import queue
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 from ibapi import contract as ib_contract
 from ibapi import wrapper
 
 from ibpy_native import error
 from ibpy_native import models
+from ibpy_native._internal import _typing
 from ibpy_native.interfaces import delegates
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import finishable_queue as fq
@@ -272,11 +273,7 @@ class IBWrapper(wrapper.EWrapper):
             self._req_queue[req_id] = fq.FinishableQueue(queue.Queue())
 
     def _handle_historical_ticks_results(
-        self, req_id: int,
-        ticks: Union[List[wrapper.HistoricalTick],
-                     List[wrapper.HistoricalTickBidAsk],
-                     List[wrapper.HistoricalTickLast],],
-        done: bool
+        self, req_id: int, ticks: _typing.WrapperResHistoricalTicks, done: bool
     ):
         """Handles results return from functions `historicalTicks`,
         `historicalTicksBidAsk`, and `historicalTicksLast` by putting the
@@ -287,9 +284,7 @@ class IBWrapper(wrapper.EWrapper):
         self._req_queue[req_id].put(element=fq.Status.FINISHED)
 
     def _handle_live_ticks(self, req_id: int,
-                           tick: Union[wrapper.HistoricalTick,
-                                       wrapper.HistoricalTickBidAsk,
-                                       wrapper.HistoricalTickLast,]):
+                           tick: _typing.HistoricalTickTypes):
         """Handles live ticks passed to functions `tickByTickAllLast`,
         `tickByTickBidAsk`, and `tickByTickMidPoint` by putting the ticks
         received into corresponding queue.

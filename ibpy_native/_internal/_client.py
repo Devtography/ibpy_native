@@ -3,6 +3,7 @@
 import datetime
 from typing import Any, List, Union
 
+from deprecated import sphinx
 from typing_extensions import TypedDict
 
 from ibapi import client as ib_client
@@ -267,6 +268,11 @@ class IBClient(ib_client.EClient):
 
             return result[0]
 
+    @sphinx.deprecated(
+        version="1.0.0",
+        reason="Function will be removed in next release. Use alternative "
+               "function `req_historical_ticks` instead."
+    )
     async def fetch_historical_ticks(
         self, req_id: int, contract: ib_contract.Contract,
         start: datetime.datetime,

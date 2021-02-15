@@ -240,6 +240,7 @@ class TestHistoricalData(unittest.TestCase):
                 show=datatype.HistoricalTicks.BID_ASK
             )
 
+    # region - Deprecated
     @utils.async_test
     async def test_fetch_historical_ticks_0(self):
         """Test function `fetch_historical_ticks`.
@@ -362,6 +363,7 @@ class TestHistoricalData(unittest.TestCase):
                 start=self._start, end=self._end,
                 show=datatype.HistoricalTicks.TRADES
             )
+    #endregion - Deprecated
 
     @classmethod
     def tearDownClass(cls):

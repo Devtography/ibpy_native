@@ -7,15 +7,17 @@ import unittest
 from ibapi import contract as ib_contract
 from ibpy_native import account
 from ibpy_native import models
-from ibpy_native.internal import client as ib_client
+from ibpy_native._internal import _global
 from ibpy_native.utils import finishable_queue as fq
 
 from tests.toolkit import utils
 
-_MOCK_AC_140: str = 'DU0000140'
-_MOCK_AC_141: str = 'DU0000141'
-_MOCK_AC_142: str = 'DU0000142'
-_MOCK_AC_143: str = 'DU0000143'
+#region - Constants
+_MOCK_AC_140: str = "DU0000140"
+_MOCK_AC_141: str = "DU0000141"
+_MOCK_AC_142: str = "DU0000142"
+_MOCK_AC_143: str = "DU0000143"
+#endregion - Constants
 
 class TestAccountsManager(unittest.TestCase):
     """Unit tests for class `AccountsManager`."""
@@ -43,7 +45,7 @@ class TestAccountsManager(unittest.TestCase):
         self._manager = account.AccountsManager(
             accounts={_MOCK_AC_140: models.Account(account_id=_MOCK_AC_140),
                       _MOCK_AC_142: models.Account(account_id=_MOCK_AC_142),
-                      _MOCK_AC_143: models.Account(account_id=_MOCK_AC_143)}
+                      _MOCK_AC_143: models.Account(account_id=_MOCK_AC_143),}
         )
 
         self._manager.on_account_list_update(
@@ -77,21 +79,21 @@ class TestAccountsManager(unittest.TestCase):
                 currency="BASE")
         )
         self.assertEqual(datetime.time(hour=10, minute=10,
-                                       tzinfo=ib_client._IBClient.TZ),
+                                       tzinfo=_global.TZ),
                          self._manager.accounts[_MOCK_AC_140].last_update_time)
 
         # Assert portfolio data
         self.assertEqual(
             8, self._manager.accounts[_MOCK_AC_140].positions[0].avg_cost)
         self.assertEqual(
-            datetime.time(hour=10, minute=7, tzinfo=ib_client._IBClient.TZ),
+            datetime.time(hour=10, minute=7, tzinfo=_global.TZ),
             self._manager.accounts[_MOCK_AC_140].positions[0].last_update_time
         )
         self.assertEqual(20689,
                          (self._manager.accounts[_MOCK_AC_140]
                           .positions[412888950].market_price))
         self.assertEqual(datetime.time(hour=10, minute=11,
-                                       tzinfo=ib_client._IBClient.TZ),
+                                       tzinfo=_global.TZ),
                          (self._manager.accounts[_MOCK_AC_140]
                           .positions[412888950].last_update_time))
 
@@ -130,5 +132,5 @@ class TestAccountsManager(unittest.TestCase):
         )
         self._manager.account_updates_queue.put("10:11")
 
-        self._manager.account_updates_queue.put(fq._Status.FINISHED)
+        self._manager.account_updates_queue.put(fq.Status.FINISHED)
     #endregion - Private functions

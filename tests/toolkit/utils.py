@@ -1,6 +1,7 @@
 """Utilities for making unittests easier to write."""
 # pylint: disable=protected-access
 import asyncio
+import os
 import queue
 from typing import Dict, List, Union
 
@@ -12,6 +13,7 @@ from ibpy_native.interfaces import delegates
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import finishable_queue as fq
 
+#region - General utils
 def async_test(fn):
     # pylint: disable=invalid-name
     """Decorator for testing the async functions."""
@@ -21,12 +23,31 @@ def async_test(fn):
         return loop.run_until_complete(fn(*args, **kwargs))
 
     return wrapper
+#endregion - General utils
 
-class MockAccountManagementDelegate(delegates._AccountManagementDelegate):
+#region - ibpy_native specific
+# Constants
+IB_HOST: str = os.getenv("IB_HOST", "127.0.0.1")
+IB_PORT: int = int(os.getenv("IB_PORT", "4002"))
+IB_CLIENT_ID: int = int(os.getenv("IB_CLIENT_ID", "1001"))
+IB_ACC_ID: str = os.getenv("IB_ACC_ID", "")
+
+class MockNotificationListener(listeners.NotificationListener):
+    """Mock notification listener."""
+    def __init__(self):
+        self.msg_code = -1
+        self.msg = ""
+
+    def on_notify(self, msg_code: int, msg: str):
+        """Mock callback implementation."""
+        self.msg_code = msg_code
+        self.msg = msg
+
+class MockAccountsManagementDelegate(delegates.AccountsManagementDelegate):
     """Mock accounts delegate"""
     def __init__(self):
-        self._account_list: Dict[str, models.Account] = []
-        self._account_updates_queue: fq._FinishableQueue = fq._FinishableQueue(
+        self._account_list: Dict[str, models.Account] = {}
+        self._account_updates_queue: fq.FinishableQueue = fq.FinishableQueue(
             queue_to_finish=queue.Queue()
         )
 
@@ -35,12 +56,12 @@ class MockAccountManagementDelegate(delegates._AccountManagementDelegate):
         return self._account_list
 
     @property
-    def account_updates_queue(self) -> fq._FinishableQueue:
+    def account_updates_queue(self) -> fq.FinishableQueue:
         return self._account_updates_queue
 
     def on_account_list_update(self, account_list: List[str]):
         for account_id in account_list:
-            self._account_list.append(models.Account(account_id))
+            self._account_list[account_id] = models.Account(account_id)
 
     async def sub_account_updates(self, account: models.Account):
         pass
@@ -50,16 +71,16 @@ class MockAccountManagementDelegate(delegates._AccountManagementDelegate):
 
 class MockLiveTicksListener(listeners.LiveTicksListener):
     """Mock notification listener"""
-    ticks: List[Union[ib_wrapper.HistoricalTick,
-                      ib_wrapper.HistoricalTickBidAsk,
-                      ib_wrapper.HistoricalTickLast]] = []
-
-    finished: bool = False
+    def __init__(self):
+        self.ticks: List[Union[ib_wrapper.HistoricalTick,
+                               ib_wrapper.HistoricalTickBidAsk,
+                               ib_wrapper.HistoricalTickLast]] = []
+        self.finished = False
 
     def on_tick_receive(self, req_id: int,
                         tick: Union[ib_wrapper.HistoricalTick,
                                     ib_wrapper.HistoricalTickBidAsk,
-                                    ib_wrapper.HistoricalTickLast]):
+                                    ib_wrapper.HistoricalTickLast,]):
         print(tick)
         self.ticks.append(tick)
 
@@ -68,3 +89,4 @@ class MockLiveTicksListener(listeners.LiveTicksListener):
 
     def on_err(self, err: error.IBError):
         raise err
+#endregion - ibpy_native specific

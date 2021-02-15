@@ -7,11 +7,11 @@ import queue
 from typing import Dict, List, Optional, Union
 
 from ibpy_native import models
+from ibpy_native._internal import _global
 from ibpy_native.interfaces import delegates
-from ibpy_native.internal import client as ib_client
 from ibpy_native.utils import finishable_queue as fq
 
-class AccountsManager(delegates._AccountManagementDelegate):
+class AccountsManager(delegates.AccountsManagementDelegate):
     """Class to manage all IB accounts under the same username logged-in on
     IB Gateway.
 
@@ -23,7 +23,7 @@ class AccountsManager(delegates._AccountManagementDelegate):
     def __init__(self, accounts: Optional[Dict[str, models.Account]]=None):
         self._accounts: Dict[str, models.Account] = ({} if accounts is None
                                                      else accounts)
-        self._account_updates_queue: fq._FinishableQueue = fq._FinishableQueue(
+        self._account_updates_queue: fq.FinishableQueue = fq.FinishableQueue(
             queue_to_finish=queue.Queue()
         )
 
@@ -37,15 +37,15 @@ class AccountsManager(delegates._AccountManagementDelegate):
         return self._accounts
 
     @property
-    def account_updates_queue(self) -> fq._FinishableQueue:
-        """":obj:`ibpy_native.utils.finishable_queue._FinishableQueue`:
+    def account_updates_queue(self) -> fq.FinishableQueue:
+        """":obj:`ibpy_native.utils.finishable_queue.FinishableQueue`:
         The queue that stores account updates data from IB Gateway.
         """
         return self._account_updates_queue
 
     def on_account_list_update(self, account_list: List[str]):
         """Callback function for internal API callback
-        `_IBWrapper.managedAccounts`.
+        `IBWrapper.managedAccounts`.
 
         Checks the existing account list for update(s) to the list. Terminates
         action(s) or subscription(s) on account(s) which is/are no longer
@@ -92,11 +92,11 @@ class AccountsManager(delegates._AccountManagementDelegate):
         await self._prevent_multi_account_updates()
 
         last_elm: Optional[Union[models.RawAccountValueData,
-                                 models.RawPortfolioData]] = None
+                                 models.RawPortfolioData,]] = None
 
         async for elm in self._account_updates_queue.stream():
             if isinstance(elm, (models.RawAccountValueData,
-                                models.RawPortfolioData)):
+                                models.RawPortfolioData,)):
                 if elm.account != account.account_id:
                     # Skip the current element incase the data received doesn't
                     # belong to the account specified, which shouldn't happen
@@ -116,7 +116,7 @@ class AccountsManager(delegates._AccountManagementDelegate):
 
                 if re.fullmatch(r"\d{2}:\d{2}", elm):
                     time = datetime.datetime.strptime(elm, "%H:%M").time()
-                    time = time.replace(tzinfo=ib_client._IBClient.TZ)
+                    time = time.replace(tzinfo=_global.TZ)
 
                     if isinstance(last_elm, (str, models.RawAccountValueData)):
                         # This timestamp represents the last update system time
@@ -137,7 +137,7 @@ class AccountsManager(delegates._AccountManagementDelegate):
 
     async def unsub_account_updates(self):
         """Unsubscribes to account updates."""
-        self._account_updates_queue.put(fq._Status.FINISHED)
+        self._account_updates_queue.put(fq.Status.FINISHED)
 
     #region - Private functions
     async def _prevent_multi_account_updates(self):
@@ -146,7 +146,7 @@ class AccountsManager(delegates._AccountManagementDelegate):
         `ibapi.EClient.reqAccountUpdates` is designed as only one account at a
         time can be subscribed at a time.
         """
-        if self._account_updates_queue.status is fq._Status.INIT:
+        if self._account_updates_queue.status is fq.Status.INIT:
             # Returns as no account updates request has been made before.
             return
 

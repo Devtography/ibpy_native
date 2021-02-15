@@ -1,4 +1,6 @@
 """Predefined contracts for unittest."""
+import datetime
+
 from ibapi import contract as ib_contract
 
 def gbp_usd_fx() -> ib_contract.Contract:
@@ -23,23 +25,33 @@ def us_stock() -> ib_contract.Contract:
 
 def us_future() -> ib_contract.Contract:
     """US future - YM"""
+    # Generate contract month dynamically
+    now = datetime.datetime.now()
+    month = now.month
+    for i in [3, 6, 9, 12]:
+        if month < i:
+            month = i
+            break
+
     contract = ib_contract.Contract()
     contract.symbol = "YM"
     contract.secType = "FUT"
     contract.exchange = "ECBOT"
     contract.currency = "USD"
-    contract.lastTradeDateOrContractMonth = "202009"
+    contract.lastTradeDateOrContractMonth = f"{now.year}{month:02d}"
 
     return contract
 
 def us_future_expired() -> ib_contract.Contract:
-    """Expired US future - YM 2020.06"""
+    """Expired US future"""
     contract = ib_contract.Contract()
     contract.symbol = "YM"
     contract.secType = "FUT"
     contract.exchange = "ECBOT"
     contract.currency = "USD"
-    contract.lastTradeDateOrContractMonth = "202006"
+    # Targets the latest contract of last year
+    contract.lastTradeDateOrContractMonth = (
+        f"{datetime.datetime.now().year-1}12")
     contract.includeExpired = True
 
     return contract

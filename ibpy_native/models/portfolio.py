@@ -43,6 +43,11 @@ class Position:
         """
         return self._contract
 
+    @contract.setter
+    def contract(self, val: contract):
+        with self._lock:
+            self._contract = val
+
     @property
     def position(self) -> float:
         """float: The number of positions held."""

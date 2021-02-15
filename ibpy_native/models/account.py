@@ -7,8 +7,11 @@ from ibpy_native.models import portfolio
 from ibpy_native.models import raw_data
 
 class Account:
-    """Model class for individual IB account."""
+    """Model class for individual IB account.
 
+    Args:
+        account_id (str): Account ID received from IB Gateway.
+    """
     def __init__(self, account_id: str):
         self._lock = threading.Lock()
 
@@ -69,7 +72,7 @@ class Account:
         """
         return self._destroy_flag
 
-    def get_account_value(self, key: str, currency: str = "") -> Optional[str]:
+    def get_account_value(self, key: str, currency: str="") -> Optional[str]:
         """Returns the value of specified account's information.
 
         Args:
@@ -89,7 +92,7 @@ class Account:
 
         return None
 
-    def update_account_value(self, key: str, currency: str = "", val: str = ""):
+    def update_account_value(self, key: str, currency: str="", val: str=""):
         """Thread-safe setter function to update the account value.
 
         Args:

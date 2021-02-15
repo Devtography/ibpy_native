@@ -1,9 +1,8 @@
 """Code implementation for `EClient` related stuffs"""
 # pylint: disable=protected-access
 import datetime
-from typing import Any, List, Optional, Union
+from typing import Any, List, Union
 
-import pytz
 from typing_extensions import TypedDict
 
 from ibapi import client as ib_client
@@ -11,52 +10,44 @@ from ibapi import contract as ib_contract
 from ibapi import wrapper as ib_wrapper
 
 from ibpy_native import error
+from ibpy_native._internal import _global
+from ibpy_native._internal import _wrapper
 from ibpy_native.interfaces import listeners
-from ibpy_native.internal import wrapper as ibpy_wrapper
-from ibpy_native.utils import const
 from ibpy_native.utils import datatype as dt
 from ibpy_native.utils import finishable_queue as fq
 
 class _ProcessHistoricalTicksResult(TypedDict):
-    """Use for type hint the returns of `_IBClient.fetch_historical_ticks`."""
+    """Use for type hint the returns of `IBClient.fetch_historical_ticks`."""
     ticks: List[Union[ib_wrapper.HistoricalTick,
                       ib_wrapper.HistoricalTickBidAsk,
-                      ib_wrapper.HistoricalTickLast]]
+                      ib_wrapper.HistoricalTickLast,]]
     next_end_time: datetime.datetime
 
-class _IBClient(ib_client.EClient):
-    """The client calls the native methods from _IBWrapper instead of
+class IBClient(ib_client.EClient):
+    """The client calls the native methods from IBWrapper instead of
     overriding native methods.
 
-    Attributes:
-        TZ: Class level timezone for all datetime related object. Timezone
-            should be aligned with the timezone specified in TWS/IB Gateway
-            at login. Defaults to 'America/New_York'.
-        REQ_TIMEOUT (int): Constant uses as a default timeout value.
+    Args:
+        wrapper (:obj:`ibpy_native._internal._wrapper.IBWrapper`): The wrapper
+            object to handle messages return from IB Gateway.
     """
-    # Static variable to define the timezone
-    TZ = pytz.timezone('America/New_York')
-
-    # Default timeout time in second for requests
-    REQ_TIMEOUT = 10
-
-    def __init__(self, wrapper: ibpy_wrapper._IBWrapper):
+    def __init__(self, wrapper: _wrapper.IBWrapper):
         self._wrapper = wrapper
         super().__init__(wrapper)
 
+    #region - Contract
     async def resolve_contract(
-            self, req_id: int, contract: ib_contract.Contract
-        ) -> ib_contract.Contract:
+        self, req_id: int, contract: ib_contract.Contract
+    ) -> ib_contract.Contract:
         """From a partially formed contract, returns a fully fledged version.
 
         Args:
             req_id (int): Request ID (ticker ID in IB API).
-            contract (:obj:`ibapi.contract.Contract`):
-                `Contract` object with partially completed info
-                    - e.g. symbol, currency, etc...
+            contract (:obj:`ibapi.contract.Contract`): `Contract` object with
+                partially completed info (e.g. symbol, currency, etc...)
 
         Returns:
-            ibapi.contract.Contract: Fully resolved IB contract.
+            :obj:`ibapi.contract.Contract`: Fully resolved IB contract.
 
         Raises:
             ibpy_native.error.IBError: If
@@ -79,7 +70,7 @@ class _IBClient(ib_client.EClient):
         res = await f_queue.get()
 
         if res:
-            if f_queue.status is fq._Status.ERROR:
+            if f_queue.status is fq.Status.ERROR:
                 if isinstance(res[-1], error.IBError):
                     raise res[-1]
 
@@ -98,20 +89,19 @@ class _IBClient(ib_client.EClient):
         )
 
     async def resolve_contracts(
-            self, req_id: int, contract: ib_contract.Contract
-        ) -> List[ib_contract.ContractDetails]:
+        self, req_id: int, contract: ib_contract.Contract
+    ) -> List[ib_contract.ContractDetails]:
         """Search the fully fledged contracts with details from a partially
         formed `ibapi.contract.Contract` object.
 
         Args:
             req_id (int): Request ID (ticker ID in IB API).
             contract (:obj:`ibapi.contract.Contract`): `Contract` object with
-                partially completed info
-                    - e.g. symbol, currency, etc...
+                partially completed info (e.g. symbol, currency, etc...)
 
         Returns:
-            List[ibapi.contract.ContractDetails]: Fully fledged IB contract(s)
-                with detailed info.
+            :obj:`list` of `ibapi.contract.ContractDetails`: Fully fledged IB
+                contract(s) with detailed info.
 
         Raises:
             ibpy_native.error.IBError: If
@@ -129,11 +119,12 @@ class _IBClient(ib_client.EClient):
 
         self.reqContractDetails(reqId=req_id, contract=contract)
 
-        res: List[Union[ib_contract.ContractDetails, error.IBError]] = \
+        res: List[Union[ib_contract.ContractDetails, error.IBError]] = (
             await f_queue.get()
+        )
 
         if res:
-            if f_queue.status is fq._Status.ERROR:
+            if f_queue.status is fq.Status.ERROR:
                 if isinstance(res[-1], error.IBError):
                     raise res[-1]
 
@@ -143,11 +134,12 @@ class _IBClient(ib_client.EClient):
             rid=req_id, err_code=error.IBErrorCode.RES_NO_CONTENT,
             err_str="Failed to get additional contract details"
         )
+    #endregion - Contract
 
     async def resolve_head_timestamp(
-            self, req_id: int, contract: ib_contract.Contract,
-            show: Optional[dt.EarliestDataPoint] = dt.EarliestDataPoint.TRADES
-        ) -> int:
+        self, req_id: int, contract: ib_contract.Contract,
+        show: dt.EarliestDataPoint=dt.EarliestDataPoint.TRADES
+    ) -> int:
         """Fetch the earliest available data point for a given instrument
         from IB.
 
@@ -155,8 +147,9 @@ class _IBClient(ib_client.EClient):
             req_id (int): Request ID (ticker ID in IB API).
             contract (:obj:`ibapi.contract.Contract`): `Contract` object with
                 sufficient info to identify the instrument.
-            show (Literal['BID', 'ASK', 'TRADES'], optional):
-                Type of data for head timestamp. Defaults to 'TRADES'.
+            show (:obj:`ibpy_native.utils.datatype.EarliestDataPoint`,
+                optional): Type of data for head timestamp. Defaults to
+                `EarliestDataPoint.TRADES`.
 
         Returns:
             int: Unix timestamp of the earliest available datapoint.
@@ -165,8 +158,6 @@ class _IBClient(ib_client.EClient):
             ibpy_native.error.IBError: If
                 - queue associated with `req_id` is being used by other tasks;
                 - there's any error returned from IB;
-                - no element found in received result;
-                - multiple elements found in received result.
         """
         try:
             f_queue = self._wrapper.get_request_queue(req_id=req_id)
@@ -174,7 +165,7 @@ class _IBClient(ib_client.EClient):
             raise err
 
         print("Getting earliest available data point for the given "
-              "instrument from IB... ")
+              "instrument from IB...")
 
         self.reqHeadTimeStamp(reqId=req_id, contract=contract,
                               whatToShow=show.value, useRTH=0, formatDate=2)
@@ -186,7 +177,7 @@ class _IBClient(ib_client.EClient):
         self.cancelHeadTimeStamp(reqId=req_id)
 
         if res:
-            if f_queue.status is fq._Status.ERROR:
+            if f_queue.status is fq.Status.ERROR:
                 if isinstance(res[-1], error.IBError):
                     raise res[-1]
 
@@ -206,12 +197,11 @@ class _IBClient(ib_client.EClient):
         )
 
     async def fetch_historical_ticks(
-            self, req_id: int, contract: ib_contract.Contract,
-            start: datetime.datetime,
-            end: Optional[datetime.datetime] = datetime.datetime.now()\
-                .astimezone(TZ),
-            show: Optional[dt.HistoricalTicks] = dt.HistoricalTicks.TRADES
-        ) -> dt.HistoricalTicksResult:
+        self, req_id: int, contract: ib_contract.Contract,
+        start: datetime.datetime,
+        end: datetime.datetime=datetime.datetime.now().astimezone(_global.TZ),
+        show: dt.HistoricalTicks=dt.HistoricalTicks.TRADES
+    ) -> dt.HistoricalTicksResult:
         """Fetch the historical ticks data for a given instrument from IB.
 
         Args:
@@ -222,11 +212,12 @@ class _IBClient(ib_client.EClient):
                 data to be included.
             end (:obj:`datetime.datetime`, optional): The time for the latest
                 tick data to be included. Defaults to now.
-            show (Literal['MIDPOINT', 'BID_ASK', 'TRADES'], optional):
-                Type of data requested. Defaults to 'TRADES'.
+            show (:obj:`ibpy_native.utils.datatype.HistoricalTicks`, optional):
+                Type of data requested. Defaults to `HistoricalTicks.TRADES`.
 
         Returns:
-            Ticks data (fetched recursively to get around IB 1000 ticks limit)
+            :obj:`ibpy_native.utils.datatype.HistoricalTicksResult`: Ticks
+                data (fetched recursively to get around IB 1000 ticks limit)
 
         Raises:
             ValueError: If
@@ -236,10 +227,6 @@ class _IBClient(ib_client.EClient):
                 - queue associated with `req_id` is being used by other tasks;
                 - there's any error returned from IB before any tick data is
                 fetched successfully;
-                - no result received from IB with no tick fetched in pervious
-                request(s);
-                - incorrect number of items (!= 2) found in the result received
-                from IB with no tick fetched in pervious request(s).
         """
         # Pre-process & error checking
         if type(start.tzinfo) is not type(end.tzinfo):
@@ -260,11 +247,13 @@ class _IBClient(ib_client.EClient):
 
         all_ticks: list = []
 
-        real_start_time = _IBClient.TZ.localize(start) if start.tzinfo is None \
-            else start
+        real_start_time = (
+            _global.TZ.localize(start) if start.tzinfo is None else start
+        )
 
-        next_end_time = _IBClient.TZ.localize(end) if end.tzinfo is None \
-            else end
+        next_end_time = (
+            _global.TZ.localize(end) if end.tzinfo is None else end
+        )
 
         finished = False
 
@@ -274,22 +263,22 @@ class _IBClient(ib_client.EClient):
         while not finished:
             self.reqHistoricalTicks(
                 reqId=req_id, contract=contract, startDateTime="",
-                endDateTime=next_end_time.strftime(const._IB.TIME_FMT),
+                endDateTime=next_end_time.strftime(_global.TIME_FMT),
                 numberOfTicks=1000, whatToShow=show.value, useRth=0,
                 ignoreSize=False, miscOptions=[]
             )
 
             res: List[List[Union[ib_wrapper.HistoricalTick,
                                  ib_wrapper.HistoricalTickBidAsk,
-                                 ib_wrapper.HistoricalTickLast]],
-                      bool] = await f_queue.get()
+                                 ib_wrapper.HistoricalTickLast,]],
+                      bool,] = await f_queue.get()
 
-            if res and f_queue.status is fq._Status.ERROR:
+            if res and f_queue.status is fq.Status.ERROR:
                 # Response received and internal queue reports error
                 if isinstance(res[-1], error.IBError):
                     if all_ticks:
-                        if res[-1].err_code == error.IBErrorCode\
-                            .INVALID_CONTRACT:
+                        if res[-1].err_code == (error.IBErrorCode
+                                                .INVALID_CONTRACT):
                             # Continue if IB returns error `No security
                             # definition has been found for the request` as
                             # it's not possible that ticks can be fetched
@@ -319,7 +308,7 @@ class _IBClient(ib_client.EClient):
                     raise error.IBError(
                         rid=req_id, err_code=error.IBErrorCode.RES_UNEXPECTED,
                         err_str="[Abnormal] Incorrect number of items "
-                        f"received: {len(res)}"
+                                f"received: {len(res)}"
                     )
 
                 # Process the data
@@ -328,13 +317,13 @@ class _IBClient(ib_client.EClient):
                     start_time=real_start_time,
                     end_time=next_end_time
                 )
-                all_ticks.extend(processed_result['ticks'])
-                next_end_time = processed_result['next_end_time']
+                all_ticks.extend(processed_result["ticks"])
+                next_end_time = processed_result["next_end_time"]
 
                 print(
                     f"{len(all_ticks)} ticks fetched ("
                     f"{len(processed_result['ticks'])} new ticks); Next end "
-                    f"time - {next_end_time.strftime(const._IB.TIME_FMT)}"
+                    f"time - {next_end_time.strftime(_global.TIME_FMT)}"
                 )
 
                 if next_end_time.timestamp() <= real_start_time.timestamp():
@@ -361,27 +350,26 @@ class _IBClient(ib_client.EClient):
 
         all_ticks.reverse()
 
-        # return (all_ticks, finished)
-        return {'ticks': all_ticks,
-                'completed': finished}
+        return {"ticks": all_ticks,
+                "completed": finished,}
 
-    # Stream live tick data
+    #region - Stream live tick data
     async def stream_live_ticks(
-            self, req_id: int, contract: ib_contract.Contract,
-            listener: listeners.LiveTicksListener,
-            tick_type: Optional[dt.LiveTicks] = dt.LiveTicks.LAST
-        ):
+        self, req_id: int, contract: ib_contract.Contract,
+        listener: listeners.LiveTicksListener,
+        tick_type: dt.LiveTicks=dt.LiveTicks.LAST
+    ):
         """Request to stream live tick data.
 
         Args:
             req_id (int): Request ID (ticker ID in IB API).
             contract (:obj:`ibapi.contract.Contract`): `Contract` object with
                 sufficient info to identify the instrument.
-            listener (:obj:`ibpy_native.interfaces.listeners.LiveTicksListener`):
-                Callback listener for receiving ticks, finish signal, and error
-                from IB API.
-            tick_type (Literal['Last', 'AllLast', 'BidAsk', 'MidPoint'],
-                optional): Type of tick to be requested. Defaults to 'Last'.
+            listener (:obj:`ibpy_native.interfaces.listeners
+                .LiveTicksListener`): Callback listener for receiving ticks,
+                finish signal, and error from IB API.
+            tick_type (:obj:`ibpy_native.utils.datatype.LiveTicks`, optional):
+                Type of tick to be requested. Defaults to `LiveTicks.LAST`.
 
         Raises:
             ibpy_native.error.IBError: If queue associated with `req_id` is
@@ -411,11 +399,11 @@ class _IBClient(ib_client.EClient):
         async for elm in f_queue.stream():
             if isinstance(elm, (ib_wrapper.HistoricalTick,
                                 ib_wrapper.HistoricalTickLast,
-                                ib_wrapper.HistoricalTickBidAsk)):
+                                ib_wrapper.HistoricalTickBidAsk,)):
                 listener.on_tick_receive(req_id=req_id, tick=elm)
             elif isinstance(elm, error.IBError):
                 listener.on_err(err=elm)
-            elif elm is fq._Status.FINISHED:
+            elif elm is fq.Status.FINISHED:
                 listener.on_finish(req_id=req_id)
 
     def cancel_live_ticks_stream(self, req_id: int):
@@ -425,28 +413,29 @@ class _IBClient(ib_client.EClient):
             req_id (int): Request ID (ticker ID in IB API).
 
         Raises:
-            ibpy_native.error.IBError: If there's no `_FinishableQueue` object
+            ibpy_native.error.IBError: If there's no `FinishableQueue` object
                 associated with the specified `req_id` found in the internal
-                `_IBWrapper` object.
+                `IBWrapper` object.
         """
         f_queue = self._wrapper.get_request_queue_no_throw(req_id=req_id)
 
         if f_queue is not None:
             self.cancelTickByTickData(reqId=req_id)
-            f_queue.put(element=fq._Status.FINISHED)
+            f_queue.put(element=fq.Status.FINISHED)
         else:
             raise error.IBError(
                 rid=req_id, err_code=error.IBErrorCode.RES_NOT_FOUND,
                 err_str=f"Task associated with request ID {req_id} not found"
             )
+    #endregion - Stream live tick data
 
-    # Private functions
+    #region - Private functions
     def _process_historical_ticks(
-            self, ticks: List[Union[ib_wrapper.HistoricalTick,
-                                    ib_wrapper.HistoricalTickBidAsk,
-                                    ib_wrapper.HistoricalTickLast]],
-            start_time: datetime.datetime,
-            end_time: datetime.datetime
+        self, ticks: List[Union[ib_wrapper.HistoricalTick,
+                                ib_wrapper.HistoricalTickBidAsk,
+                                ib_wrapper.HistoricalTickLast,]],
+        start_time: datetime.datetime,
+        end_time: datetime.datetime
     ) -> _ProcessHistoricalTicksResult:
         """Processes the tick data returned from IB in function
         `fetch_historical_ticks`.
@@ -473,8 +462,9 @@ class _IBClient(ib_client.EClient):
 
                 # Updates the next end time to prepare to fetch more
                 # data again from IB
-                end_time = datetime.datetime.fromtimestamp(ticks[-1].time)\
-                    .astimezone(end_time.tzinfo)
+                end_time = datetime.datetime.fromtimestamp(
+                    ticks[-1].time
+                ).astimezone(end_time.tzinfo)
             else:
                 # Ticks data received from IB but all records included in
                 # response are earlier than the start time.
@@ -492,13 +482,13 @@ class _IBClient(ib_client.EClient):
             else:
                 end_time = end_time - delta
 
-        return {'ticks': ticks,
-                'next_end_time': end_time}
+        return {"ticks": ticks,
+                "next_end_time": end_time,}
 
     def _unknown_error(self, req_id: int, extra: Any = None):
         """Constructs `IBError` with error code `UNKNOWN`
 
-        For siturations which internal `_FinishableQueue` reports error status
+        For siturations which internal `FinishableQueue` reports error status
         but not exception received.
 
         Args:
@@ -513,6 +503,7 @@ class _IBClient(ib_client.EClient):
         return error.IBError(
             rid=req_id, err_code=error.IBErrorCode.UNKNOWN,
             err_str="Unknown error: Internal queue reported error "
-            "status but no exception received",
+                    "status but no exception received",
             err_extra=extra
         )
+    #endregion - Private functions

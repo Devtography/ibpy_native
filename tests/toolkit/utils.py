@@ -71,11 +71,11 @@ class MockAccountsManagementDelegate(delegates.AccountsManagementDelegate):
 
 class MockLiveTicksListener(listeners.LiveTicksListener):
     """Mock notification listener"""
-    ticks: List[Union[ib_wrapper.HistoricalTick,
-                      ib_wrapper.HistoricalTickBidAsk,
-                      ib_wrapper.HistoricalTickLast]] = []
-
-    finished: bool = False
+    def __init__(self):
+        self.ticks: List[Union[ib_wrapper.HistoricalTick,
+                               ib_wrapper.HistoricalTickBidAsk,
+                               ib_wrapper.HistoricalTickLast]] = []
+        self.finished = False
 
     def on_tick_receive(self, req_id: int,
                         tick: Union[ib_wrapper.HistoricalTick,

@@ -218,9 +218,7 @@ class IBBridge:
         except error.IBError as err:
             raise err
 
-        data_point = datetime.datetime.fromtimestamp(
-            result
-        ).astimezone(
+        data_point = datetime.datetime.fromtimestamp(result).astimezone(
             _global.TZ
         )
 
@@ -234,13 +232,6 @@ class IBBridge:
     ) -> dt.HistoricalTicksResult:
         """Retrieve historical ticks data for specificed instrument/contract
         from IB.
-
-        Note:
-            Multiple attempts is recommended for requesting long period of
-            data as the request may timeout due to IB delays the responds to
-            protect their service over a long session.
-            Longer timeout value is also recommended for the same reason. Around
-            30 to 100 seconds should be reasonable.
 
         Args:
             contract (:obj:`ibapi.contract.Contract`): `Contract` object with

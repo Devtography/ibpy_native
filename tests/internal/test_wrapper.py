@@ -222,6 +222,30 @@ class TestAccountAndPortfolio(unittest.TestCase):
         # Expect data stored as-is in `account_updates_queue`
         self.assertEqual(results[0], time)
 
+class TestOrder(unittest.TestCase):
+    """Unit tests for IB order related functions & properties in `IBWrapper`.
+
+    Connection with IB is REQUIRED.
+    """
+    @classmethod
+    def setUpClass(cls):
+        cls._wrapper = _wrapper.IBWrapper()
+        cls._client = _client.IBClient(cls._wrapper)
+
+        cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)
+
+        thread = threading.Thread(target=cls._client.run)
+        thread.start()
+
+    def test_next_valid_id(self):
+        """Test overridden function `nextValidId`."""
+        self._wrapper.nextValidId(orderId=10)
+        self.assertEqual(self._wrapper.next_order_id, 10)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._client.disconnect()
+
 class TestContract(unittest.TestCase):
     """Unit tests for IB contract related functions in `IBWrapper`.
 

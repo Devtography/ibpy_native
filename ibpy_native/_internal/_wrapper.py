@@ -1,5 +1,6 @@
 """Code implementation of IB API resposes handling."""
 # pylint: disable=protected-access
+import threading
 import queue
 from typing import Dict, List, Optional
 
@@ -14,6 +15,7 @@ from ibpy_native.interfaces import listeners
 from ibpy_native.utils import finishable_queue as fq
 
 class IBWrapper(wrapper.EWrapper):
+    # pylint: disable=too-many-public-methods
     """The wrapper deals with the action coming back from the IB gateway or
     TWS instance.
 
@@ -26,10 +28,13 @@ class IBWrapper(wrapper.EWrapper):
         self,
         notification_listener: Optional[listeners.NotificationListener]=None
     ):
+        self._lock = threading.Lock()
+
         self._req_queue: Dict[int, fq.FinishableQueue] = {}
         self._ac_man_delegate: Optional[
             delegates.AccountsManagementDelegate] = None
         self._notification_listener = notification_listener
+        self._next_order_id = 0 # Next available order ID
 
         super().__init__()
 
@@ -56,6 +61,17 @@ class IBWrapper(wrapper.EWrapper):
                     usable_id = key
 
         return usable_id + 1
+
+    @property
+    def next_order_id(self) -> int:
+        """int: Next valid order ID. If is `0`, it means the connection with IB
+        has not been established yet."""
+        return self._next_order_id
+
+    @next_order_id.setter
+    def next_order_id(self, val: int):
+        with self._lock:
+            self._next_order_id = val
 
     #region - Getters
     def get_request_queue(self, req_id: int) -> fq.FinishableQueue:
@@ -177,6 +193,12 @@ class IBWrapper(wrapper.EWrapper):
             self._ac_man_delegate.account_updates_queue.put(timeStamp)
     #endregion - account updates
     #endregion - Accounts & portfolio
+
+    #region - Orders
+    def nextValidId(self, orderId: int):
+        # Next valid order ID returned from IB
+        self.next_order_id = orderId
+    #endregion - Orders
 
     #region - Get contract details
     def contractDetails(self, reqId, contractDetails):

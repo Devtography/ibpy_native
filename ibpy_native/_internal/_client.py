@@ -3,6 +3,7 @@
 import datetime
 from typing import Any, List, Union
 
+from deprecated import sphinx
 from typing_extensions import TypedDict
 
 from ibapi import client as ib_client
@@ -11,6 +12,7 @@ from ibapi import wrapper as ib_wrapper
 
 from ibpy_native import error
 from ibpy_native._internal import _global
+from ibpy_native._internal import _typing
 from ibpy_native._internal import _wrapper
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import datatype as dt
@@ -196,6 +198,81 @@ class IBClient(ib_client.EClient):
             err_str="Failed to get the earliest available data point"
         )
 
+    async def req_historical_ticks(
+        self, req_id: int, contract: ib_contract.Contract,
+        start_date_time: datetime.datetime,
+        show: dt.HistoricalTicks=dt.HistoricalTicks.TRADES
+    ) -> _typing.ResHistoricalTicks:
+        """Request historical tick data of the given instrument from IB.
+
+        Args:
+            req_id (int): Request ID (ticker ID in IB API).
+            contract (:obj:`ibapi.contract.Contract`): `Contract` object with
+                sufficient info to identify the instrument.
+            start_date_time (:obj:`datetime.datetime`): Time for the earliest
+                tick data to be included.
+            show (:obj:`ibpy_native.utils.datatype.HistoricalTicks`, optional):
+                Type of data to be requested. Defaults to
+                `HistoricalTicks.TRADES`.
+
+        Returns:
+            :obj:`ibpy_native._internal._typing.ResHistoricalTicks`: Tick data
+                returned from IB.
+
+        Raises:
+            ValueError: If argument `start_date_time` is an aware `datetime`
+                object.
+            ibpy_native.error.IBError: If
+                - queue associated with argument `req_id` is being used by other
+                task;
+                - there's any error returned from IB;
+                - Data received from IB is indicated as incomplete.
+
+        Notes:
+            Around 1000 ticks will be returned from IB. Ticks returned will
+            always cover a full second as describled in IB API document.
+        """
+        # Error checking
+        if start_date_time.tzinfo is not None:
+            raise ValueError("Value of argument `start_date_time` must not "
+                             "be an aware `datetime` object.")
+        # Pre-processing
+        try:
+            f_queue = self._wrapper.get_request_queue(req_id)
+        except error.IBError as err:
+            raise err
+
+        converted_start_time = _global.TZ.localize(start_date_time)
+
+        self.reqHistoricalTicks(
+            reqId=req_id, contract=contract,
+            startDateTime=converted_start_time.strftime(_global.TIME_FMT),
+            endDateTime="", numberOfTicks=1000, whatToShow=show.value,
+            useRth=0, ignoreSize=False, miscOptions=[]
+        )
+
+        result: _typing.WrapperResHistoricalTicks = await f_queue.get()
+
+        if result:
+            if f_queue.status is fq.Status.ERROR:
+                # Handle error returned from IB
+                if isinstance(result[-1], error.IBError):
+                    raise result[-1]
+
+            if not result[1]:
+                raise error.IBError(
+                    rid=req_id, err_code=error.IBErrorCode.RES_UNEXPECTED,
+                    err_str="Not all historical tick data has been received "
+                            "for this request. Please retry."
+                )
+
+            return result[0]
+
+    @sphinx.deprecated(
+        version="1.0.0",
+        reason="Function will be removed in next release. Use alternative "
+               "function `req_historical_ticks` instead."
+    )
     async def fetch_historical_ticks(
         self, req_id: int, contract: ib_contract.Contract,
         start: datetime.datetime,
@@ -431,11 +508,8 @@ class IBClient(ib_client.EClient):
 
     #region - Private functions
     def _process_historical_ticks(
-        self, ticks: List[Union[ib_wrapper.HistoricalTick,
-                                ib_wrapper.HistoricalTickBidAsk,
-                                ib_wrapper.HistoricalTickLast,]],
-        start_time: datetime.datetime,
-        end_time: datetime.datetime
+        self, ticks: _typing.ResHistoricalTicks,
+        start_time: datetime.datetime, end_time: datetime.datetime
     ) -> _ProcessHistoricalTicksResult:
         """Processes the tick data returned from IB in function
         `fetch_historical_ticks`.

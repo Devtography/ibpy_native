@@ -221,7 +221,7 @@ class TestHistoricalData(unittest.TestCase):
     def setUp(self):
         self._end = (datetime.datetime.now() + relativedelta.relativedelta(
             weekday=relativedelta.FR(-1))
-        ).replace(hour=12, minute=0)
+        ).replace(hour=12, minute=0, second=0, microsecond=0)
         self._start = self._end - datetime.timedelta(minutes=5)
 
     @utils.async_test
@@ -247,6 +247,106 @@ class TestHistoricalData(unittest.TestCase):
                 data_type=datatype.EarliestDataPoint.BID
             )
 
+    @utils.async_test
+    async def test_req_historical_ticks_0(self):
+        """Test function `req_historical_ticks`.
+
+        * Reqest tick data for `BID_ASK`.
+        """
+        async for result in self._bridge.req_historical_ticks(
+            contract=sample_contracts.gbp_usd_fx(), start=self._start,
+            end=self._end, tick_type=datatype.HistoricalTicks.BID_ASK,
+            retry=0
+        ):
+            self.assertTrue(result.ticks)
+            self.assertIsInstance(result.ticks[0], wrapper.HistoricalTickBidAsk)
+
+    @utils.async_test
+    async def test_req_historical_ticks_1(self):
+        """Test function `req_historical_ticks`.
+
+        * Reqest tick data for `MIDPOINT`.
+        """
+        async for result in self._bridge.req_historical_ticks(
+            contract=sample_contracts.gbp_usd_fx(), start=self._start,
+            end=self._end, tick_type=datatype.HistoricalTicks.MIDPOINT,
+            retry=0
+        ):
+            self.assertTrue(result.ticks)
+            self.assertIsInstance(result.ticks[0], wrapper.HistoricalTick)
+
+    @utils.async_test
+    async def test_req_historical_ticks_2(self):
+        """Test function `req_historical_ticks`.
+
+        * Reqest tick data for `TRADES`.
+        """
+        async for result in self._bridge.req_historical_ticks(
+            contract=sample_contracts.us_future(), start=self._start,
+            end=self._end, tick_type=datatype.HistoricalTicks.TRADES,
+            retry=0
+        ):
+            self.assertTrue(result.ticks)
+            self.assertIsInstance(result.ticks[0], wrapper.HistoricalTickLast)
+
+    @utils.async_test
+    async def test_req_historical_ticks_err_0(self):
+        """Test function `req_historical_ticks`.
+
+        * Expect `ValueError` due to value of `start` is an aware datetime
+          object.
+        """
+        with self.assertRaises(ValueError):
+            async for _ in self._bridge.req_historical_ticks(
+                contract=sample_contracts.gbp_usd_fx(),
+                start=_global.TZ.localize(self._start), end=self._end,
+                tick_type=datatype.HistoricalTicks.BID_ASK, retry=0
+            ):
+                pass
+
+    @utils.async_test
+    async def test_req_historical_ticks_err_1(self):
+        """Test function `req_historical_ticks`.
+
+        * Expect `ValueError` due to value of `end` is an aware datetime
+          object.
+        """
+        with self.assertRaises(ValueError):
+            async for _ in self._bridge.req_historical_ticks(
+                contract=sample_contracts.gbp_usd_fx(),
+                start=self._start, end=_global.TZ.localize(self._end),
+                tick_type=datatype.HistoricalTicks.BID_ASK, retry=0
+            ):
+                pass
+
+    @utils.async_test
+    async def test_req_historical_ticks_err_2(self):
+        """Test function `req_historical_ticks`.
+
+        * Expect `IBError` due to unresolvable `Contract`.
+        """
+        with self.assertRaises(error.IBError):
+            async for _ in self._bridge.req_historical_ticks(
+                contract=contract.Contract(), start=self._start, end=self._end,
+                tick_type=datatype.HistoricalTicks.BID_ASK, retry=0
+            ):
+                pass
+
+    @utils.async_test
+    async def test_req_historical_ticks_err_3(self):
+        """Test function `req_historical_ticks`.
+
+        * Expect `IBError` due to IB returning an error
+        """
+        with self.assertRaises(error.IBError):
+            async for _ in self._bridge.req_historical_ticks(
+                contract=sample_contracts.gbp_usd_fx(), start=self._start,
+                end=self._end, tick_type=datatype.HistoricalTicks.TRADES,
+                retry=0
+            ):
+                pass
+
+    #region - Deprecated
     @utils.async_test
     async def test_get_historical_ticks_0(self):
         """Test function `get_historical_ticks`.
@@ -369,6 +469,7 @@ class TestHistoricalData(unittest.TestCase):
                 contract=contract.Contract(), start=self._start, end=self._end,
                 data_type=datatype.HistoricalTicks.BID_ASK, attempts=1
             )
+    #endregion - Deprecated
 
     @classmethod
     def tearDownClass(cls):

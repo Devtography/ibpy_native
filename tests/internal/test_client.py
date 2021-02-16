@@ -152,6 +152,96 @@ class TestHistoricalData(unittest.TestCase):
             )
 
     @utils.async_test
+    async def test_req_historical_ticks_0(self):
+        """Test function `req_historical_ticks`.
+
+        * Request tick data for `BidAsk`.
+        """
+        result = await self._client.req_historical_ticks(
+            req_id=self._req_id, contract=sample_contracts.gbp_usd_fx(),
+            start_date_time=self._start.replace(tzinfo=None),
+            show=datatype.HistoricalTicks.BID_ASK
+        )
+
+        self.assertTrue(result)
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], wrapper.HistoricalTickBidAsk)
+
+    @utils.async_test
+    async def test_req_historical_ticks_1(self):
+        """Test function `req_historical_ticks`.
+
+        * Request tick data for `MidPoint`.
+        """
+        result = await self._client.req_historical_ticks(
+            req_id=self._req_id, contract=sample_contracts.gbp_usd_fx(),
+            start_date_time=self._start.replace(tzinfo=None),
+            show=datatype.HistoricalTicks.MIDPOINT
+        )
+
+        self.assertTrue(result)
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], wrapper.HistoricalTick)
+
+    @utils.async_test
+    async def test_req_historical_ticks_2(self):
+        """Test function `req_historical_ticks`.
+
+        * Request tick data for `MidPoint`.
+        """
+        result = await self._client.req_historical_ticks(
+            req_id=self._req_id, contract=sample_contracts.us_future(),
+            start_date_time=self._start.replace(tzinfo=None),
+            show=datatype.HistoricalTicks.TRADES
+        )
+
+        self.assertTrue(result)
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], wrapper.HistoricalTickLast)
+
+    @utils.async_test
+    async def test_req_historical_ticks_err_0(self):
+        """Test function `req_historical_ticks`.
+
+        * Expect `ValueError` for aware datetime object passed in.
+        """
+        with self.assertRaises(ValueError):
+            await self._client.req_historical_ticks(
+                req_id=self._req_id, contract=sample_contracts.gbp_usd_fx(),
+                start_date_time=self._start,
+                show=datatype.HistoricalTicks.BID_ASK
+            )
+
+    @utils.async_test
+    async def test_req_historical_ticks_err_1(self):
+        """Test function `req_historical_ticks`.
+
+        * `IBError` raised due to `req_id` is being occupied by other task
+        """
+        self._wrapper.get_request_queue(req_id=self._req_id)
+        with self.assertRaises(error.IBError):
+            await self._client.req_historical_ticks(
+                req_id=self._req_id, contract=sample_contracts.gbp_usd_fx(),
+                start_date_time=self._start.replace(tzinfo=None),
+                show=datatype.HistoricalTicks.BID_ASK
+            )
+
+    @utils.async_test
+    async def test_req_historical_ticks_err_2(self):
+        """Test function `req_historical_ticks`.
+
+        * `IBError` raised due to unresolvable IB `Contract`
+        """
+        self._wrapper.get_request_queue(req_id=self._req_id)
+        with self.assertRaises(error.IBError):
+            await self._client.req_historical_ticks(
+                req_id=self._req_id, contract=contract.Contract(),
+                start_date_time=self._start.replace(tzinfo=None),
+                show=datatype.HistoricalTicks.BID_ASK
+            )
+
+    # region - Deprecated
+    @utils.async_test
     async def test_fetch_historical_ticks_0(self):
         """Test function `fetch_historical_ticks`.
 
@@ -273,6 +363,7 @@ class TestHistoricalData(unittest.TestCase):
                 start=self._start, end=self._end,
                 show=datatype.HistoricalTicks.TRADES
             )
+    #endregion - Deprecated
 
     @classmethod
     def tearDownClass(cls):

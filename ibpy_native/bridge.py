@@ -5,7 +5,9 @@ IB API.
 import asyncio
 import datetime
 import threading
-from typing import List, Optional
+from typing import Iterator, List, Optional
+
+from deprecated import sphinx
 
 from ibapi import contract as ib_contract
 
@@ -224,6 +226,109 @@ class IBBridge:
 
         return data_point.replace(tzinfo=None)
 
+    async def req_historical_ticks(
+        self, contract: ib_contract.Contract,
+        start: Optional[datetime.datetime]=None,
+        end: Optional[datetime.datetime]=None,
+        tick_type: dt.HistoricalTicks=dt.HistoricalTicks.TRADES,
+        retry: int=0
+    ) -> Iterator[dt.ResHistoricalTicks]:
+        """Retrieve historical tick data for specificed instrument/contract
+        from IB.
+
+        Args:
+            contract (:obj:`ibapi.contract.Contract`): `Contract` object with
+                sufficient info to identify the instrument.
+            start (:obj:`datetime.datetime`, optional): Datetime for the
+                earliest tick data to be included. If is `None`, the start time
+                will be set as the earliest data point. Defaults to `None`.
+            end (:obj:`datetime.datetime`, optional): Datetime for the latest
+                tick data to be included. If is `None`, the end time will be
+                set as now. Defaults to `None`.
+            tick_type (:obj:`ibpy_native.utils.datatype.HistoricalTicks`,
+                optional): Type of tick data. Defaults to
+                `HistoricalTicks.TRADES`.
+            retry (int): Max retry attempts if error occur before terminating
+                the task and rasing the error.
+
+        Yields:
+            :obj:ibpy_native.utils.datatype.ResHistoricalTicks`: Tick data
+                received from IB. Attribute `completed` indicates if all ticks
+                within the specified time period are received.
+
+        Raises:
+            ValueError: If either argument `start` or `end` is not an native
+                `datetime` object;
+            ibpy_native.error.IBError: If
+                - `contract` passed in is unresolvable;
+                - there is any issue raised from the request function while
+                excuteing the task, and max retry attemps has been reached.
+        """
+        # Error checking
+        if start.tzinfo is not None or end.tzinfo is not None:
+            raise ValueError("Value of argument `start` & `end` must be an "
+                             "native `datetime` object.")
+        # Prep start and end time
+        try:
+            if tick_type is dt.HistoricalTicks.TRADES:
+                head_time = await self.get_earliest_data_point(contract)
+            else:
+                head_time_ask = await self.get_earliest_data_point(
+                    contract, data_type=dt.EarliestDataPoint.ASK)
+                head_time_bid = await self.get_earliest_data_point(
+                    contract, data_type=dt.EarliestDataPoint.BID)
+                head_time = (head_time_ask if head_time_ask < head_time_bid
+                             else head_time_bid)
+        except error.IBError as err:
+            raise err
+
+        start_date_time = head_time if head_time > start else start
+        end_date_time = datetime.datetime.now() if end is None else end
+
+        # Request tick data
+        finished = False
+        retry_attemps = 0
+
+        while not finished:
+            try:
+                ticks = await self._client.req_historical_ticks(
+                    req_id=self._wrapper.next_req_id, contract=contract,
+                    start_date_time=start_date_time, show=tick_type
+                )
+            except error.IBError as err:
+                if retry_attemps < retry:
+                    continue
+                raise err
+
+            if ticks:
+                # Drop the 1st tick as tick time of it is `start_date_time`
+                # - 1 second
+                del ticks[0]
+                # Determine if it should fetch next batch of data
+                last_tick_time = datetime.datetime.fromtimestamp(
+                    timestamp=ticks[-1].time, tz=_global.TZ).replace(tzinfo=None)
+                if last_tick_time >= end_date_time:
+                    # All ticks within the specified time period are received
+                    finished = True
+                    for i in range(len(ticks) - 1, -1, -1):
+                        data_time = datetime.datetime.fromtimestamp(
+                            timestamp=ticks[i].time, tz=_global.TZ).replace(tzinfo=None)
+                        if data_time > end_date_time:
+                            del ticks[i]
+                        else:
+                            break
+                else:
+                    # Ready for next request
+                    start_date_time = (last_tick_time +
+                                       datetime.timedelta(seconds=1))
+            # Yield the result
+            yield dt.ResHistoricalTicks(ticks=ticks, completed=finished)
+
+    @sphinx.deprecated(
+        version="1.0.0",
+        reason="Function will be removed in next release. Use alternative "
+               "function `get_historical_ticks_v2` instead."
+    )
     async def get_historical_ticks(
         self, contract: ib_contract.Contract, start: datetime.datetime=None,
         end: datetime.datetime=datetime.datetime.now(),

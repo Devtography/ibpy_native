@@ -27,12 +27,9 @@ class IBWrapper(wrapper.EWrapper):
         notification_listener: Optional[listeners.NotificationListener]=None
     ):
         self._req_queue: Dict[int, fq.FinishableQueue] = {}
-
         self._ac_man_delegate: Optional[
             delegates.AccountsManagementDelegate] = None
-
-        self._notification_listener: Optional[
-                listeners.NotificationListener] = notification_listener
+        self._notification_listener = notification_listener
 
         super().__init__()
 

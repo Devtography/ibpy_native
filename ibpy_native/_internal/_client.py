@@ -54,8 +54,6 @@ class IBClient(ib_client.EClient):
         except error.IBError as err:
             raise err
 
-        print("Getting full contract details from IB...")
-
         self.reqContractDetails(reqId=req_id, contract=contract)
 
         # Run until we get a valid contract(s)
@@ -67,9 +65,6 @@ class IBClient(ib_client.EClient):
                     raise res[-1]
 
                 raise self._unknown_error(req_id=req_id)
-
-            if len(res) > 1:
-                print("Multiple contracts found: returning 1st contract")
 
             resolved_contract = res[0].contract
 
@@ -107,8 +102,6 @@ class IBClient(ib_client.EClient):
         except error.IBError as err:
             raise err
 
-        print("Searching contracts with details from IB...")
-
         self.reqContractDetails(reqId=req_id, contract=contract)
 
         res: List[Union[ib_contract.ContractDetails, error.IBError]] = (
@@ -128,6 +121,7 @@ class IBClient(ib_client.EClient):
         )
     #endregion - Contract
 
+    #region - Historical data
     async def resolve_head_timestamp(
         self, req_id: int, contract: ib_contract.Contract,
         show: datatype.EarliestDataPoint=datatype.EarliestDataPoint.TRADES
@@ -155,9 +149,6 @@ class IBClient(ib_client.EClient):
             f_queue = self._wrapper.get_request_queue(req_id=req_id)
         except error.IBError as err:
             raise err
-
-        print("Getting earliest available data point for the given "
-              "instrument from IB...")
 
         self.reqHeadTimeStamp(reqId=req_id, contract=contract,
                               whatToShow=show.value, useRTH=0, formatDate=2)
@@ -257,6 +248,7 @@ class IBClient(ib_client.EClient):
                 )
 
             return result[0]
+    #endregion - Historical data
 
     #region - Stream live tick data
     async def stream_live_ticks(
@@ -292,9 +284,6 @@ class IBClient(ib_client.EClient):
             f_queue = self._wrapper.get_request_queue(req_id)
         except error.IBError as err:
             raise err
-
-        print(f"Streaming live ticks [{tick_type}] for the given instrument "
-              "instrument from IB...")
 
         self.reqTickByTickData(
             reqId=req_id, contract=contract, tickType=tick_type.value,

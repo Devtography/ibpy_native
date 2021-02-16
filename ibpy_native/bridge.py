@@ -218,9 +218,8 @@ class IBBridge:
         except error.IBError as err:
             raise err
 
-        data_point = datetime.datetime.fromtimestamp(result).astimezone(
-            _global.TZ
-        )
+        data_point = datetime.datetime.fromtimestamp(
+            timestamp=result, tz=_global.TZ)
 
         return data_point.replace(tzinfo=None)
 
@@ -304,13 +303,16 @@ class IBBridge:
                 del ticks[0]
                 # Determine if it should fetch next batch of data
                 last_tick_time = datetime.datetime.fromtimestamp(
-                    timestamp=ticks[-1].time, tz=_global.TZ).replace(tzinfo=None)
+                    timestamp=ticks[-1].time, tz=_global.TZ
+                ).replace(tzinfo=None)
+
                 if last_tick_time >= end_date_time:
                     # All ticks within the specified time period are received
                     finished = True
                     for i in range(len(ticks) - 1, -1, -1):
                         data_time = datetime.datetime.fromtimestamp(
-                            timestamp=ticks[i].time, tz=_global.TZ).replace(tzinfo=None)
+                            timestamp=ticks[i].time, tz=_global.TZ
+                        ).replace(tzinfo=None)
                         if data_time > end_date_time:
                             del ticks[i]
                         else:

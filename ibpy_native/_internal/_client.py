@@ -12,7 +12,7 @@ from ibpy_native._internal import _global
 from ibpy_native._internal import _typing
 from ibpy_native._internal import _wrapper
 from ibpy_native.interfaces import listeners
-from ibpy_native.utils import datatype as dt
+from ibpy_native.utils import datatype
 from ibpy_native.utils import finishable_queue as fq
 
 class IBClient(ib_client.EClient):
@@ -130,7 +130,7 @@ class IBClient(ib_client.EClient):
 
     async def resolve_head_timestamp(
         self, req_id: int, contract: ib_contract.Contract,
-        show: dt.EarliestDataPoint=dt.EarliestDataPoint.TRADES
+        show: datatype.EarliestDataPoint=datatype.EarliestDataPoint.TRADES
     ) -> int:
         """Fetch the earliest available data point for a given instrument
         from IB.
@@ -191,7 +191,7 @@ class IBClient(ib_client.EClient):
     async def req_historical_ticks(
         self, req_id: int, contract: ib_contract.Contract,
         start_date_time: datetime.datetime,
-        show: dt.HistoricalTicks=dt.HistoricalTicks.TRADES
+        show: datatype.HistoricalTicks=datatype.HistoricalTicks.TRADES
     ) -> _typing.ResHistoricalTicks:
         """Request historical tick data of the given instrument from IB.
 
@@ -262,7 +262,7 @@ class IBClient(ib_client.EClient):
     async def stream_live_ticks(
         self, req_id: int, contract: ib_contract.Contract,
         listener: listeners.LiveTicksListener,
-        tick_type: dt.LiveTicks=dt.LiveTicks.LAST
+        tick_type: datatype.LiveTicks=datatype.LiveTicks.LAST
     ):
         """Request to stream live tick data.
 

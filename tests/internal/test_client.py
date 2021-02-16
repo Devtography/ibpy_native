@@ -6,8 +6,6 @@ import threading
 import unittest
 from dateutil import relativedelta
 
-import pytz
-
 from ibapi import contract
 from ibapi import wrapper
 

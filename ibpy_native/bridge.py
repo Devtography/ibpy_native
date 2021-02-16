@@ -16,7 +16,7 @@ from ibpy_native._internal import _client
 from ibpy_native._internal import _global
 from ibpy_native._internal import _wrapper
 from ibpy_native.interfaces import listeners
-from ibpy_native.utils import datatype as dt
+from ibpy_native.utils import datatype
 
 class IBBridge:
     """Public class to bridge between `ibpy-native` & IB API.
@@ -190,7 +190,7 @@ class IBBridge:
     #region - Historical data
     async def get_earliest_data_point(
         self, contract: ib_contract.Contract,
-        data_type: dt.EarliestDataPoint=dt.EarliestDataPoint.TRADES
+        data_type: datatype.EarliestDataPoint=datatype.EarliestDataPoint.TRADES
     ) -> datetime:
         """Returns the earliest data point of specified contract.
 
@@ -228,9 +228,9 @@ class IBBridge:
         self, contract: ib_contract.Contract,
         start: Optional[datetime.datetime]=None,
         end: Optional[datetime.datetime]=None,
-        tick_type: dt.HistoricalTicks=dt.HistoricalTicks.TRADES,
+        tick_type: datatype.HistoricalTicks=datatype.HistoricalTicks.TRADES,
         retry: int=0
-    ) -> Iterator[dt.ResHistoricalTicks]:
+    ) -> Iterator[datatype.ResHistoricalTicks]:
         """Retrieve historical tick data for specificed instrument/contract
         from IB.
 
@@ -268,13 +268,13 @@ class IBBridge:
                              "native `datetime` object.")
         # Prep start and end time
         try:
-            if tick_type is dt.HistoricalTicks.TRADES:
+            if tick_type is datatype.HistoricalTicks.TRADES:
                 head_time = await self.get_earliest_data_point(contract)
             else:
                 head_time_ask = await self.get_earliest_data_point(
-                    contract, data_type=dt.EarliestDataPoint.ASK)
+                    contract, data_type=datatype.EarliestDataPoint.ASK)
                 head_time_bid = await self.get_earliest_data_point(
-                    contract, data_type=dt.EarliestDataPoint.BID)
+                    contract, data_type=datatype.EarliestDataPoint.BID)
                 head_time = (head_time_ask if head_time_ask < head_time_bid
                              else head_time_bid)
         except error.IBError as err:
@@ -320,14 +320,14 @@ class IBBridge:
                     start_date_time = (last_tick_time +
                                        datetime.timedelta(seconds=1))
             # Yield the result
-            yield dt.ResHistoricalTicks(ticks=ticks, completed=finished)
+            yield datatype.ResHistoricalTicks(ticks=ticks, completed=finished)
     #endregion - Historical data
 
     #region - Live data
     async def stream_live_ticks(
         self, contract: ib_contract.Contract,
         listener: listeners.LiveTicksListener,
-        tick_type: dt.LiveTicks=dt.LiveTicks.LAST
+        tick_type: datatype.LiveTicks=datatype.LiveTicks.LAST
     ) -> int:
         """Request to stream live tick data.
 

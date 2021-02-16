@@ -81,7 +81,6 @@ class MockLiveTicksListener(listeners.LiveTicksListener):
                         tick: Union[ib_wrapper.HistoricalTick,
                                     ib_wrapper.HistoricalTickBidAsk,
                                     ib_wrapper.HistoricalTickLast,]):
-        print(tick)
         self.ticks.append(tick)
 
     def on_finish(self, req_id: int):

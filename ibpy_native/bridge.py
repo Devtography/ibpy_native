@@ -7,8 +7,6 @@ import datetime
 import threading
 from typing import Iterator, List, Optional
 
-from deprecated import sphinx
-
 from ibapi import contract as ib_contract
 
 from ibpy_native import account as ib_account
@@ -18,7 +16,7 @@ from ibpy_native._internal import _client
 from ibpy_native._internal import _global
 from ibpy_native._internal import _wrapper
 from ibpy_native.interfaces import listeners
-from ibpy_native.utils import datatype as dt
+from ibpy_native.utils import datatype
 
 class IBBridge:
     """Public class to bridge between `ibpy-native` & IB API.
@@ -192,7 +190,7 @@ class IBBridge:
     #region - Historical data
     async def get_earliest_data_point(
         self, contract: ib_contract.Contract,
-        data_type: dt.EarliestDataPoint=dt.EarliestDataPoint.TRADES
+        data_type: datatype.EarliestDataPoint=datatype.EarliestDataPoint.TRADES
     ) -> datetime:
         """Returns the earliest data point of specified contract.
 
@@ -220,9 +218,8 @@ class IBBridge:
         except error.IBError as err:
             raise err
 
-        data_point = datetime.datetime.fromtimestamp(result).astimezone(
-            _global.TZ
-        )
+        data_point = datetime.datetime.fromtimestamp(
+            timestamp=result, tz=_global.TZ)
 
         return data_point.replace(tzinfo=None)
 
@@ -230,9 +227,9 @@ class IBBridge:
         self, contract: ib_contract.Contract,
         start: Optional[datetime.datetime]=None,
         end: Optional[datetime.datetime]=None,
-        tick_type: dt.HistoricalTicks=dt.HistoricalTicks.TRADES,
+        tick_type: datatype.HistoricalTicks=datatype.HistoricalTicks.TRADES,
         retry: int=0
-    ) -> Iterator[dt.ResHistoricalTicks]:
+    ) -> Iterator[datatype.ResHistoricalTicks]:
         """Retrieve historical tick data for specificed instrument/contract
         from IB.
 
@@ -270,13 +267,13 @@ class IBBridge:
                              "native `datetime` object.")
         # Prep start and end time
         try:
-            if tick_type is dt.HistoricalTicks.TRADES:
+            if tick_type is datatype.HistoricalTicks.TRADES:
                 head_time = await self.get_earliest_data_point(contract)
             else:
                 head_time_ask = await self.get_earliest_data_point(
-                    contract, data_type=dt.EarliestDataPoint.ASK)
+                    contract, data_type=datatype.EarliestDataPoint.ASK)
                 head_time_bid = await self.get_earliest_data_point(
-                    contract, data_type=dt.EarliestDataPoint.BID)
+                    contract, data_type=datatype.EarliestDataPoint.BID)
                 head_time = (head_time_ask if head_time_ask < head_time_bid
                              else head_time_bid)
         except error.IBError as err:
@@ -306,13 +303,16 @@ class IBBridge:
                 del ticks[0]
                 # Determine if it should fetch next batch of data
                 last_tick_time = datetime.datetime.fromtimestamp(
-                    timestamp=ticks[-1].time, tz=_global.TZ).replace(tzinfo=None)
+                    timestamp=ticks[-1].time, tz=_global.TZ
+                ).replace(tzinfo=None)
+
                 if last_tick_time >= end_date_time:
                     # All ticks within the specified time period are received
                     finished = True
                     for i in range(len(ticks) - 1, -1, -1):
                         data_time = datetime.datetime.fromtimestamp(
-                            timestamp=ticks[i].time, tz=_global.TZ).replace(tzinfo=None)
+                            timestamp=ticks[i].time, tz=_global.TZ
+                        ).replace(tzinfo=None)
                         if data_time > end_date_time:
                             del ticks[i]
                         else:
@@ -322,172 +322,14 @@ class IBBridge:
                     start_date_time = (last_tick_time +
                                        datetime.timedelta(seconds=1))
             # Yield the result
-            yield dt.ResHistoricalTicks(ticks=ticks, completed=finished)
-
-    @sphinx.deprecated(
-        version="1.0.0",
-        reason="Function will be removed in next release. Use alternative "
-               "function `get_historical_ticks_v2` instead."
-    )
-    async def get_historical_ticks(
-        self, contract: ib_contract.Contract, start: datetime.datetime=None,
-        end: datetime.datetime=datetime.datetime.now(),
-        data_type: dt.HistoricalTicks=dt.HistoricalTicks.TRADES,
-        attempts: int=1
-    ) -> dt.HistoricalTicksResult:
-        """Retrieve historical ticks data for specificed instrument/contract
-        from IB.
-
-        Args:
-            contract (:obj:`ibapi.contract.Contract`): `Contract` object with
-                sufficient info to identify the instrument.
-            start (:obj:`datetime.datetime`, optional): The time for the
-                earliest tick data to be included. Defaults to `None`.
-            end (:obj:`datetime.datetime`, optional): The time for the latest
-                tick data to be included. Defaults to now.
-            data_type (:obj:`ibpy_native.utils.datatype.HistoricalTicks`,
-                optional): Type of data for the ticks. Defaults to
-                `HistoricalTicks.TRADES`.
-            attempts (int, optional): Attemp(s) to try requesting the historical
-                ticks. Passing -1 into this argument will let the function
-                retries for infinity times until all available ticks are received. Defaults to 1.
-
-        Returns:
-            :obj:`ibpy_native.utils.datatype.IBTicksResult`: Ticks returned
-                from IB and a boolean to indicate if the returning object
-                contains all available ticks.
-
-        Raises:
-            ValueError: If
-                - argument `start` or `end` contains the timezone info;
-                - timestamp of `start` is earlier than the earliest available
-                datapoint.
-                - timestamp of `end` is earlier than `start` or earliest
-                available datapoint;
-                - value of `attempts` < 1 and != -1.
-            ibpy_native.error.IBError: If there is any issue raised from the
-                request function while excuteing the task, with `attempts
-                reduced to 0 and no tick fetched successfully in pervious
-                attempt(s).
-        """
-        all_ticks = []
-        next_end_time = _global.TZ.localize(dt=end)
-
-        # Error checking
-        if end.tzinfo is not None or (start is not None and
-                                      start.tzinfo is not None):
-            raise ValueError(
-                "Timezone should not be specified in either `start` or `end`."
-            )
-
-        try:
-            head_timestamp = datetime.datetime.fromtimestamp(
-                await self._client.resolve_head_timestamp(
-                    req_id=self._wrapper.next_req_id, contract=contract,
-                    show=dt.EarliestDataPoint.TRADES if (
-                        data_type is dt.HistoricalTicks.TRADES
-                     ) else dt.EarliestDataPoint.BID
-                )
-            ).astimezone(tz=_global.TZ)
-        except error.IBError as err:
-            raise err
-
-        if start is not None:
-            if start.timestamp() < head_timestamp.timestamp():
-                raise ValueError(
-                    "Specificed start time is earlier than the earliest "
-                    "available datapoint - "
-                    f"{head_timestamp.strftime(_global.TIME_FMT)}"
-                )
-            if end.timestamp() < start.timestamp():
-                raise ValueError(
-                    "Specificed end time cannot be earlier than start time"
-                )
-
-            start = _global.TZ.localize(dt=start)
-        else:
-            start = head_timestamp
-
-        if next_end_time.timestamp() < head_timestamp.timestamp():
-            raise ValueError(
-                "Specificed end time is earlier than the earliest available "
-                f"datapoint - {head_timestamp.strftime(_global.TIME_FMT)}"
-            )
-
-        if attempts < 1 and attempts != -1:
-            raise ValueError(
-                "Value of argument `attempts` must be positive integer or -1"
-            )
-
-        # Process the request
-        while attempts > 0 or attempts == -1:
-            attempts = attempts - 1 if attempts != -1 else attempts
-
-            try:
-                res = await self._client.fetch_historical_ticks(
-                    req_id=self._wrapper.next_req_id, contract=contract,
-                    start=start, end=next_end_time, show=data_type
-                )
-
-                #  `ticks[1]` is a boolean represents if the data are all
-                # fetched without timeout
-                if res["completed"]:
-                    res["ticks"].extend(all_ticks)
-
-                    return {
-                        "ticks": res["ticks"],
-                        "completed": True,
-                    }
-
-                res["ticks"].extend(all_ticks)
-                all_ticks = res["ticks"]
-
-                next_end_time = datetime.datetime.fromtimestamp(
-                    res[0][0].time
-                ).astimezone(_global.TZ)
-            except ValueError as err:
-                raise err
-            except error.IBError as err:
-                if err.err_code == error.IBErrorCode.DUPLICATE_TICKER_ID:
-                    # Restore the attempts count for error `Duplicate ticker ID`
-                    # as it seems like sometimes IB cannot release the ID used
-                    # as soon as it has responded the request while the
-                    # reverse historical ticks request approaching the start
-                    # time with all available ticks fetched and throws
-                    # the duplicate ticker ID error.
-                    attempts = attempts + 1 if attempts != -1 else attempts
-
-                    next_end_time: datetime = err.err_extra
-
-                    continue
-
-                if attempts > 0:
-                    if all_ticks:
-                        # Updates the end time for next attempt
-                        next_end_time = datetime.datetime.fromtimestamp(
-                            all_ticks[0].time
-                        ).astimezone(_global.TZ)
-
-                    continue
-
-                if attempts == 0 and all_ticks:
-                    print("Reached maximum attempts. Ending...")
-                    break
-
-                if attempts == 0 and not all_ticks:
-                    raise err
-
-        return {
-            "ticks": all_ticks,
-            "completed": False,
-        }
+            yield datatype.ResHistoricalTicks(ticks=ticks, completed=finished)
     #endregion - Historical data
 
     #region - Live data
     async def stream_live_ticks(
         self, contract: ib_contract.Contract,
         listener: listeners.LiveTicksListener,
-        tick_type: dt.LiveTicks=dt.LiveTicks.LAST
+        tick_type: datatype.LiveTicks=datatype.LiveTicks.LAST
     ) -> int:
         """Request to stream live tick data.
 

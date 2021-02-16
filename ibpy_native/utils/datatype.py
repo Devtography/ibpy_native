@@ -1,7 +1,6 @@
 """Enums/Types for parameters or return objects."""
 import enum
 from typing import List, NamedTuple, Union
-from typing_extensions import TypedDict
 
 from ibapi import wrapper
 
@@ -30,15 +29,6 @@ class LiveTicks(enum.Enum):
 #endregion - Argument options
 
 #region - Return type
-class HistoricalTicksResult(TypedDict):
-    """Use to type hint the returns of `IBBridge.get_historical_ticks`."""
-    ticks: List[Union[
-        wrapper.HistoricalTick,
-        wrapper.HistoricalTickBidAsk,
-        wrapper.HistoricalTickLast
-    ]]
-    completed: bool
-
 class ResHistoricalTicks(NamedTuple):
     """Return type of function `bridge.IBBridge.get_historical_ticks_v2`."""
     ticks: List[Union[

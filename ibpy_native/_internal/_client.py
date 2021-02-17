@@ -27,6 +27,29 @@ class IBClient(ib_client.EClient):
         self._wrapper = wrapper
         super().__init__(wrapper)
 
+    #region - Orders
+    async def req_next_order_id(self) -> int:
+        """Request the next valid order ID from IB.
+
+        Returns:
+            int: The next valid order ID returned from IB.
+
+        Raises:
+            ibpy_native.error.IBError: If queue associated with `req_id` -1 is
+                being used by other task.
+        """
+        try:
+            f_queue = self._wrapper.get_request_queue(req_id=-1)
+        except error.IBError as err:
+            raise err
+        # Request next valid order ID
+        self.reqIds(numIds=-1) # `numIds` has deprecated
+        await f_queue.get()
+
+        return self._wrapper.next_order_id
+
+    #endregion - Orders
+
     #region - Contract
     async def resolve_contract(
         self, req_id: int, contract: ib_contract.Contract

@@ -34,6 +34,9 @@ class IBWrapper(wrapper.EWrapper):
         self._ac_man_delegate: Optional[
             delegates.AccountsManagementDelegate] = None
         self._notification_listener = notification_listener
+
+        # Queue with ID -1 is always reserved for next order ID
+        self._req_queue[-1] = fq.FinishableQueue(queue.Queue())
         self._next_order_id = 0 # Next available order ID
 
         super().__init__()
@@ -198,6 +201,10 @@ class IBWrapper(wrapper.EWrapper):
     def nextValidId(self, orderId: int):
         # Next valid order ID returned from IB
         self.next_order_id = orderId
+        # To finish waiting on IBClient.req_next_order_id
+        if (self._req_queue[-1].status is not
+            (fq.Status.INIT or fq.Status.FINISHED)):
+            self._req_queue[-1].put(element=fq.Status.FINISHED)
     #endregion - Orders
 
     #region - Get contract details
@@ -280,7 +287,9 @@ class IBWrapper(wrapper.EWrapper):
                 `self.__req_queue[req_id]` and it's not finished.
         """
         if req_id in self._req_queue:
-            if self._req_queue[req_id].finished:
+            if self._req_queue[req_id].finished or (
+                req_id == -1 and self._req_queue[-1].status is fq.Status.INIT
+            ):
                 self._req_queue[req_id].reset()
             else:
                 raise error.IBError(

@@ -47,10 +47,10 @@ class FinishableQueue():
         return self._status is Status.FINISHED
 
     def reset(self):
-        """Reset the status to `STARTED` for reusing the queue if the
-        status is marked as either `TIMEOUT` or `FINISHED`
+        """Reset the status to `READY` for reusing the queue if the
+        status is marked as either `INIT` or `FINISHED`
         """
-        if self.finished:
+        if self.finished or self._status is Status.INIT:
             self._status = Status.READY
 
     def put(self, element: Any):

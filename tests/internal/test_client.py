@@ -19,6 +19,32 @@ from ibpy_native.utils import finishable_queue as fq
 from tests.toolkit import sample_contracts
 from tests.toolkit import utils
 
+class TestOrder(unittest.TestCase):
+    """Unit tests for IB order related functions & properties in `IBWrapper`.
+
+    Connection with IB is REQUIRED.
+    """
+    @classmethod
+    def setUpClass(cls):
+        cls._wrapper = _wrapper.IBWrapper()
+        cls._client = _client.IBClient(cls._wrapper)
+
+        cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)
+
+        thread = threading.Thread(target=cls._client.run)
+        thread.start()
+
+    @utils.async_test
+    async def test_req_next_order_id(self):
+        """Test function `req_next_order_id`."""
+        next_order_id = await self._client.req_next_order_id()
+        print(next_order_id)
+        self.assertGreater(next_order_id, 0)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._client.disconnect()
+
 class TestContract(unittest.TestCase):
     """Unit tests for IB contract related functions in `IBClient`.
 

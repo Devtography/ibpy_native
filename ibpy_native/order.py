@@ -1,6 +1,7 @@
 """IB order related resources."""
 import threading
 
+from ibpy_native import error
 from ibpy_native.interfaces import delegates
 
 class OrdersManager(delegates.OrdersManagementDelegate):
@@ -22,3 +23,10 @@ class OrdersManager(delegates.OrdersManagementDelegate):
     def update_next_order_id(self, order_id: int):
         with self._lock:
             self._next_order_id = order_id
+
+    def is_pending_order(self, val: int) -> bool:
+        return False
+
+    def order_error(self, err: error.IBError):
+        if err.err_code == 399: # Warning message only
+            return

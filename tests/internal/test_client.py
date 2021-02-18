@@ -10,6 +10,7 @@ from ibapi import contract
 from ibapi import wrapper
 
 from ibpy_native import error
+from ibpy_native import order
 from ibpy_native._internal import _client
 from ibpy_native._internal import _global
 from ibpy_native._internal import _wrapper
@@ -26,7 +27,7 @@ class TestOrder(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls._wrapper = _wrapper.IBWrapper()
+        cls._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
         cls._client = _client.IBClient(cls._wrapper)
 
         cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)
@@ -38,7 +39,6 @@ class TestOrder(unittest.TestCase):
     async def test_req_next_order_id(self):
         """Test function `req_next_order_id`."""
         next_order_id = await self._client.req_next_order_id()
-        print(next_order_id)
         self.assertGreater(next_order_id, 0)
 
     @classmethod
@@ -52,7 +52,7 @@ class TestContract(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls._wrapper = _wrapper.IBWrapper()
+        cls._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
         cls._client = _client.IBClient(cls._wrapper)
 
         cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)
@@ -121,7 +121,7 @@ class TestHistoricalData(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls._wrapper = _wrapper.IBWrapper()
+        cls._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
         cls._client = _client.IBClient(cls._wrapper)
 
         cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)
@@ -277,7 +277,7 @@ class TestLiveData(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls._wrapper = _wrapper.IBWrapper()
+        cls._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
         cls._client = _client.IBClient(cls._wrapper)
 
         cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)

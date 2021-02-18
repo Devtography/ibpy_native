@@ -20,12 +20,16 @@ class IBWrapper(wrapper.EWrapper):
     TWS instance.
 
     Args:
+        orders_manager (:obj:`ibpy_native.interfaces.delgates.order
+            .OrdersManagementDelegate`): Manager to handler orders related
+            events.
         notification_listener (:obj:`ibpy_native.interfaces.listeners
             .NotificationListener`, optional): Handler to receive system
             notifications from IB Gateway. Defaults to `None`.
     """
     def __init__(
         self,
+        orders_manager: delegates.OrdersManagementDelegate,
         notification_listener: Optional[listeners.NotificationListener]=None
     ):
         self._lock = threading.Lock()
@@ -33,11 +37,12 @@ class IBWrapper(wrapper.EWrapper):
         self._req_queue: Dict[int, fq.FinishableQueue] = {}
         self._ac_man_delegate: Optional[
             delegates.AccountsManagementDelegate] = None
+
+        self._orders_manager = orders_manager
         self._notification_listener = notification_listener
 
         # Queue with ID -1 is always reserved for next order ID
         self._req_queue[-1] = fq.FinishableQueue(queue.Queue())
-        self._next_order_id = 0 # Next available order ID
 
         super().__init__()
 
@@ -66,15 +71,11 @@ class IBWrapper(wrapper.EWrapper):
         return usable_id + 1
 
     @property
-    def next_order_id(self) -> int:
-        """int: Next valid order ID. If is `0`, it means the connection with IB
-        has not been established yet."""
-        return self._next_order_id
-
-    @next_order_id.setter
-    def next_order_id(self, val: int):
-        with self._lock:
-            self._next_order_id = val
+    def orders_manager(self) -> delegates.OrdersManagementDelegate:
+        """:obj:`ibpy_native.interfaces.delegates.order
+        .OrdersManagementDelegate`: The internal orders manager.
+        """
+        return self._orders_manager
 
     #region - Getters
     def get_request_queue(self, req_id: int) -> fq.FinishableQueue:
@@ -200,7 +201,7 @@ class IBWrapper(wrapper.EWrapper):
     #region - Orders
     def nextValidId(self, orderId: int):
         # Next valid order ID returned from IB
-        self.next_order_id = orderId
+        self._orders_manager.update_next_order_id(order_id=orderId)
         # To finish waiting on IBClient.req_next_order_id
         if (self._req_queue[-1].status is not
             (fq.Status.INIT or fq.Status.FINISHED)):

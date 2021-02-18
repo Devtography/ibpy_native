@@ -46,7 +46,7 @@ class IBClient(ib_client.EClient):
         self.reqIds(numIds=-1) # `numIds` has deprecated
         await f_queue.get()
 
-        return self._wrapper.next_order_id
+        return self._wrapper.orders_manager.next_order_id
 
     #endregion - Orders
 

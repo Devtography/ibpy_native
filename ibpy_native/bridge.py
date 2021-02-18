@@ -9,12 +9,14 @@ from typing import Iterator, List, Optional
 
 from ibapi import contract as ib_contract
 
+import ibpy_native
 from ibpy_native import account as ib_account
 from ibpy_native import error
 from ibpy_native import models
 from ibpy_native._internal import _client
 from ibpy_native._internal import _global
 from ibpy_native._internal import _wrapper
+from ibpy_native.interfaces import delegates
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import datatype
 
@@ -51,8 +53,10 @@ class IBBridge:
             ib_account.AccountsManager() if accounts_manager is None
             else accounts_manager
         )
+        self._orders_manager = ibpy_native.OrdersManager()
 
         self._wrapper = _wrapper.IBWrapper(
+            orders_manager=self._orders_manager,
             notification_listener=notification_listener
         )
         self._wrapper.set_accounts_management_delegate(
@@ -78,6 +82,13 @@ class IBBridge:
             manages all IB account(s) related data.
         """
         return self._accounts_manager
+
+    @property
+    def orders_manager(self) -> delegates.OrdersManagementDelegate:
+        """:obj:`ibpy_native.order.OrdersManager`: Instance that handles order
+        related events.
+        """
+        return self._orders_manager
 
     #region - Setters
     @staticmethod

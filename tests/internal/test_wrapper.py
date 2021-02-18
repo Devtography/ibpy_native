@@ -10,6 +10,7 @@ from ibapi import wrapper
 
 from ibpy_native import error
 from ibpy_native import models
+from ibpy_native import order
 from ibpy_native._internal import _client
 from ibpy_native._internal import _global
 from ibpy_native._internal import _wrapper
@@ -25,7 +26,7 @@ class TestGeneral(unittest.TestCase):
     Connection with IB is NOT required.
     """
     def setUp(self):
-        self._wrapper = _wrapper.IBWrapper()
+        self._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
 
     def test_set_on_notify_listener(self):
         """Test setter `set_on_notify_listener` & overridden function `error`
@@ -69,7 +70,7 @@ class TestReqQueue(unittest.TestCase):
     Connection with IB is NOT required.
     """
     def setUp(self):
-        self._wrapper = _wrapper.IBWrapper()
+        self._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
 
     def test_next_req_id_0(self):
         """Test property `next_req_id` for retrieval of next usable
@@ -166,7 +167,7 @@ class TestAccountAndPortfolio(unittest.TestCase):
     Connection with IB is NOT required.
     """
     def setUp(self):
-        self._wrapper = _wrapper.IBWrapper()
+        self._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
 
         self._delegate = utils.MockAccountsManagementDelegate()
         self._wrapper.set_accounts_management_delegate(delegate=self._delegate)
@@ -229,18 +230,13 @@ class TestOrder(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls._wrapper = _wrapper.IBWrapper()
+        cls._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
         cls._client = _client.IBClient(cls._wrapper)
 
         cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)
 
         thread = threading.Thread(target=cls._client.run)
         thread.start()
-
-    def test_next_valid_id(self):
-        """Test overridden function `nextValidId`."""
-        self._wrapper.nextValidId(orderId=10)
-        self.assertEqual(self._wrapper.next_order_id, 10)
 
     @classmethod
     def tearDownClass(cls):
@@ -253,7 +249,7 @@ class TestContract(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls._wrapper = _wrapper.IBWrapper()
+        cls._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
         cls._client = _client.IBClient(cls._wrapper)
 
         cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)
@@ -301,7 +297,7 @@ class TestHistoricalData(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls._wrapper = _wrapper.IBWrapper()
+        cls._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
         cls._client = _client.IBClient(cls._wrapper)
 
         cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)
@@ -400,7 +396,7 @@ class TestTickByTickData(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls._wrapper = _wrapper.IBWrapper()
+        cls._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
         cls._client = _client.IBClient(cls._wrapper)
 
         cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)

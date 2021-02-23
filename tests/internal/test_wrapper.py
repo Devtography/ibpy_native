@@ -18,6 +18,7 @@ from ibpy_native.utils import datatype
 from ibpy_native.utils import finishable_queue as fq
 
 from tests.toolkit import sample_contracts
+from tests.toolkit import sample_orders
 from tests.toolkit import utils
 
 class TestGeneral(unittest.TestCase):
@@ -237,6 +238,35 @@ class TestOrder(unittest.TestCase):
 
         thread = threading.Thread(target=cls._client.run)
         thread.start()
+
+    def setUp(self):
+        self._orders_manager = self._wrapper.orders_manager
+
+    @utils.async_test
+    async def test_open_order(self):
+        """Test overridden function `openOrder`."""
+        order_id = await self._client.req_next_order_id()
+        self._client.placeOrder(
+            orderId=order_id, contract=sample_contracts.gbp_usd_fx(),
+            order=sample_orders.mkt(order_id=order_id,
+                                    action=datatype.OrderAction.BUY)
+        )
+        await asyncio.sleep(1)
+
+        self.assertTrue(order_id in self._orders_manager.open_orders)
+
+    @utils.async_test
+    async def test_order_status(self):
+        """Test overridden function `orderStatus`."""
+        order_id = await self._client.req_next_order_id()
+        self._client.placeOrder(
+            orderId=order_id, contract=sample_contracts.gbp_usd_fx(),
+            order=sample_orders.mkt(order_id=order_id,
+                                    action=datatype.OrderAction.SELL)
+        )
+        await asyncio.sleep(1)
+
+        self.assertTrue(self._orders_manager.open_orders[order_id].exec_rec)
 
     @classmethod
     def tearDownClass(cls):

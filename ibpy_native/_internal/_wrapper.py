@@ -5,6 +5,8 @@ import queue
 from typing import Dict, List, Optional
 
 from ibapi import contract as ib_contract
+from ibapi import order as ib_order
+from ibapi import order_state
 from ibapi import wrapper
 
 from ibpy_native import error
@@ -208,6 +210,22 @@ class IBWrapper(wrapper.EWrapper):
         if (self._req_queue[-1].status is not
             (fq.Status.INIT or fq.Status.FINISHED)):
             self._req_queue[-1].put(element=fq.Status.FINISHED)
+
+    def openOrder(self, orderId: int, contract: ib_contract.Contract,
+                  order: ib_order.Order, orderState: order_state.OrderState):
+        self._orders_manager.on_open_order_updated(
+            contract=contract, order=order, order_state=orderState
+        )
+
+    def orderStatus(self, orderId: int, status: str, filled: float,
+                    remaining: float, avgFillPrice: float, permId: int,
+                    parentId: int, lastFillPrice: float, clientId: int,
+                    whyHeld: str, mktCapPrice: float):
+        self._orders_manager.on_order_status_updated(
+            order_id=orderId, filled=filled, remaining=remaining,
+            avg_fill_price=avgFillPrice, last_fill_price=lastFillPrice,
+            mkt_cap_price=mktCapPrice
+        )
     #endregion - Orders
 
     #region - Get contract details

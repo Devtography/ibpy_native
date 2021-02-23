@@ -65,4 +65,10 @@ class OrderStatus(enum.Enum):
     CANCELLED = "Cancelled"
     FILLED = "Filled"
     INACTIVE = "Inactive"
+
+class OrderExecRec(NamedTuple):
+    """Named tuple for order information returned from IB on changes."""
+    filled: float
+    remaining: float
+    last_fill_price: float
 #endregion - Order related

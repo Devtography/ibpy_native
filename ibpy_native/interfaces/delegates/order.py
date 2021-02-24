@@ -1,6 +1,6 @@
 """Internal delegate module for orders related features."""
 import abc
-from typing import Dict
+from typing import Dict, Optional
 
 from ibapi import contract as ib_contract
 from ibapi import order as ib_order
@@ -8,6 +8,7 @@ from ibapi import order_state as ib_order_state
 
 from ibpy_native import error
 from ibpy_native import models
+from ibpy_native.utils import finishable_queue as fq
 
 class OrdersManagementDelegate(metaclass=abc.ABCMeta):
     """Internal delegate protocol for handling orders."""
@@ -50,9 +51,37 @@ class OrdersManagementDelegate(metaclass=abc.ABCMeta):
         """
         return NotImplemented
 
+    #region - Internal functions
+    @abc.abstractmethod
+    def get_pending_queue(self, order_id: int) -> Optional[fq.FinishableQueue]:
+        """INTERNAL FUNCTION! Retrieve the queue for order submission task
+        completeion status.
+
+        Args:
+            order_id (int): The order's identifier on TWS/Gateway.
+
+        Returns:
+            :obj:`Optional[ibpy_native.utils.finishable_queue.FinishableQueue]`:
+                Queue to monitor for the completeion signal of the order
+                submission task. `None` should be return if the `order_id`
+                passed in does not match with any queue stored.
+        """
+        return NotImplemented
+
+    #region - Order events
     @abc.abstractmethod
     def order_error(self, err: error.IBError):
         """Handles the error return from IB for the order submiteted."""
+        return NotImplemented
+
+    @abc.abstractmethod
+    def on_order_submission(self, order_id: int):
+        """INTERNAL FUNCTION! Triggers while invoking the internal order
+        submission function.
+
+        Args:
+            order_id (int): The order's identifier on TWS/Gateway.
+        """
         return NotImplemented
 
     @abc.abstractmethod
@@ -85,3 +114,5 @@ class OrdersManagementDelegate(metaclass=abc.ABCMeta):
             remaining (float): The remnant positions.
         """
         return NotImplemented
+    #endregion - Order events
+    #endregion - Internal functions

@@ -70,6 +70,21 @@ class TestOrder(unittest.TestCase):
                                         action=datatype.OrderAction.BUY)
             )
 
+    @utils.async_test
+    async def test_cancel_order(self):
+        """Test function `cancel_order`."""
+        order_id = await self._client.req_next_order_id()
+
+        order_submit_task = asyncio.create_task(self._client.submit_order(
+            contract=sample_contracts.gbp_usd_fx(),
+            order=sample_orders.no_transmit(order_id)
+        ))
+        await asyncio.sleep(0.5) # Give the order time to arrive at TWS/Gateway
+        self._client.cancel_order(order_id)
+        await order_submit_task
+        # Nothing to assert in this test.
+        # The function is good as long as there's no error thrown.
+
     @classmethod
     def tearDownClass(cls):
         cls._client.disconnect()

@@ -165,6 +165,19 @@ class IBClient(ib_client.EClient):
         if queue.status is fq.Status.ERROR:
             if isinstance(result[-1], error.IBError):
                 raise result[-1]
+
+    def cancel_order(self, order_id: int):
+        """Cancel an order submitted.
+
+        Args:
+            order_id (int): The order's identifer.
+        """
+        self.cancelOrder(orderId=order_id)
+        if self._wrapper.orders_manager.is_pending_order(val=order_id):
+            # Send finish signal to the pending order
+            queue = self._wrapper.orders_manager.get_pending_queue(order_id)
+            if queue.status is not (fq.Status.FINISHED or fq.Status.ERROR):
+                queue.put(element=fq.Status.FINISHED)
     #endregion - Orders
 
     #region - Historical data

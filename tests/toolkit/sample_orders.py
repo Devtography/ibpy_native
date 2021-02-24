@@ -26,3 +26,11 @@ def mkt(order_id: int, action: datatype.OrderAction) -> ib_order.Order:
     order.orderType = "MKT"
 
     return order
+
+def no_transmit(order_id: int) -> ib_order.Order:
+    """Market order with `transmit` set to `False`."""
+    order = _base_order(order_id, datatype.OrderAction.BUY)
+    order.orderType = "MKT"
+    order.transmit = False
+
+    return order

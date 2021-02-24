@@ -202,6 +202,14 @@ class IBWrapper(wrapper.EWrapper):
     #endregion - account updates
     #endregion - Accounts & portfolio
 
+    #region - Get contract details
+    def contractDetails(self, reqId, contractDetails):
+        self._req_queue[reqId].put(element=contractDetails)
+
+    def contractDetailsEnd(self, reqId):
+        self._req_queue[reqId].put(element=fq.Status.FINISHED)
+    #endregion - Get contract details
+
     #region - Orders
     def nextValidId(self, orderId: int):
         # Next valid order ID returned from IB
@@ -227,14 +235,6 @@ class IBWrapper(wrapper.EWrapper):
             mkt_cap_price=mktCapPrice
         )
     #endregion - Orders
-
-    #region - Get contract details
-    def contractDetails(self, reqId, contractDetails):
-        self._req_queue[reqId].put(element=contractDetails)
-
-    def contractDetailsEnd(self, reqId):
-        self._req_queue[reqId].put(element=fq.Status.FINISHED)
-    #endregion - Get contract details
 
     # Get earliest data point for a given instrument and data
     def headTimestamp(self, reqId: int, headTimestamp: str):

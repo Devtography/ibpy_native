@@ -28,51 +28,6 @@ class IBClient(ib_client.EClient):
         self._wrapper = wrapper
         super().__init__(wrapper)
 
-    #region - Orders
-    async def req_next_order_id(self) -> int:
-        """Request the next valid order ID from IB.
-
-        Returns:
-            int: The next valid order ID returned from IB.
-
-        Raises:
-            ibpy_native.error.IBError: If queue associated with `req_id` -1 is
-                being used by other task.
-        """
-        try:
-            f_queue = self._wrapper.get_request_queue(req_id=-1)
-        except error.IBError as err:
-            raise err
-        # Request next valid order ID
-        self.reqIds(numIds=-1) # `numIds` has deprecated
-        await f_queue.get()
-
-        return self._wrapper.orders_manager.next_order_id
-
-    async def submit_order(self, contract: ib_contract.Contract,
-                     order: ib_order.Order):
-        """Send the order to IB TWS/Gateway for submission.
-
-        Args:
-            contract (:obj:`ibapi.contract.Contract`): The order's contract.
-            order (:obj:`ibapi.order.Order`): Order to be submitted.
-
-        Raises:
-            ibpy_native.error.IBError: If order error is returned from IB after
-                the order is sent to TWS/Gateway.
-        """
-        self.placeOrder(orderId=order.orderId, contract=contract, order=order)
-        self._wrapper.orders_manager.on_order_submission(order_id=order.orderId)
-
-        queue = self._wrapper.orders_manager.get_pending_queue(
-            order_id=order.orderId)
-        result = await queue.get() # Wait for completeion signal
-
-        if queue.status is fq.Status.ERROR:
-            if isinstance(result[-1], error.IBError):
-                raise result[-1]
-    #endregion - Orders
-
     #region - Contract
     async def resolve_contract(
         self, req_id: int, contract: ib_contract.Contract
@@ -166,6 +121,51 @@ class IBClient(ib_client.EClient):
             err_str="Failed to get additional contract details"
         )
     #endregion - Contract
+
+    #region - Orders
+    async def req_next_order_id(self) -> int:
+        """Request the next valid order ID from IB.
+
+        Returns:
+            int: The next valid order ID returned from IB.
+
+        Raises:
+            ibpy_native.error.IBError: If queue associated with `req_id` -1 is
+                being used by other task.
+        """
+        try:
+            f_queue = self._wrapper.get_request_queue(req_id=-1)
+        except error.IBError as err:
+            raise err
+        # Request next valid order ID
+        self.reqIds(numIds=-1) # `numIds` has deprecated
+        await f_queue.get()
+
+        return self._wrapper.orders_manager.next_order_id
+
+    async def submit_order(self, contract: ib_contract.Contract,
+                           order: ib_order.Order):
+        """Send the order to IB TWS/Gateway for submission.
+
+        Args:
+            contract (:obj:`ibapi.contract.Contract`): The order's contract.
+            order (:obj:`ibapi.order.Order`): Order to be submitted.
+
+        Raises:
+            ibpy_native.error.IBError: If order error is returned from IB after
+                the order is sent to TWS/Gateway.
+        """
+        self.placeOrder(orderId=order.orderId, contract=contract, order=order)
+        self._wrapper.orders_manager.on_order_submission(order_id=order.orderId)
+
+        queue = self._wrapper.orders_manager.get_pending_queue(
+            order_id=order.orderId)
+        result = await queue.get() # Wait for completeion signal
+
+        if queue.status is fq.Status.ERROR:
+            if isinstance(result[-1], error.IBError):
+                raise result[-1]
+    #endregion - Orders
 
     #region - Historical data
     async def resolve_head_timestamp(

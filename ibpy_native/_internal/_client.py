@@ -152,11 +152,17 @@ class IBClient(ib_client.EClient):
             order (:obj:`ibapi.order.Order`): Order to be submitted.
 
         Raises:
-            ibpy_native.error.IBError: If order error is returned from IB after
-                the order is sent to TWS/Gateway.
+            ibpy_native.error.IBError: If
+                - pending order with order ID same as the order passed in;
+                - order error is returned from IB after the order is sent to
+                TWS/Gateway.
         """
+        try:
+            self._wrapper.orders_manager.on_order_submission(
+                order_id=order.orderId)
+        except error.IBError as err:
+            raise err
         self.placeOrder(orderId=order.orderId, contract=contract, order=order)
-        self._wrapper.orders_manager.on_order_submission(order_id=order.orderId)
 
         queue = self._wrapper.orders_manager.get_pending_queue(
             order_id=order.orderId)

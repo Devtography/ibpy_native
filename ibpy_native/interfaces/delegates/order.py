@@ -39,11 +39,11 @@ class OrdersManagementDelegate(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    def is_pending_order(self, val: int) -> bool:
+    def is_pending_order(self, order_id: int) -> bool:
         """Check if a identifier matches with an existing order in pending.
 
         Args:
-            val (int): The identifier to validate.
+            order_id (int): The order identifier to validate.
 
         Returns:
             bool: `True` if `val` matches with the order identifier of an

@@ -151,7 +151,7 @@ class IBWrapper(wrapper.EWrapper):
 
         # -1 indicates a notification and not true error condition
         if reqId is not -1:
-            if self._orders_manager.is_pending_order(val=reqId):
+            if self._orders_manager.is_pending_order(order_id=reqId):
                 self._orders_manager.order_error(err)
             elif reqId in self._req_queue:
                 self._req_queue[reqId].put(element=err)

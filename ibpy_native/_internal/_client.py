@@ -179,7 +179,7 @@ class IBClient(ib_client.EClient):
             order_id (int): The order's identifer.
         """
         self.cancelOrder(orderId=order_id)
-        if self._wrapper.orders_manager.is_pending_order(val=order_id):
+        if self._wrapper.orders_manager.is_pending_order(order_id):
             # Send finish signal to the pending order
             queue = self._wrapper.orders_manager.get_pending_queue(order_id)
             if queue.status is not (fq.Status.FINISHED or fq.Status.ERROR):

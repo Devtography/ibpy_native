@@ -35,7 +35,7 @@ class OrdersManager(delegates.OrdersManagementDelegate):
             self._next_order_id = order_id
 
     def is_pending_order(self, val: int) -> bool:
-        return False
+        return val in self._pending_queues
 
     #region - Internal functions
     def get_pending_queue(self, order_id: int) -> Optional[fq.FinishableQueue]:

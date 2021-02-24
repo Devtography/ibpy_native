@@ -43,7 +43,7 @@ class OrdersManagementDelegate(metaclass=abc.ABCMeta):
         """Check if a identifier matches with an existing order in pending.
 
         Args:
-            val (int): The value to validate.
+            val (int): The identifier to validate.
 
         Returns:
             bool: `True` if `val` matches with the order identifier of an

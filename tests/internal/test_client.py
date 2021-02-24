@@ -18,6 +18,7 @@ from ibpy_native.utils import datatype
 from ibpy_native.utils import finishable_queue as fq
 
 from tests.toolkit import sample_contracts
+from tests.toolkit import sample_orders
 from tests.toolkit import utils
 
 class TestOrder(unittest.TestCase):
@@ -35,11 +36,39 @@ class TestOrder(unittest.TestCase):
         thread = threading.Thread(target=cls._client.run)
         thread.start()
 
+    def setUp(self):
+        self._orders_manager = self._wrapper.orders_manager
+
     @utils.async_test
     async def test_req_next_order_id(self):
         """Test function `req_next_order_id`."""
         next_order_id = await self._client.req_next_order_id()
         self.assertGreater(next_order_id, 0)
+
+    @utils.async_test
+    async def test_submit_order(self):
+        """Test function `submit_order`."""
+        order_id = await self._client.req_next_order_id()
+
+        await self._client.submit_order(
+            contract=sample_contracts.gbp_usd_fx(),
+            order=sample_orders.mkt(order_id=order_id,
+                                    action=datatype.OrderAction.BUY)
+        )
+        self.assertTrue(order_id in self._orders_manager.open_orders)
+
+    @utils.async_test
+    async def test_submit_order_err(self):
+        """Test function `submit_order`.
+
+        * Error returned from IB for duplicated order ID.
+        """
+        with self.assertRaises(error.IBError):
+            await self._client.submit_order(
+                contract=sample_contracts.gbp_usd_fx(),
+                order=sample_orders.mkt(order_id=1,
+                                        action=datatype.OrderAction.BUY)
+            )
 
     @classmethod
     def tearDownClass(cls):

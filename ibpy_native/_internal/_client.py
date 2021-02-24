@@ -5,6 +5,7 @@ from typing import Any, List, Union
 
 from ibapi import client as ib_client
 from ibapi import contract as ib_contract
+from ibapi import order as ib_order
 from ibapi import wrapper as ib_wrapper
 
 from ibpy_native import error
@@ -48,6 +49,28 @@ class IBClient(ib_client.EClient):
 
         return self._wrapper.orders_manager.next_order_id
 
+    async def submit_order(self, contract: ib_contract.Contract,
+                     order: ib_order.Order):
+        """Send the order to IB TWS/Gateway for submission.
+
+        Args:
+            contract (:obj:`ibapi.contract.Contract`): The order's contract.
+            order (:obj:`ibapi.order.Order`): Order to be submitted.
+
+        Raises:
+            ibpy_native.error.IBError: If order error is returned from IB after
+                the order is sent to TWS/Gateway.
+        """
+        self.placeOrder(orderId=order.orderId, contract=contract, order=order)
+        self._wrapper.orders_manager.on_order_submission(order_id=order.orderId)
+
+        queue = self._wrapper.orders_manager.get_pending_queue(
+            order_id=order.orderId)
+        result = await queue.get() # Wait for completeion signal
+
+        if queue.status is fq.Status.ERROR:
+            if isinstance(result[-1], error.IBError):
+                raise result[-1]
     #endregion - Orders
 
     #region - Contract

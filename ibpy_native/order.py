@@ -48,6 +48,10 @@ class OrdersManager(delegates.OrdersManagementDelegate):
     def order_error(self, err: error.IBError):
         if err.err_code == 399: # Warning message only
             return
+        if err.rid in self._pending_queues:
+            # Signals the order submission error
+            if self._pending_queues[err.rid].status is not fq.Status.FINISHED:
+                self._pending_queues[err.rid].put(element=err)
 
     def on_order_submission(self, order_id: int):
         """INTERNAL FUNCTION! Creates a new `FinishableQueue` with `order_id`
@@ -82,6 +86,9 @@ class OrdersManager(delegates.OrdersManagementDelegate):
             self._open_orders[order.orderId] = models.OpenOrder(
                 contract, order, order_state
             )
+            if order.orderId in self._pending_queues:
+                self._pending_queues[order.orderId].put(
+                    element=fq.Status.FINISHED)
 
     def on_order_status_updated(
         self, order_id: int, filled: float, remaining: float,

@@ -44,7 +44,8 @@ class IBBridge:
     def __init__(
         self, host: str="127.0.0.1", port: int=4001,
         client_id: int=1, auto_conn: bool=True,
-        notification_listener:Optional[listeners.NotificationListener]=None,
+        notification_listener: Optional[listeners.NotificationListener]=None,
+        order_events_listener: Optional[listeners.OrderEventsListener]=None,
         accounts_manager: Optional[ib_account.AccountsManager]=None
     ):
         self._host = host
@@ -54,7 +55,8 @@ class IBBridge:
             ib_account.AccountsManager() if accounts_manager is None
             else accounts_manager
         )
-        self._orders_manager = ibpy_native.OrdersManager()
+        self._orders_manager = ibpy_native.OrdersManager(
+            event_listener=order_events_listener)
 
         self._wrapper = _wrapper.IBWrapper(
             orders_manager=self._orders_manager,

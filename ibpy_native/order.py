@@ -10,6 +10,7 @@ from ibapi import order_state as ib_order_state
 from ibpy_native import error
 from ibpy_native import models
 from ibpy_native.interfaces import delegates
+from ibpy_native.utils import datatype
 from ibpy_native.utils import finishable_queue as fq
 
 class OrdersManager(delegates.OrdersManagementDelegate):
@@ -95,14 +96,14 @@ class OrdersManager(delegates.OrdersManagementDelegate):
                     element=fq.Status.FINISHED)
 
     def on_order_status_updated(
-        self, order_id: int, filled: float, remaining: float,
+        self, order_id: int, status: str, filled: float, remaining: float,
         avg_fill_price: float, last_fill_price: float, mkt_cap_price: float
     ):
-        if order_id in self._open_orders and filled != 0:
-            # Filter out the message(s) with no actual trade
+        if order_id in self._open_orders:
             self._open_orders[order_id].order_status_update(
-                filled, remaining, avg_fill_price,
-                last_fill_price, mkt_cap_price
+                status=datatype.OrderStatus(status), filled=filled,
+                remaining=remaining, avg_fill_price=avg_fill_price,
+                last_fill_price=last_fill_price, mkt_cap_price=mkt_cap_price
             )
     #endregion - Order events
     #endregion - Internal functions

@@ -103,15 +103,21 @@ class OrdersManagementDelegate(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def on_order_status_updated(
-        self, order_id: int, filled: float, remaining: float,
+        self, order_id: int, status: str, filled: float, remaining: float,
         avg_fill_price: float, last_fill_price: float, mkt_cap_price: float
     ):
         """INTERNAL FUNCTION! Handles the `orderStatus` callback from IB.
 
         Args:
             order_id (int): The order's identifier on TWS/Gateway.
+            status (str): The current status of the order.
             filled (float): Number of filled positions.
             remaining (float): The remnant positions.
+            avg_fill_price (float): Average filling price.
+            last_fill_price (float): Price at which the last positions were
+                filled.
+            mkt_cap_price (float): If an order has been capped, this indicates
+                the current capped price.
         """
         return NotImplemented
     #endregion - Order events

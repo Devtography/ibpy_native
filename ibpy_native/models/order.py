@@ -26,6 +26,7 @@ class OpenOrder:
         self._order = order
         self._order_state = order_state
         # From `orderStatus` callback
+        self._status = datatype.OrderStatus(order_state.status)
         self._avg_fill_price = 0.0
         self._mkt_cap_price = 0.0
         self._exec_rec: List[datatype.OrderExecRec] = []
@@ -74,7 +75,7 @@ class OpenOrder:
         """:obj:`ibpy_native.utils.datatype.OrderStatus`: The order's current
         status.
         """
-        return datatype.OrderStatus(self._order_state.status)
+        return self._status
 
     @property
     def filled(self) -> int:
@@ -144,9 +145,9 @@ class OpenOrder:
             self._order = order
             self._order_state = order_state
 
-    def order_status_update(self, filled: float, remaining: float,
-                            avg_fill_price: float, last_fill_price: float,
-                            mkt_cap_price: float):
+    def order_status_update(self, status: datatype.OrderStatus, filled: float,
+                            remaining: float, avg_fill_price: float,
+                            last_fill_price: float, mkt_cap_price: float):
         """INTERNAL FUNCTION! Thread-safe function to handle the changes on
         order status updates from IB. DO NOT use this function in your own code
         unless you're testing something specifically.
@@ -161,6 +162,8 @@ class OpenOrder:
                 the current capped price.
         """
         with self._lock:
+            self._status = status # Update order status no matter what
+
             if self._exec_rec:
                 if self._exec_rec[-1].remaining == remaining:
                     # Filter out the duplicate messages returned from IB

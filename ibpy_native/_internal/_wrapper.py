@@ -150,11 +150,11 @@ class IBWrapper(wrapper.EWrapper):
         err = error.IBError(rid=reqId, err_code=errorCode, err_str=errorString)
 
         # -1 indicates a notification and not true error condition
-        if reqId is not -1:
-            if self._orders_manager.is_pending_order(order_id=reqId):
-                self._orders_manager.order_error(err)
-            elif reqId in self._req_queue:
-                self._req_queue[reqId].put(element=err)
+        if reqId is not -1 and self._orders_manager.is_pending_order(
+            order_id=reqId):
+            self._orders_manager.order_error(err)
+        elif reqId is not -1 and reqId in self._req_queue:
+            self._req_queue[reqId].put(element=err)
         else:
             if self._notification_listener is not None:
                 self._notification_listener.on_notify(
@@ -230,7 +230,7 @@ class IBWrapper(wrapper.EWrapper):
                     parentId: int, lastFillPrice: float, clientId: int,
                     whyHeld: str, mktCapPrice: float):
         self._orders_manager.on_order_status_updated(
-            order_id=orderId, filled=filled, remaining=remaining,
+            order_id=orderId, status=status, filled=filled, remaining=remaining,
             avg_fill_price=avgFillPrice, last_fill_price=lastFillPrice,
             mkt_cap_price=mktCapPrice
         )

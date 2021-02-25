@@ -5,9 +5,10 @@ IB API.
 import asyncio
 import datetime
 import threading
-from typing import Iterator, List, Optional
+from typing import Awaitable, Iterator, List, Optional
 
 from ibapi import contract as ib_contract
+from ibapi import order as ib_order
 
 import ibpy_native
 from ibpy_native import account as ib_account
@@ -197,6 +198,48 @@ class IBBridge:
             raise err
 
         return  res
+
+    #region - Orders
+    async def next_order_id(self) -> int:
+        """Get next valid order ID.
+
+        Returns:
+            int: The next valid order ID.
+        """
+        return await self._client.req_next_order_id()
+
+    async def place_orders(self, contract: ib_contract.Contract,
+                           orders: List[ib_order.Order]):
+        """Place order(s) to IB.
+
+        Note:
+            Order IDs must be unique for each order. Arguments `orders` can be
+            used to place child order(s) together with the parent order but you
+            should make sure orders passing in are all valid. All of the orders
+            passed in will be cancelled if there's error casuse by any of the
+            order in the list.
+
+        Args:
+            contract (:obj:`ibapi.contract.Contract`): The order's contract.
+            orders (:obj:`List[ibapi.order.Order]`): Order(s) to be submitted.
+
+        Raises:
+            ibpy_native.error.IBError: If any order error returned from IB or
+                lower level internal processes.
+        """
+        coroutines: List[Awaitable[None]] = []
+
+        for order in orders:
+            coroutines.append(self._client.submit_order(contract, order))
+
+        try:
+            await asyncio.gather(*coroutines)
+        except error.IBError as err:
+            for order in orders:
+                self._client.cancel_order(order_id=order.orderId)
+
+            raise err
+    #endregion - Orders
 
     #region - Historical data
     async def get_earliest_data_point(

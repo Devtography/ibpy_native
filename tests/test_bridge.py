@@ -265,6 +265,19 @@ class TestOrder(unittest.TestCase):
         self.assertFalse(
             self._orders_manager.is_pending_order(order_id=order1.orderId))
 
+    @utils.async_test
+    async def test_cancel_order(self):
+        """Test function `cancel_order`."""
+        order = sample_orders.lmt(order_id=await self._bridge.next_order_id(),
+                                  action=datatype.OrderAction.SELL,
+                                  price=3)
+        await self._bridge.place_orders(contract=sample_contracts.gbp_usd_fx(),
+                                        orders=[order])
+        self._bridge.cancel_order(order_id=order.orderId)
+        await asyncio.sleep(0.5) # Give time the cancel request to arrive IB
+        self.assertEqual(self._orders_manager.open_orders[order.orderId].status,
+                         datatype.OrderStatus.CANCELLED)
+
     @classmethod
     def tearDownClass(cls):
         cls._bridge.disconnect()

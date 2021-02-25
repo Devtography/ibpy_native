@@ -239,6 +239,22 @@ class IBBridge:
                 self._client.cancel_order(order_id=order.orderId)
 
             raise err
+
+    def cancel_order(self, order_id: int):
+        """Cancel a submitted order.
+
+        Note:
+            No error will be raise even if you pass in an ID which doesn't
+            match any existing open order. A warning message will be returned
+            via the `NotificationListener` supplied instead.
+
+            A message will be returned to the `NotificationListener` supplied
+            once the order is cancelled.
+
+        Args:
+            order_id (int): The order's identifier.
+        """
+        self._client.cancel_order(order_id)
     #endregion - Orders
 
     #region - Historical data

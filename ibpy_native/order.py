@@ -3,6 +3,7 @@ import threading
 import queue
 from typing import Dict, Optional
 
+from ibapi import common
 from ibapi import contract as ib_contract
 from ibapi import order as ib_order
 from ibapi import order_state as ib_order_state
@@ -10,14 +11,17 @@ from ibapi import order_state as ib_order_state
 from ibpy_native import error
 from ibpy_native import models
 from ibpy_native.interfaces import delegates
+from ibpy_native.interfaces import listeners
 from ibpy_native.utils import datatype
 from ibpy_native.utils import finishable_queue as fq
 
 class OrdersManager(delegates.OrdersManagementDelegate):
     """Class to handle orders related events."""
-    def __init__(self):
+    def __init__(self,
+                 event_listener: Optional[listeners.OrderEventsListener]=None):
         # Internal members
         self._lock = threading.Lock()
+        self._listener = event_listener
         # Property
         self._next_order_id = 0
         self._open_orders: Dict[int, models.OpenOrder] = {}
@@ -52,8 +56,13 @@ class OrdersManager(delegates.OrdersManagementDelegate):
     #region - Order events
     def order_error(self, err: error.IBError):
         if err.err_code == 399: # Warning message only
+            if self._listener:
+                self._listener.on_warning(order_id=err.rid, msg=err.msg)
             return
         if err.rid in self._pending_queues:
+            if self._listener:
+                self._listener.on_err(err)
+
             # Signals the order submission error
             if self._pending_queues[err.rid].status is not fq.Status.FINISHED:
                 self._pending_queues[err.rid].put(element=err)
@@ -87,6 +96,12 @@ class OrdersManager(delegates.OrdersManagementDelegate):
     ):
         if order.orderId in self._open_orders:
             self._open_orders[order.orderId].order_update(order, order_state)
+            if (self._listener
+                and order_state.status == "Filled"
+                and order_state.commission != common.UNSET_DOUBLE):
+                # Commission validation is to filter out the 1st incomplete
+                # order filled status update.
+                self._listener.on_filled(order=self._open_orders[order.orderId])
         else:
             self._open_orders[order.orderId] = models.OpenOrder(
                 contract, order, order_state
@@ -105,5 +120,8 @@ class OrdersManager(delegates.OrdersManagementDelegate):
                 remaining=remaining, avg_fill_price=avg_fill_price,
                 last_fill_price=last_fill_price, mkt_cap_price=mkt_cap_price
             )
+
+            if self._listener and status == "Cancelled":
+                self._listener.on_cancelled(order=self._open_orders[order_id])
     #endregion - Order events
     #endregion - Internal functions

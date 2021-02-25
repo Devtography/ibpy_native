@@ -29,16 +29,6 @@ class OrdersManagementDelegate(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    def update_next_order_id(self, order_id: int):
-        """Internal function to update the next order ID stored. Not expected
-        to be invoked by the user.
-
-        Args:
-            order_id (int): The updated order identifier.
-        """
-        return NotImplemented
-
-    @abc.abstractmethod
     def is_pending_order(self, order_id: int) -> bool:
         """Check if a identifier matches with an existing order in pending.
 
@@ -52,6 +42,15 @@ class OrdersManagementDelegate(metaclass=abc.ABCMeta):
         return NotImplemented
 
     #region - Internal functions
+    @abc.abstractmethod
+    def update_next_order_id(self, order_id: int):
+        """INTERNAL FUNCTION! Update the next order ID stored.
+
+        Args:
+            order_id (int): The updated order identifier.
+        """
+        return NotImplemented
+
     @abc.abstractmethod
     def get_pending_queue(self, order_id: int) -> Optional[fq.FinishableQueue]:
         """INTERNAL FUNCTION! Retrieve the queue for order submission task
@@ -71,7 +70,12 @@ class OrdersManagementDelegate(metaclass=abc.ABCMeta):
     #region - Order events
     @abc.abstractmethod
     def order_error(self, err: error.IBError):
-        """Handles the error return from IB for the order submiteted."""
+        """INTERNAL FUNCTION! Handles the error return from IB for the order
+        submiteted.
+
+        Args:
+            err (:obj:`ibpy_native.error.IBError`): Error returned from IB.
+        """
         return NotImplemented
 
     @abc.abstractmethod

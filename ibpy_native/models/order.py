@@ -153,6 +153,8 @@ class OpenOrder:
         unless you're testing something specifically.
 
         Args:
+            status (:obj:`ibpy_native.utils.datatype.OrderStatus`): The order's
+                current status.
             filled (float): Number of filled positions.
             remaining (float): The remnant positions.
             avg_fill_price (float): Average filling price.

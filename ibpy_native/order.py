@@ -31,10 +31,6 @@ class OrdersManager(delegates.OrdersManagementDelegate):
     def open_orders(self) -> Dict[int, models.OpenOrder]:
         return self._open_orders
 
-    def update_next_order_id(self, order_id: int):
-        with self._lock:
-            self._next_order_id = order_id
-
     def is_pending_order(self, order_id: int) -> bool:
         if order_id in self._pending_queues:
             if self._pending_queues[order_id].status is fq.Status.INIT:
@@ -43,6 +39,10 @@ class OrdersManager(delegates.OrdersManagementDelegate):
         return False
 
     #region - Internal functions
+    def update_next_order_id(self, order_id: int):
+        with self._lock:
+            self._next_order_id = order_id
+
     def get_pending_queue(self, order_id: int) -> Optional[fq.FinishableQueue]:
         if order_id in self._pending_queues:
             return self._pending_queues[order_id]

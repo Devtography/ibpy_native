@@ -5,16 +5,19 @@ IB API.
 import asyncio
 import datetime
 import threading
-from typing import Iterator, List, Optional
+from typing import Awaitable, Iterator, List, Optional
 
 from ibapi import contract as ib_contract
+from ibapi import order as ib_order
 
+import ibpy_native
 from ibpy_native import account as ib_account
 from ibpy_native import error
 from ibpy_native import models
 from ibpy_native._internal import _client
 from ibpy_native._internal import _global
 from ibpy_native._internal import _wrapper
+from ibpy_native.interfaces import delegates
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import datatype
 
@@ -41,7 +44,8 @@ class IBBridge:
     def __init__(
         self, host: str="127.0.0.1", port: int=4001,
         client_id: int=1, auto_conn: bool=True,
-        notification_listener:Optional[listeners.NotificationListener]=None,
+        notification_listener: Optional[listeners.NotificationListener]=None,
+        order_events_listener: Optional[listeners.OrderEventsListener]=None,
         accounts_manager: Optional[ib_account.AccountsManager]=None
     ):
         self._host = host
@@ -51,8 +55,11 @@ class IBBridge:
             ib_account.AccountsManager() if accounts_manager is None
             else accounts_manager
         )
+        self._orders_manager = ibpy_native.OrdersManager(
+            event_listener=order_events_listener)
 
         self._wrapper = _wrapper.IBWrapper(
+            orders_manager=self._orders_manager,
             notification_listener=notification_listener
         )
         self._wrapper.set_accounts_management_delegate(
@@ -78,6 +85,13 @@ class IBBridge:
             manages all IB account(s) related data.
         """
         return self._accounts_manager
+
+    @property
+    def orders_manager(self) -> delegates.OrdersManagementDelegate:
+        """:obj:`ibpy_native.order.OrdersManager`: Instance that handles order
+        related events.
+        """
+        return self._orders_manager
 
     #region - Setters
     @staticmethod
@@ -186,6 +200,64 @@ class IBBridge:
             raise err
 
         return  res
+
+    #region - Orders
+    async def next_order_id(self) -> int:
+        """Get next valid order ID.
+
+        Returns:
+            int: The next valid order ID.
+        """
+        return await self._client.req_next_order_id()
+
+    async def place_orders(self, contract: ib_contract.Contract,
+                           orders: List[ib_order.Order]):
+        """Place order(s) to IB.
+
+        Note:
+            Order IDs must be unique for each order. Arguments `orders` can be
+            used to place child order(s) together with the parent order but you
+            should make sure orders passing in are all valid. All of the orders
+            passed in will be cancelled if there's error casuse by any of the
+            order in the list.
+
+        Args:
+            contract (:obj:`ibapi.contract.Contract`): The order's contract.
+            orders (:obj:`List[ibapi.order.Order]`): Order(s) to be submitted.
+
+        Raises:
+            ibpy_native.error.IBError: If any order error returned from IB or
+                lower level internal processes.
+        """
+        coroutines: List[Awaitable[None]] = []
+
+        for order in orders:
+            coroutines.append(self._client.submit_order(contract, order))
+
+        try:
+            await asyncio.gather(*coroutines)
+        except error.IBError as err:
+            for order in orders:
+                self._client.cancel_order(order_id=order.orderId)
+
+            raise err
+
+    def cancel_order(self, order_id: int):
+        """Cancel a submitted order.
+
+        Note:
+            No error will be raise even if you pass in an ID which doesn't
+            match any existing open order. A warning message will be returned
+            via the `NotificationListener` supplied instead.
+
+            A message will be returned to the `NotificationListener` supplied
+            once the order is cancelled.
+
+        Args:
+            order_id (int): The order's identifier.
+        """
+        self._client.cancel_order(order_id)
+    #endregion - Orders
 
     #region - Historical data
     async def get_earliest_data_point(

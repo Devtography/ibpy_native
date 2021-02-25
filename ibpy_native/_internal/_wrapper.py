@@ -1,9 +1,12 @@
 """Code implementation of IB API resposes handling."""
 # pylint: disable=protected-access
+import threading
 import queue
 from typing import Dict, List, Optional
 
 from ibapi import contract as ib_contract
+from ibapi import order as ib_order
+from ibapi import order_state
 from ibapi import wrapper
 
 from ibpy_native import error
@@ -14,22 +17,34 @@ from ibpy_native.interfaces import listeners
 from ibpy_native.utils import finishable_queue as fq
 
 class IBWrapper(wrapper.EWrapper):
+    # pylint: disable=too-many-public-methods
     """The wrapper deals with the action coming back from the IB gateway or
     TWS instance.
 
     Args:
+        orders_manager (:obj:`ibpy_native.interfaces.delgates.order
+            .OrdersManagementDelegate`): Manager to handler orders related
+            events.
         notification_listener (:obj:`ibpy_native.interfaces.listeners
             .NotificationListener`, optional): Handler to receive system
             notifications from IB Gateway. Defaults to `None`.
     """
     def __init__(
         self,
+        orders_manager: delegates.OrdersManagementDelegate,
         notification_listener: Optional[listeners.NotificationListener]=None
     ):
+        self._lock = threading.Lock()
+
         self._req_queue: Dict[int, fq.FinishableQueue] = {}
         self._ac_man_delegate: Optional[
             delegates.AccountsManagementDelegate] = None
+
+        self._orders_manager = orders_manager
         self._notification_listener = notification_listener
+
+        # Queue with ID -1 is always reserved for next order ID
+        self._req_queue[-1] = fq.FinishableQueue(queue.Queue())
 
         super().__init__()
 
@@ -56,6 +71,13 @@ class IBWrapper(wrapper.EWrapper):
                     usable_id = key
 
         return usable_id + 1
+
+    @property
+    def orders_manager(self) -> delegates.OrdersManagementDelegate:
+        """:obj:`ibpy_native.interfaces.delegates.order
+        .OrdersManagementDelegate`: The internal orders manager.
+        """
+        return self._orders_manager
 
     #region - Getters
     def get_request_queue(self, req_id: int) -> fq.FinishableQueue:
@@ -128,9 +150,14 @@ class IBWrapper(wrapper.EWrapper):
         err = error.IBError(rid=reqId, err_code=errorCode, err_str=errorString)
 
         # -1 indicates a notification and not true error condition
-        if reqId is not -1:
-            if reqId in self._req_queue:
-                self._req_queue[reqId].put(element=err)
+        if reqId is not -1 and self._orders_manager.is_pending_order(
+            order_id=reqId): # Is an order error
+            self._orders_manager.order_error(err)
+        elif reqId is not -1 and errorCode == 201: # 201 == order rejected
+            self._orders_manager.on_order_rejected(order_id=reqId,
+                                                   reason=errorString)
+        elif reqId is not -1 and reqId in self._req_queue:
+            self._req_queue[reqId].put(element=err)
         else:
             if self._notification_listener is not None:
                 self._notification_listener.on_notify(
@@ -185,6 +212,32 @@ class IBWrapper(wrapper.EWrapper):
     def contractDetailsEnd(self, reqId):
         self._req_queue[reqId].put(element=fq.Status.FINISHED)
     #endregion - Get contract details
+
+    #region - Orders
+    def nextValidId(self, orderId: int):
+        # Next valid order ID returned from IB
+        self._orders_manager.update_next_order_id(order_id=orderId)
+        # To finish waiting on IBClient.req_next_order_id
+        if (self._req_queue[-1].status is not
+            (fq.Status.INIT or fq.Status.FINISHED)):
+            self._req_queue[-1].put(element=fq.Status.FINISHED)
+
+    def openOrder(self, orderId: int, contract: ib_contract.Contract,
+                  order: ib_order.Order, orderState: order_state.OrderState):
+        self._orders_manager.on_open_order_updated(
+            contract=contract, order=order, order_state=orderState
+        )
+
+    def orderStatus(self, orderId: int, status: str, filled: float,
+                    remaining: float, avgFillPrice: float, permId: int,
+                    parentId: int, lastFillPrice: float, clientId: int,
+                    whyHeld: str, mktCapPrice: float):
+        self._orders_manager.on_order_status_updated(
+            order_id=orderId, status=status, filled=filled, remaining=remaining,
+            avg_fill_price=avgFillPrice, last_fill_price=lastFillPrice,
+            mkt_cap_price=mktCapPrice
+        )
+    #endregion - Orders
 
     # Get earliest data point for a given instrument and data
     def headTimestamp(self, reqId: int, headTimestamp: str):
@@ -258,7 +311,9 @@ class IBWrapper(wrapper.EWrapper):
                 `self.__req_queue[req_id]` and it's not finished.
         """
         if req_id in self._req_queue:
-            if self._req_queue[req_id].finished:
+            if self._req_queue[req_id].finished or (
+                req_id == -1 and self._req_queue[-1].status is fq.Status.INIT
+            ):
                 self._req_queue[req_id].reset()
             else:
                 raise error.IBError(

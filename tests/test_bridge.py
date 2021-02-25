@@ -17,6 +17,7 @@ from ibpy_native.utils import datatype
 from ibpy_native.utils import finishable_queue as fq
 
 from tests.toolkit import sample_contracts
+from tests.toolkit import sample_orders
 from tests.toolkit import utils
 
 class TestGeneral(unittest.TestCase):
@@ -200,6 +201,82 @@ class TestContract(unittest.TestCase):
             await self._bridge.search_detailed_contracts(
                 contract = contract.Contract()
             )
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._bridge.disconnect()
+
+class TestOrder(unittest.TestCase):
+    """Unit tests for IB order related functions in `IBBridge`.
+
+    Connection with IB is REQUIRED.
+    """
+    @classmethod
+    def setUpClass(cls):
+        cls._bridge = bridge.IBBridge(host=utils.IB_HOST, port=utils.IB_PORT,
+                                      client_id=utils.IB_CLIENT_ID)
+
+    def setUp(self):
+        self._orders_manager = self._bridge.orders_manager
+
+    @utils.async_test
+    async def test_next_order_id(self):
+        """Test function `next_order_id`."""
+        old_order_id = self._orders_manager.next_order_id
+        next_order_id = await self._bridge.next_order_id()
+
+        self.assertGreater(next_order_id, old_order_id)
+
+    @utils.async_test
+    async def test_place_orders(self):
+        """Test function `place_orders`."""
+        # Prepare orders
+        order1 = sample_orders.mkt(order_id=await self._bridge.next_order_id(),
+                                   action=datatype.OrderAction.BUY)
+        order2 = sample_orders.mkt(order_id=order1.orderId + 1,
+                                   action=datatype.OrderAction.SELL)
+
+        await self._bridge.place_orders(contract=sample_contracts.gbp_usd_fx(),
+                                        orders=[order1, order2])
+        self.assertTrue(order1.orderId in self._orders_manager.open_orders)
+        self.assertTrue(order2.orderId in self._orders_manager.open_orders)
+        self.assertFalse(
+            self._orders_manager.is_pending_order(order_id=order1.orderId))
+        self.assertFalse(
+            self._orders_manager.is_pending_order(order_id=order2.orderId))
+
+    @utils.async_test
+    async def test_place_orders_err(self):
+        """Test function `place_orders`.
+
+        * Error expected due to duplicate order ID.
+        """
+        # Prepare orders
+        order1 = sample_orders.mkt(order_id=await self._bridge.next_order_id(),
+                                   action=datatype.OrderAction.BUY)
+        order2 = sample_orders.mkt(order_id=order1.orderId,
+                                   action=datatype.OrderAction.SELL)
+
+        with self.assertRaises(error.IBError):
+            await self._bridge.place_orders(
+                contract=sample_contracts.gbp_usd_fx(),
+                orders=[order1, order2]
+            )
+        self.assertFalse(
+            self._orders_manager.is_pending_order(order_id=order1.orderId))
+
+    @utils.async_test
+    async def test_cancel_order(self):
+        """Test function `cancel_order`."""
+        order = sample_orders.lmt(order_id=await self._bridge.next_order_id(),
+                                  action=datatype.OrderAction.SELL,
+                                  price=3)
+        await self._bridge.place_orders(contract=sample_contracts.gbp_usd_fx(),
+                                        orders=[order])
+        self._bridge.cancel_order(order_id=order.orderId)
+        await asyncio.sleep(0.5) # Give time the cancel request to arrive IB
+        self.assertEqual(self._orders_manager.open_orders[order.orderId].status,
+                         datatype.OrderStatus.CANCELLED)
 
     @classmethod
     def tearDownClass(cls):

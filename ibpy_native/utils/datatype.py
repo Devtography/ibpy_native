@@ -38,3 +38,37 @@ class ResHistoricalTicks(NamedTuple):
     ]]
     completed: bool
 #endregion - Return type
+
+#region - Order related
+@enum.unique
+class OrderAction(enum.Enum):
+    """Action type of the order. Either BUY or SELL."""
+    BUY = "BUY"
+    SELL = "SELL"
+
+@enum.unique
+class OrderStatus(enum.Enum):
+    """Status of the order after submission to TWS/Gateway.
+
+    For the definition of each status, please refer to `Possible Order States`_
+    from TWS API document.
+
+    .. _Possible Order States:
+        https://interactivebrokers.github.io/tws-api/order_submission.html#order_status
+    """
+    API_PENDING = "ApiPending"
+    PENDING_SUBMIT = "PendingSubmit"
+    PENDING_CANCEL = "PendingCancel"
+    PRE_SUBMITTED = "PreSubmitted"
+    SUBMITTED = "Submitted"
+    API_CANCELLED = "ApiCancelled"
+    CANCELLED = "Cancelled"
+    FILLED = "Filled"
+    INACTIVE = "Inactive"
+
+class OrderExecRec(NamedTuple):
+    """Named tuple for order information returned from IB on changes."""
+    filled: float
+    remaining: float
+    last_fill_price: float
+#endregion - Order related

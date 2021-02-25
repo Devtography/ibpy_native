@@ -10,6 +10,7 @@ from ibapi import wrapper
 
 from ibpy_native import error
 from ibpy_native import models
+from ibpy_native import order
 from ibpy_native._internal import _client
 from ibpy_native._internal import _global
 from ibpy_native._internal import _wrapper
@@ -17,6 +18,7 @@ from ibpy_native.utils import datatype
 from ibpy_native.utils import finishable_queue as fq
 
 from tests.toolkit import sample_contracts
+from tests.toolkit import sample_orders
 from tests.toolkit import utils
 
 class TestGeneral(unittest.TestCase):
@@ -25,7 +27,7 @@ class TestGeneral(unittest.TestCase):
     Connection with IB is NOT required.
     """
     def setUp(self):
-        self._wrapper = _wrapper.IBWrapper()
+        self._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
 
     def test_set_on_notify_listener(self):
         """Test setter `set_on_notify_listener` & overridden function `error`
@@ -69,7 +71,7 @@ class TestReqQueue(unittest.TestCase):
     Connection with IB is NOT required.
     """
     def setUp(self):
-        self._wrapper = _wrapper.IBWrapper()
+        self._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
 
     def test_next_req_id_0(self):
         """Test property `next_req_id` for retrieval of next usable
@@ -166,7 +168,7 @@ class TestAccountAndPortfolio(unittest.TestCase):
     Connection with IB is NOT required.
     """
     def setUp(self):
-        self._wrapper = _wrapper.IBWrapper()
+        self._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
 
         self._delegate = utils.MockAccountsManagementDelegate()
         self._wrapper.set_accounts_management_delegate(delegate=self._delegate)
@@ -222,6 +224,54 @@ class TestAccountAndPortfolio(unittest.TestCase):
         # Expect data stored as-is in `account_updates_queue`
         self.assertEqual(results[0], time)
 
+class TestOrder(unittest.TestCase):
+    """Unit tests for IB order related functions & properties in `IBWrapper`.
+
+    Connection with IB is REQUIRED.
+    """
+    @classmethod
+    def setUpClass(cls):
+        cls._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
+        cls._client = _client.IBClient(cls._wrapper)
+
+        cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)
+
+        thread = threading.Thread(target=cls._client.run)
+        thread.start()
+
+    def setUp(self):
+        self._orders_manager = self._wrapper.orders_manager
+
+    @utils.async_test
+    async def test_open_order(self):
+        """Test overridden function `openOrder`."""
+        order_id = await self._client.req_next_order_id()
+        self._client.placeOrder(
+            orderId=order_id, contract=sample_contracts.gbp_usd_fx(),
+            order=sample_orders.mkt(order_id=order_id,
+                                    action=datatype.OrderAction.BUY)
+        )
+        await asyncio.sleep(1)
+
+        self.assertTrue(order_id in self._orders_manager.open_orders)
+
+    @utils.async_test
+    async def test_order_status(self):
+        """Test overridden function `orderStatus`."""
+        order_id = await self._client.req_next_order_id()
+        self._client.placeOrder(
+            orderId=order_id, contract=sample_contracts.gbp_usd_fx(),
+            order=sample_orders.mkt(order_id=order_id,
+                                    action=datatype.OrderAction.SELL)
+        )
+        await asyncio.sleep(1)
+
+        self.assertTrue(self._orders_manager.open_orders[order_id].exec_rec)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._client.disconnect()
+
 class TestContract(unittest.TestCase):
     """Unit tests for IB contract related functions in `IBWrapper`.
 
@@ -229,7 +279,7 @@ class TestContract(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls._wrapper = _wrapper.IBWrapper()
+        cls._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
         cls._client = _client.IBClient(cls._wrapper)
 
         cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)
@@ -277,7 +327,7 @@ class TestHistoricalData(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls._wrapper = _wrapper.IBWrapper()
+        cls._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
         cls._client = _client.IBClient(cls._wrapper)
 
         cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)
@@ -376,7 +426,7 @@ class TestTickByTickData(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls._wrapper = _wrapper.IBWrapper()
+        cls._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
         cls._client = _client.IBClient(cls._wrapper)
 
         cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)

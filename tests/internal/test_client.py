@@ -10,6 +10,7 @@ from ibapi import contract
 from ibapi import wrapper
 
 from ibpy_native import error
+from ibpy_native import order
 from ibpy_native._internal import _client
 from ibpy_native._internal import _global
 from ibpy_native._internal import _wrapper
@@ -17,7 +18,76 @@ from ibpy_native.utils import datatype
 from ibpy_native.utils import finishable_queue as fq
 
 from tests.toolkit import sample_contracts
+from tests.toolkit import sample_orders
 from tests.toolkit import utils
+
+class TestOrder(unittest.TestCase):
+    """Unit tests for IB order related functions & properties in `IBWrapper`.
+
+    Connection with IB is REQUIRED.
+    """
+    @classmethod
+    def setUpClass(cls):
+        cls._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
+        cls._client = _client.IBClient(cls._wrapper)
+
+        cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)
+
+        thread = threading.Thread(target=cls._client.run)
+        thread.start()
+
+    def setUp(self):
+        self._orders_manager = self._wrapper.orders_manager
+
+    @utils.async_test
+    async def test_req_next_order_id(self):
+        """Test function `req_next_order_id`."""
+        next_order_id = await self._client.req_next_order_id()
+        self.assertGreater(next_order_id, 0)
+
+    @utils.async_test
+    async def test_submit_order(self):
+        """Test function `submit_order`."""
+        order_id = await self._client.req_next_order_id()
+
+        await self._client.submit_order(
+            contract=sample_contracts.gbp_usd_fx(),
+            order=sample_orders.mkt(order_id=order_id,
+                                    action=datatype.OrderAction.BUY)
+        )
+        self.assertTrue(order_id in self._orders_manager.open_orders)
+
+    @utils.async_test
+    async def test_submit_order_err(self):
+        """Test function `submit_order`.
+
+        * Error returned from IB for duplicated order ID.
+        """
+        with self.assertRaises(error.IBError):
+            await self._client.submit_order(
+                contract=sample_contracts.gbp_usd_fx(),
+                order=sample_orders.mkt(order_id=1,
+                                        action=datatype.OrderAction.BUY)
+            )
+
+    @utils.async_test
+    async def test_cancel_order(self):
+        """Test function `cancel_order`."""
+        order_id = await self._client.req_next_order_id()
+
+        order_submit_task = asyncio.create_task(self._client.submit_order(
+            contract=sample_contracts.gbp_usd_fx(),
+            order=sample_orders.no_transmit(order_id)
+        ))
+        await asyncio.sleep(0.5) # Give the order time to arrive at TWS/Gateway
+        self._client.cancel_order(order_id)
+        await order_submit_task
+        # Nothing to assert in this test.
+        # The function is good as long as there's no error thrown.
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._client.disconnect()
 
 class TestContract(unittest.TestCase):
     """Unit tests for IB contract related functions in `IBClient`.
@@ -26,7 +96,7 @@ class TestContract(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls._wrapper = _wrapper.IBWrapper()
+        cls._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
         cls._client = _client.IBClient(cls._wrapper)
 
         cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)
@@ -95,7 +165,7 @@ class TestHistoricalData(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls._wrapper = _wrapper.IBWrapper()
+        cls._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
         cls._client = _client.IBClient(cls._wrapper)
 
         cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)
@@ -251,7 +321,7 @@ class TestLiveData(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls._wrapper = _wrapper.IBWrapper()
+        cls._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
         cls._client = _client.IBClient(cls._wrapper)
 
         cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)

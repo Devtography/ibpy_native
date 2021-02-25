@@ -5,6 +5,7 @@ from typing import Any, List, Union
 
 from ibapi import client as ib_client
 from ibapi import contract as ib_contract
+from ibapi import order as ib_order
 from ibapi import wrapper as ib_wrapper
 
 from ibpy_native import error
@@ -120,6 +121,70 @@ class IBClient(ib_client.EClient):
             err_str="Failed to get additional contract details"
         )
     #endregion - Contract
+
+    #region - Orders
+    async def req_next_order_id(self) -> int:
+        """Request the next valid order ID from IB.
+
+        Returns:
+            int: The next valid order ID returned from IB.
+
+        Raises:
+            ibpy_native.error.IBError: If queue associated with `req_id` -1 is
+                being used by other task.
+        """
+        try:
+            f_queue = self._wrapper.get_request_queue(req_id=-1)
+        except error.IBError as err:
+            raise err
+        # Request next valid order ID
+        self.reqIds(numIds=-1) # `numIds` has deprecated
+        await f_queue.get()
+
+        return self._wrapper.orders_manager.next_order_id
+
+    async def submit_order(self, contract: ib_contract.Contract,
+                           order: ib_order.Order):
+        """Send the order to IB TWS/Gateway for submission.
+
+        Args:
+            contract (:obj:`ibapi.contract.Contract`): The order's contract.
+            order (:obj:`ibapi.order.Order`): Order to be submitted.
+
+        Raises:
+            ibpy_native.error.IBError: If
+                - pending order with order ID same as the order passed in;
+                - order error is returned from IB after the order is sent to
+                TWS/Gateway.
+        """
+        try:
+            self._wrapper.orders_manager.on_order_submission(
+                order_id=order.orderId)
+        except error.IBError as err:
+            raise err
+        self.placeOrder(orderId=order.orderId, contract=contract, order=order)
+
+        queue = self._wrapper.orders_manager.get_pending_queue(
+            order_id=order.orderId)
+        result = await queue.get() # Wait for completeion signal
+
+        if queue.status is fq.Status.ERROR:
+            if isinstance(result[-1], error.IBError):
+                raise result[-1]
+
+    def cancel_order(self, order_id: int):
+        """Cancel an order submitted.
+
+        Args:
+            order_id (int): The order's identifer.
+        """
+        self.cancelOrder(orderId=order_id)
+        if self._wrapper.orders_manager.is_pending_order(order_id):
+            # Send finish signal to the pending order
+            queue = self._wrapper.orders_manager.get_pending_queue(order_id)
+            if queue.status is not (fq.Status.FINISHED or fq.Status.ERROR):
+                queue.put(element=fq.Status.FINISHED)
+    #endregion - Orders
 
     #region - Historical data
     async def resolve_head_timestamp(

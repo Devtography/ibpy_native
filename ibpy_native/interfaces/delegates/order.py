@@ -124,5 +124,16 @@ class OrdersManagementDelegate(metaclass=abc.ABCMeta):
                 the current capped price.
         """
         return NotImplemented
+
+    @abc.abstractmethod
+    def on_order_rejected(self, order_id: int, reason: str):
+        """INTERNAL FUNCTION! Handles the order rejection error and message
+        received in `error` callback from IB.
+
+        Args:
+            order_id (int): The order's client identifier.
+            reason (str): Reason of order rejection.
+        """
+        return NotImplemented
     #endregion - Order events
     #endregion - Internal functions

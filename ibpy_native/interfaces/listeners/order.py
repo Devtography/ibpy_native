@@ -26,6 +26,16 @@ class OrderEventsListener(base.BaseListener):
         return NotImplemented
 
     @abc.abstractmethod
+    def on_rejected(self, order: models.OpenOrder, reason: str):
+        """Callback on event of order rejected by IB.
+
+        Args:
+            order (:obj:`ibpy_native.models.OpenOrder`): The rejected order.
+            reason (str): Reason of order rejection.
+        """
+        return NotImplemented
+
+    @abc.abstractmethod
     def on_filled(self, order: models.OpenOrder):
         """Callback on event of order has been completely filled.
 

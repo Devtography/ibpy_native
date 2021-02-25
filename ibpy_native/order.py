@@ -123,5 +123,10 @@ class OrdersManager(delegates.OrdersManagementDelegate):
 
             if self._listener and status == "Cancelled":
                 self._listener.on_cancelled(order=self._open_orders[order_id])
+
+    def on_order_rejected(self, order_id: int, reason: str):
+        if self._listener and order_id in self._open_orders:
+            self._listener.on_rejected(order=self._open_orders[order_id],
+                                       reason=reason)
     #endregion - Order events
     #endregion - Internal functions

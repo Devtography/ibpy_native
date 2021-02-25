@@ -4,6 +4,7 @@ IB API.
 # pylint: disable=protected-access
 import asyncio
 import datetime
+import time
 import threading
 from typing import Awaitable, Iterator, List, Optional
 
@@ -128,8 +129,8 @@ class IBBridge:
             self._client.connect(host=self._host, port=self._port,
                                  clientId=self._client_id)
 
-            thread = threading.Thread(target=self._client.run)
-            thread.start()
+            threading.Thread(name="ib_loop", target=self._client.run).start()
+            threading.Thread(name="heart_beat", target=self._heart_beat).start()
 
     def disconnect(self):
         """Disconnect the bridge from the connected TWS/IB Gateway instance.
@@ -444,3 +445,13 @@ class IBBridge:
         except error.IBError as err:
             raise err
     #endregion - Live data
+
+    #region - Private functions
+    def _heart_beat(self):
+        """Infinity loop to monitor connection with TWS/Gateway."""
+        while True:
+            time.sleep(2)
+            self._client.reqCurrentTime()
+            if not self._client.isConnected():
+                break
+    #endregion - Private functions

@@ -136,4 +136,10 @@ class OrdersManagementDelegate(metaclass=abc.ABCMeta):
         """
         return NotImplemented
     #endregion - Order events
+
+    @abc.abstractmethod
+    def on_disconnected(self):
+        """INTERNAL FUNCTION! Handles the event of API connection dropped.
+        """
+        return NotImplemented
     #endregion - Internal functions

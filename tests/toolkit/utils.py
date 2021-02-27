@@ -69,6 +69,9 @@ class MockAccountsManagementDelegate(delegates.AccountsManagementDelegate):
     async def unsub_account_updates(self):
         pass
 
+    def on_disconnected(self):
+        pass
+
 class MockLiveTicksListener(listeners.LiveTicksListener):
     """Mock notification listener"""
     def __init__(self):

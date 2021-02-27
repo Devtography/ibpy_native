@@ -54,3 +54,9 @@ class AccountsManagementDelegate(metaclass=abc.ABCMeta):
         from an on-going account updates subscription.
         """
         return NotImplemented
+
+    @abc.abstractmethod
+    def on_disconnected(self):
+        """INTERNAL FUNCTION! Callback for the event of API connection dropped.
+        """
+        return NotImplemented

@@ -8,3 +8,6 @@ from typing_extensions import Final
 TIME_FMT: Final[str] = "%Y%m%d %H:%M:%S"
 # Timezone to match the one set in IB Gateway/TWS at login
 TZ: datetime.tzinfo = pytz.timezone("America/New_York")
+
+# Mesages
+MSG_NOT_CONNECTED: Final[str] = "Not connected."

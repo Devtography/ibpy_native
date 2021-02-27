@@ -11,6 +11,7 @@ from ibapi import wrapper
 
 from ibpy_native import error
 from ibpy_native import models
+from ibpy_native._internal import _global
 from ibpy_native._internal import _typing
 from ibpy_native.interfaces import delegates
 from ibpy_native.interfaces import listeners
@@ -158,6 +159,9 @@ class IBWrapper(wrapper.EWrapper):
                                                    reason=errorString)
         elif reqId is not -1 and reqId in self._req_queue:
             self._req_queue[reqId].put(element=err)
+        elif reqId == -1 and errorCode == error.IBErrorCode.NOT_CONNECTED:
+            # Connection dropped
+            self._on_disconnected()
         else:
             if self._notification_listener is not None:
                 self._notification_listener.on_notify(
@@ -324,6 +328,33 @@ class IBWrapper(wrapper.EWrapper):
         else:
             self._req_queue[req_id] = fq.FinishableQueue(queue.Queue())
 
+    def _on_disconnected(self):
+        """Stop all active requests."""
+        if self._req_queue[-1].status is not (
+            fq.Status.INIT or fq.Status.FINISHED):
+            # Send finish signal to the active next order ID request
+            self._req_queue[-1].put(element=fq.Status.FINISHED)
+
+        for key, f_queue in self._req_queue.items():
+            if key == -1:
+                continue
+            if f_queue.status is not fq.Status.FINISHED or fq.Status.ERROR:
+                err = error.IBError(
+                    rid=key, err_code=error.IBErrorCode.NOT_CONNECTED,
+                    err_str=_global.MSG_NOT_CONNECTED
+                )
+                f_queue.put(element=err)
+
+        self._reset()
+        self._orders_manager.on_disconnected()
+        if self._ac_man_delegate:
+            self._ac_man_delegate.on_disconnected()
+
+    def _reset(self):
+        self._req_queue.clear()
+        self._req_queue[-1] = fq.FinishableQueue(queue_to_finish=queue.Queue())
+
+    #region - Ticks handling
     def _handle_historical_ticks_results(
         self, req_id: int, ticks: _typing.WrapperResHistoricalTicks, done: bool
     ):
@@ -342,4 +373,5 @@ class IBWrapper(wrapper.EWrapper):
         received into corresponding queue.
         """
         self._req_queue[req_id].put(element=tick)
+    #endregion - Ticks handling
     #endregion - Private functions

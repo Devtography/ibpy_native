@@ -97,6 +97,17 @@ class TestAccountsManager(unittest.TestCase):
                          (self._manager.accounts[_MOCK_AC_140]
                           .positions[412888950].last_update_time))
 
+    @utils.async_test
+    async def test_on_disconnected(self):
+        """Test the implementation of `on_disconnected`."""
+        queue = self._manager.account_updates_queue
+        # Mock the connection dropped event triggers the `on_disconnected`
+        # callback.
+        self._manager.on_disconnected()
+
+        await queue.get()
+        self.assertEqual(queue.status, fq.Status.ERROR)
+
     #region - Private functions
     async def _simulate_account_updates(self, account_id: str):
         self._manager.account_updates_queue.put(

@@ -6,6 +6,7 @@ import re
 import queue
 from typing import Dict, List, Optional, Union
 
+from ibpy_native import error
 from ibpy_native import models
 from ibpy_native._internal import _global
 from ibpy_native.interfaces import delegates
@@ -138,6 +139,15 @@ class AccountsManager(delegates.AccountsManagementDelegate):
     async def unsub_account_updates(self):
         """Unsubscribes to account updates."""
         self._account_updates_queue.put(fq.Status.FINISHED)
+
+    def on_disconnected(self):
+        if self._account_updates_queue.status is not (
+            fq.Status.ERROR or fq.Status.FINISHED):
+            err = error.IBError(
+                rid=-1, err_code=error.IBErrorCode.NOT_CONNECTED,
+                err_str=_global.MSG_NOT_CONNECTED
+            )
+            self._account_updates_queue.put(element=err)
 
     #region - Private functions
     async def _prevent_multi_account_updates(self):

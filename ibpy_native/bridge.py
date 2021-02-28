@@ -380,7 +380,8 @@ class IBBridge(interfaces.IBridge):
         except error.IBError as err:
             raise err
 
-        start_date_time = head_time if head_time > start else start
+        start_date_time = (head_time if start is None or head_time > start
+                           else start)
         end_date_time = datetime.datetime.now() if end is None else end
 
         # Request tick data
@@ -407,7 +408,8 @@ class IBBridge(interfaces.IBridge):
             if ticks:
                 # Drop the 1st tick as tick time of it is `start_date_time`
                 # - 1 second
-                del ticks[0]
+                if len(ticks) > 1:
+                    del ticks[0]
                 # Determine if it should fetch next batch of data
                 last_tick_time = datetime.datetime.fromtimestamp(
                     timestamp=ticks[-1].time, tz=_global.TZ
@@ -428,6 +430,18 @@ class IBBridge(interfaces.IBridge):
                     # Ready for next request
                     start_date_time = (last_tick_time +
                                        datetime.timedelta(seconds=1))
+            else: # If no tick is returned
+                delta = datetime.timedelta(minutes=start_date_time.minute % 30,
+                                           seconds=start_date_time.second)
+                if delta.total_seconds() == 0: # Plus 30 minutes
+                    start_date_time = (start_date_time +
+                                       datetime.timedelta(minutes=30))
+                else: # Round up to next 30 minutes point
+                    start_date_time = (
+                        start_date_time + (datetime.datetime.min -
+                        start_date_time) % datetime.timedelta(minutes=30)
+                    )
+
             # Yield the result
             yield datatype.ResHistoricalTicks(ticks=ticks, completed=finished)
     #endregion - Historical data

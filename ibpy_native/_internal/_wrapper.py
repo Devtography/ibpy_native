@@ -229,7 +229,7 @@ class IBWrapper(wrapper.EWrapper):
 
     #region - Orders
     def nextValidId(self, orderId: int):
-        if (self._connection_listener
+        if (self._connection_listener is not None
             and self._orders_manager.next_order_id == 0):
             # Next order ID is 0 before any next order ID update.
             # Hence can determine this is the initial callback from IB after
@@ -380,7 +380,7 @@ class IBWrapper(wrapper.EWrapper):
         self._orders_manager.on_disconnected()
         self._accounts_manager.on_disconnected()
 
-        if self._connection_listener:
+        if self._connection_listener is not None:
             self._connection_listener.on_disconnected()
 
     def _reset(self):

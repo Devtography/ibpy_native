@@ -5,7 +5,7 @@ import os
 import queue
 from typing import Dict, List, Optional, Union
 
-from ibapi import wrapper as ib_wrapper
+from ibapi import wrapper
 
 from ibpy_native import error
 from ibpy_native import models
@@ -17,12 +17,12 @@ from ibpy_native.utils import finishable_queue as fq
 def async_test(fn):
     # pylint: disable=invalid-name
     """Decorator for testing the async functions."""
-    def wrapper(*args, **kwargs):
+    def fn_wrapper(*args, **kwargs):
         loop = asyncio.new_event_loop()
 
         return loop.run_until_complete(fn(*args, **kwargs))
 
-    return wrapper
+    return fn_wrapper
 #endregion - General utils
 
 #region - ibpy_native specific
@@ -86,15 +86,15 @@ class MockAccountsManagementDelegate(delegates.AccountsManagementDelegate):
 class MockLiveTicksListener(listeners.LiveTicksListener):
     """Mock notification listener"""
     def __init__(self):
-        self.ticks: List[Union[ib_wrapper.HistoricalTick,
-                               ib_wrapper.HistoricalTickBidAsk,
-                               ib_wrapper.HistoricalTickLast]] = []
+        self.ticks: List[Union[wrapper.HistoricalTick,
+                               wrapper.HistoricalTickBidAsk,
+                               wrapper.HistoricalTickLast]] = []
         self.finished = False
 
     def on_tick_receive(self, req_id: int,
-                        tick: Union[ib_wrapper.HistoricalTick,
-                                    ib_wrapper.HistoricalTickBidAsk,
-                                    ib_wrapper.HistoricalTickLast,]):
+                        tick: Union[wrapper.HistoricalTick,
+                                    wrapper.HistoricalTickBidAsk,
+                                    wrapper.HistoricalTickLast,]):
         self.ticks.append(tick)
 
     def on_finish(self, req_id: int):

@@ -23,7 +23,10 @@ class IBWrapper(wrapper.EWrapper):
     TWS instance.
 
     Args:
-        orders_manager (:obj:`ibpy_native.interfaces.delgates.order
+        accounts_manager (:obj:`ibpy_native.interfaces.delegates
+            .AccountsManagementDelegate`): Manager to handler accounts related
+            data.
+        orders_manager (:obj:`ibpy_native.interfaces.delgates
             .OrdersManagementDelegate`): Manager to handler orders related
             events.
         connection_listener (:obj:`ibpy_native.interfaces.listeners
@@ -36,16 +39,15 @@ class IBWrapper(wrapper.EWrapper):
     """
     def __init__(
         self,
+        accounts_manager: delegates.AccountsManagementDelegate,
         orders_manager: delegates.OrdersManagementDelegate,
         connection_listener: Optional[listeners.ConnectionListener]=None,
         notification_listener: Optional[listeners.NotificationListener]=None
     ):
         self._lock = threading.Lock()
-
         self._req_queue: Dict[int, fq.FinishableQueue] = {}
-        self._ac_man_delegate: Optional[
-            delegates.AccountsManagementDelegate] = None
 
+        self._accounts_manager = accounts_manager
         self._orders_manager = orders_manager
         self._connection_listener = connection_listener
         self._notification_listener = notification_listener
@@ -139,7 +141,7 @@ class IBWrapper(wrapper.EWrapper):
                 ._AccountsManagementDelegate): Delegate for managing IB
                 account list.
         """
-        self._ac_man_delegate = delegate
+        self._accounts_manager = delegate
 
     def set_on_notify_listener(self, listener: listeners.NotificationListener):
         """Setter for optional `NotificationListener`.
@@ -157,13 +159,13 @@ class IBWrapper(wrapper.EWrapper):
         err = error.IBError(rid=reqId, err_code=errorCode, err_str=errorString)
 
         # -1 indicates a notification and not true error condition
-        if reqId is not -1 and self._orders_manager.is_pending_order(
+        if reqId != -1 and self._orders_manager.is_pending_order(
             order_id=reqId): # Is an order error
             self._orders_manager.order_error(err)
-        elif reqId is not -1 and errorCode == 201: # 201 == order rejected
+        elif reqId != -1 and errorCode == error.IBErrorCode.ORDER_REJECTED:
             self._orders_manager.on_order_rejected(order_id=reqId,
                                                    reason=errorString)
-        elif reqId is not -1 and reqId in self._req_queue:
+        elif reqId != -1 and reqId in self._req_queue:
             self._req_queue[reqId].put(element=err)
         elif reqId == -1 and errorCode == error.IBErrorCode.NOT_CONNECTED:
             # Connection dropped
@@ -187,36 +189,29 @@ class IBWrapper(wrapper.EWrapper):
         # Separate different account IDs into a list
         account_list = trimmed.split(",")
 
-        if self._ac_man_delegate is not None:
-            self._ac_man_delegate.on_account_list_update(
-                account_list=account_list
-            )
+        self._accounts_manager.on_account_list_update(account_list=account_list)
 
     #region - account updates
     def updateAccountValue(self, key: str, val: str, currency: str,
                            accountName: str):
-        if self._ac_man_delegate:
-            data = models.RawAccountValueData(
-                account=accountName, currency=currency, key=key, val=val
-            )
-            self._ac_man_delegate.account_updates_queue.put(data)
+        data = models.RawAccountValueData(
+            account=accountName, currency=currency, key=key, val=val)
+        self._accounts_manager.account_updates_queue.put(data)
 
     def updatePortfolio(self, contract: ib_contract.Contract, position: float,
                         marketPrice: float, marketValue: float,
                         averageCost: float, unrealizedPNL: float,
                         realizedPNL: float, accountName: str):
-        if self._ac_man_delegate:
-            data = models.RawPortfolioData(
-                account=accountName, contract=contract,
-                position=position, market_price=marketPrice,
-                market_val=marketValue, avg_cost=averageCost,
-                unrealised_pnl=unrealizedPNL, realised_pnl=realizedPNL
-            )
-            self._ac_man_delegate.account_updates_queue.put(data)
+        data = models.RawPortfolioData(
+            account=accountName, contract=contract, position=position,
+            market_price=marketPrice, market_val=marketValue,
+            avg_cost=averageCost, unrealised_pnl=unrealizedPNL,
+            realised_pnl=realizedPNL
+        )
+        self._accounts_manager.account_updates_queue.put(data)
 
     def updateAccountTime(self, timeStamp: str):
-        if self._ac_man_delegate:
-            self._ac_man_delegate.account_updates_queue.put(timeStamp)
+        self._accounts_manager.account_updates_queue.put(timeStamp)
     #endregion - account updates
     #endregion - Accounts & portfolio
 
@@ -261,6 +256,7 @@ class IBWrapper(wrapper.EWrapper):
         )
     #endregion - Orders
 
+    #region - Historical data
     # Get earliest data point for a given instrument and data
     def headTimestamp(self, reqId: int, headTimestamp: str):
         # override method
@@ -284,6 +280,7 @@ class IBWrapper(wrapper.EWrapper):
         self._handle_historical_ticks_results(req_id=reqId, ticks=ticks,
                                               done=done)
     #endregion - Fetch historical tick data
+    #endregion - Historical data
 
     #region - Stream live tick data
     def tickByTickAllLast(self, reqId: int, tickType: int, time: int,
@@ -365,8 +362,7 @@ class IBWrapper(wrapper.EWrapper):
 
         self._reset()
         self._orders_manager.on_disconnected()
-        if self._ac_man_delegate:
-            self._ac_man_delegate.on_disconnected()
+        self._accounts_manager.on_disconnected()
 
         if self._connection_listener:
             self._connection_listener.on_disconnected()

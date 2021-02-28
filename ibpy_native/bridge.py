@@ -11,9 +11,8 @@ from typing import Awaitable, Iterator, List, Optional
 from ibapi import contract as ib_contract
 from ibapi import order as ib_order
 
-import ibpy_native
-from ibpy_native import account as ib_account
 from ibpy_native import error
+from ibpy_native import manager
 from ibpy_native import models
 from ibpy_native._internal import _client
 from ibpy_native._internal import _global
@@ -33,44 +32,45 @@ class IBBridge:
             interface as `Client {client_id}`. Defaults to `1`.
         auto_conn (bool, optional): `IBBridge` auto connects to IB Gateway on
             initial. Defaults to `True`.
+        accounts_manager (:obj:`ibpy_native.interfaces.delegates
+            .AccountsManagementDelegate`, optional): Manager to handle accounts
+            related data. If omitted, an default `AccountManager` will be
+            created on initial of `IBBridge` (which should be enough for most
+            cases unless you have a customised one). Defaults to `None`.
         connection_listener (:obj:`ibpy_native.interfaces.listeners
             .ConnectionListener`, optional): Listener to receive connection
             status callback on connection with IB TWS/Gateway is established or
             dropped. Defaults to `None`.
         notification_listener (:obj:`ibpy_native.internfaces.listeners
-            .NotificationListener`, optional): Handler to receive system
+            .NotificationListener`, optional): Listener to receive system
             notifications from IB Gateway. Defaults to `None`.
-        accounts_manager (:obj:`ibpy_native.account.AccountsManager`, optional):
-            Object to handle accounts related data. If omitted, an default
-            one will be created on initial of `IBBridge` (which should be
-            enough for most cases unless you have a customised one). Defaults
-            to `None`.
+        order_events_listener (:obj:`ibpy_native.interfaces.listeners
+            .OrderEventsListener`, optional): Listener for order events.
+            Defaults to `None`.
     """
     def __init__(
         self, host: str="127.0.0.1", port: int=4001,
         client_id: int=1, auto_conn: bool=True,
+        accounts_manager: Optional[delegates.AccountsManagementDelegate]=None,
         connection_listener: Optional[listeners.ConnectionListener]=None,
         notification_listener: Optional[listeners.NotificationListener]=None,
-        order_events_listener: Optional[listeners.OrderEventsListener]=None,
-        accounts_manager: Optional[ib_account.AccountsManager]=None
+        order_events_listener: Optional[listeners.OrderEventsListener]=None
     ):
         self._host = host
         self._port = port
         self._client_id = client_id
         self._accounts_manager = (
-            ib_account.AccountsManager() if accounts_manager is None
+            manager.AccountsManager() if accounts_manager is None
             else accounts_manager
         )
-        self._orders_manager = ibpy_native.OrdersManager(
+        self._orders_manager = manager.OrdersManager(
             event_listener=order_events_listener)
 
         self._wrapper = _wrapper.IBWrapper(
+            accounts_manager=self._accounts_manager,
             orders_manager=self._orders_manager,
             connection_listener=connection_listener,
             notification_listener=notification_listener
-        )
-        self._wrapper.set_accounts_management_delegate(
-            delegate=self._accounts_manager
         )
 
         self._client = _client.IBClient(wrapper=self._wrapper)
@@ -87,16 +87,18 @@ class IBBridge:
         return self._client.isConnected()
 
     @property
-    def accounts_manager(self) -> ib_account.AccountsManager:
-        """:obj:`ibpy_native.account.AccountsManager`: Instance that stores &
-            manages all IB account(s) related data.
+    def accounts_manager(self) -> delegates.AccountsManagementDelegate:
+        """:obj:`ibpy_native.interfaces.delegates.AccountsManagementDelegate`:
+        `ibpy_native.manager.AccountsManager` instance that stores & manages
+        all IB account(s) related data.
         """
         return self._accounts_manager
 
     @property
     def orders_manager(self) -> delegates.OrdersManagementDelegate:
-        """:obj:`ibpy_native.order.OrdersManager`: Instance that handles order
-        related events.
+        """:obj:`ibpy_native.interfaces.delegates.OrdersManagementDelegate`:
+        `ibpy_native.manager.OrdersManager` instance that handles order related
+        events.
         """
         return self._orders_manager
 

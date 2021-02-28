@@ -1,11 +1,11 @@
-"""Unit tests for module `ibpy_native.account`."""
+"""Unit tests for module `ibpy_native.manager`."""
 # pylint: disable=protected-access
 import asyncio
 import datetime
 import unittest
 
 from ibapi import contract as ib_contract
-from ibpy_native import account
+from ibpy_native import manager
 from ibpy_native import models
 from ibpy_native._internal import _global
 from ibpy_native.utils import finishable_queue as fq
@@ -20,10 +20,13 @@ _MOCK_AC_143: str = "DU0000143"
 #endregion - Constants
 
 class TestAccountsManager(unittest.TestCase):
-    """Unit tests for class `AccountsManager`."""
+    """Unit tests for class `AccountsManager`.
+
+    * Connection with IB is NOT REQUIRED.
+    """
 
     def setUp(self):
-        self._manager = account.AccountsManager()
+        self._manager = manager.AccountsManager()
 
     def test_on_account_list_update(self):
         """Test the implementation of function `on_account_list_update`."""
@@ -42,7 +45,7 @@ class TestAccountsManager(unittest.TestCase):
         non empty account list in the `AccountsManager` instance.
         """
         # Prepends data into account list for test.
-        self._manager = account.AccountsManager(
+        self._manager = manager.AccountsManager(
             accounts={_MOCK_AC_140: models.Account(account_id=_MOCK_AC_140),
                       _MOCK_AC_142: models.Account(account_id=_MOCK_AC_142),
                       _MOCK_AC_143: models.Account(account_id=_MOCK_AC_143),}

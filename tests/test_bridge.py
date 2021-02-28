@@ -222,6 +222,10 @@ class TestOrder(unittest.TestCase):
     @utils.async_test
     async def test_next_order_id(self):
         """Test function `next_order_id`."""
+        self._bridge.disconnect() # To reset the orders manager
+        await asyncio.sleep(0.5)
+        self._bridge.connect()
+
         old_order_id = self._orders_manager.next_order_id
         next_order_id = await self._bridge.next_order_id()
 
@@ -267,7 +271,10 @@ class TestOrder(unittest.TestCase):
 
     @utils.async_test
     async def test_cancel_order(self):
-        """Test function `cancel_order`."""
+        """Test function `cancel_order`.
+
+        * This test will fail when the market is closed.
+        """
         order = sample_orders.lmt(order_id=await self._bridge.next_order_id(),
                                   action=datatype.OrderAction.SELL,
                                   price=3)

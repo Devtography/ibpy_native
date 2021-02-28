@@ -10,7 +10,7 @@ from ibapi import wrapper
 
 from ibpy_native import error
 from ibpy_native import models
-from ibpy_native import order
+from ibpy_native import manager
 from ibpy_native._internal import _client
 from ibpy_native._internal import _global
 from ibpy_native._internal import _wrapper
@@ -24,10 +24,13 @@ from tests.toolkit import utils
 class TestGeneral(unittest.TestCase):
     """Unit tests for general/uncategorised things in `IBWrapper`.
 
-    Connection with IB is NOT required.
+    * Connection with IB is NOT required.
     """
     def setUp(self):
-        self._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
+        self._wrapper = _wrapper.IBWrapper(
+            accounts_manager=utils.MockAccountsManagementDelegate(),
+            orders_manager=manager.OrdersManager()
+        )
 
     def test_set_on_notify_listener(self):
         """Test setter `set_on_notify_listener` & overridden function `error`
@@ -74,7 +77,8 @@ class TestConnectionEvents(unittest.TestCase):
     def setUp(self):
         self._listener = utils.MockConnectionListener()
         self._wrapper = _wrapper.IBWrapper(
-            orders_manager=order.OrdersManager(),
+            accounts_manager=utils.MockAccountsManagementDelegate(),
+            orders_manager=manager.OrdersManager(),
             connection_listener=self._listener
         )
 
@@ -100,7 +104,10 @@ class TestReqQueue(unittest.TestCase):
     Connection with IB is NOT required.
     """
     def setUp(self):
-        self._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
+        self._wrapper = _wrapper.IBWrapper(
+            accounts_manager=utils.MockAccountsManagementDelegate(),
+            orders_manager=manager.OrdersManager()
+        )
 
     def test_next_req_id_0(self):
         """Test property `next_req_id` for retrieval of next usable
@@ -197,10 +204,12 @@ class TestAccountAndPortfolio(unittest.TestCase):
     Connection with IB is NOT required.
     """
     def setUp(self):
-        self._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
-
         self._delegate = utils.MockAccountsManagementDelegate()
-        self._wrapper.set_accounts_management_delegate(delegate=self._delegate)
+        self._wrapper = _wrapper.IBWrapper(
+            accounts_manager=self._delegate,
+            orders_manager=manager.OrdersManager()
+        )
+
 
     def test_managed_accounts(self):
         """Test overridden function `managedAccounts`."""
@@ -260,7 +269,10 @@ class TestOrder(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
+        cls._wrapper = _wrapper.IBWrapper(
+            accounts_manager=utils.MockAccountsManagementDelegate(),
+            orders_manager=manager.OrdersManager()
+        )
         cls._client = _client.IBClient(cls._wrapper)
 
         cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)
@@ -308,7 +320,10 @@ class TestContract(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
+        cls._wrapper = _wrapper.IBWrapper(
+            accounts_manager=utils.MockAccountsManagementDelegate(),
+            orders_manager=manager.OrdersManager()
+        )
         cls._client = _client.IBClient(cls._wrapper)
 
         cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)
@@ -356,7 +371,10 @@ class TestHistoricalData(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
+        cls._wrapper = _wrapper.IBWrapper(
+            accounts_manager=utils.MockAccountsManagementDelegate(),
+            orders_manager=manager.OrdersManager()
+        )
         cls._client = _client.IBClient(cls._wrapper)
 
         cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)
@@ -455,7 +473,10 @@ class TestTickByTickData(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls._wrapper = _wrapper.IBWrapper(orders_manager=order.OrdersManager())
+        cls._wrapper = _wrapper.IBWrapper(
+            accounts_manager=utils.MockAccountsManagementDelegate(),
+            orders_manager=manager.OrdersManager()
+        )
         cls._client = _client.IBClient(cls._wrapper)
 
         cls._client.connect(utils.IB_HOST, utils.IB_PORT, utils.IB_CLIENT_ID)

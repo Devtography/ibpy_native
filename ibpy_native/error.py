@@ -8,6 +8,8 @@ class IBErrorCode(enum.IntEnum):
     DUPLICATE_TICKER_ID = 102
     DUPLICATE_ORDER_ID = 103
     INVALID_CONTRACT = 200
+    ORDER_REJECTED = 201
+    ORDER_MESSAGE = 399
     NOT_CONNECTED = 504
     # Self-defined error codes
     REQ_TIMEOUT = 50504

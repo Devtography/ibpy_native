@@ -103,8 +103,7 @@ class IBBridge:
         return self._orders_manager
 
     #region - Setters
-    @staticmethod
-    def set_timezone(tz: datetime.tzinfo):
+    def set_timezone(self, tz: datetime.tzinfo):
         # pylint: disable=invalid-name
         """Set the timezone for the bridge to match the IB Gateway/TWS timezone
         specified at login.

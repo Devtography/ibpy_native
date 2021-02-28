@@ -30,7 +30,7 @@ setup(
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version="0.2.0",  # Required
+    version="1.0.0",  # Required
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
@@ -74,7 +74,7 @@ setup(
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         # Indicate who your project is intended for
         "Intended Audience :: Developers",
         "Topic :: Software Development :: Libraries",
@@ -100,7 +100,9 @@ setup(
     #
     #   py_modules=["my_module"],
     #
-    packages=find_packages(exclude=["cmd", "contrib", "docs", "tests", "tests.*"]),  # Required
+    packages=find_packages(
+        exclude=["contrib", "docs", "samples", "tests", "tests.*"]
+    ),  # Required
     # Specify which Python versions you support. In contrast to the
     # 'Programming Language' classifiers above, 'pip install' will check this
     # and refuse to install the project if the version does not match. If you
@@ -114,9 +116,10 @@ setup(
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
-        "deprecated==1.2.10",
-        "pytz==2020.1",
+        "deprecated==1.2.11",
+        "pytz==2021.1",
         "typing-extensions==3.7.4.3",
+        "wrapt==1.12.1",
     ],  # Optional
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"

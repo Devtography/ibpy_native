@@ -230,7 +230,7 @@ class OrdersManager(delegates.OrdersManagementDelegate):
                 self._listener.on_warning(order_id=err.rid, msg=err.msg)
             return
         if err.rid in self._pending_queues:
-            if self._listener:
+            if self._listener is not None:
                 self._listener.on_err(err)
 
             # Signals the order submission error
@@ -296,7 +296,7 @@ class OrdersManager(delegates.OrdersManagementDelegate):
                 self._listener.on_cancelled(order=self._open_orders[order_id])
 
     def on_order_rejected(self, order_id: int, reason: str):
-        if self._listener and order_id in self._open_orders:
+        if self._listener is not None and order_id in self._open_orders:
             self._listener.on_rejected(order=self._open_orders[order_id],
                                        reason=reason)
     #endregion - Order events

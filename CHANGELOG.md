@@ -6,6 +6,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.0] - 2021-02-28
+`v1.0.0` is the first usable release of the framework. Accounts & orders
+management features are now implemented, so as placing orders. It's a usable
+framework for actual trading as of this release. However, it's NOT compatible
+with pervious versions as a lot of the functions got revamped, including the
+functions for fetching the historical data.
+
+### Added
+- Support of requesting and managing account & portfolio data.
+- Support of requesting active orders & orders management (including order
+  placing, cancellation, and order status updates, etc..).
+- Connection status event listener to notify the connection status between
+  the client program and IB TWS/Gateway.
+- Handling for unexpected connection drops.
+  - Resources will be released and on-going tasks will all be terminated on
+    disconnected.
+- Corresponding interfaces for most if not all public classes for easy mocking,
+  so it's gonna be easy to backtest the strategies and use the same set of
+  strategy code for both backtest and live trading.
+
+### Changed
+- Reordered the grouping of packages and modules (breaking change).
+- `IBBridge.req_historical_ticks` now works as an async iterator.
+
+### Removed
+- All deprecated functions.
+- Deprecated script `cmd/fetch_us_historical_ticks.py`.
+
 ## [v0.2.0] - 2020-09-02
 `v0.2.0` is a minor release refactored most of the project to adopt async/await
 syntax, added support of streaming live "tick-by-tick" data from IB, and
@@ -127,7 +155,8 @@ returns with `finished` mark as `True` unexpectedly while IB returns less than
 1000 records but there're more historical ticks those should be fetched 
 in next request.
 
-[Unreleased]: https://github.com/Devtography/ibpy_native/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Devtography/ibpy_native/compare/v1.0.0...HEAD
+[v1.0.0]: https://github.com/Devtography/ibpy_native/compare/v1.0.0...v0.2.0
 [v0.2.0]: https://github.com/Devtography/ibpy_native/compare/v0.2.0...v0.1.4
 [v0.1.4]: https://github.com/Devtography/ibpy_native/compare/v0.1.4...v0.1.3 
 [v0.1.3]: https://github.com/Devtography/ibpy_native/compare/v0.1.3...v0.1.2

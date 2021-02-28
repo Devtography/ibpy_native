@@ -134,7 +134,8 @@ class IBClient(ib_client.EClient):
                 being used by other task.
         """
         try:
-            f_queue = self._wrapper.get_request_queue(req_id=-1)
+            f_queue = self._wrapper.get_request_queue(
+                req_id=_global.IDX_NEXT_ORDER_ID)
         except error.IBError as err:
             raise err
         # Request next valid order ID

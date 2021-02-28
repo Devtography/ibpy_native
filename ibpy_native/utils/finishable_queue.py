@@ -4,7 +4,7 @@ import enum
 import queue
 import threading
 
-from typing import Iterator, Any
+from typing import AsyncIterator, Any
 
 # Queue status
 class Status(enum.Enum):
@@ -88,7 +88,7 @@ class FinishableQueue():
 
         return contents_of_queue
 
-    async def stream(self) -> Iterator[Any]:
+    async def stream(self) -> AsyncIterator[Any]:
         """Yields the elements in queue as soon as an element has been put into
         the queue.
         """

@@ -6,7 +6,7 @@ import asyncio
 import datetime
 import time
 import threading
-from typing import Awaitable, Iterator, List, Optional
+from typing import AsyncIterator, Awaitable, List, Optional
 
 from ibapi import contract as ib_contract
 from ibapi import order as ib_order
@@ -323,7 +323,7 @@ class IBBridge:
         end: Optional[datetime.datetime]=None,
         tick_type: datatype.HistoricalTicks=datatype.HistoricalTicks.TRADES,
         retry: int=0
-    ) -> Iterator[datatype.ResHistoricalTicks]:
+    ) -> AsyncIterator[datatype.ResHistoricalTicks]:
         """Retrieve historical tick data for specificed instrument/contract
         from IB.
 

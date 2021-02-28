@@ -297,6 +297,15 @@ class TestOrder(unittest.TestCase):
         self.assertTrue(order_id in self._orders_manager.open_orders)
 
     @utils.async_test
+    async def test_open_order_end(self):
+        """Test overridden function `openOrderEnd`."""
+        queue = self._wrapper.get_request_queue(req_id=_global.IDX_OPEN_ORDERS)
+        self._client.reqOpenOrders()
+        await queue.get()
+
+        self.assertTrue(queue.finished)
+
+    @utils.async_test
     async def test_order_status(self):
         """Test overridden function `orderStatus`."""
         order_id = await self._client.req_next_order_id()

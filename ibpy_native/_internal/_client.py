@@ -143,6 +143,30 @@ class IBClient(ib_client.EClient):
 
         return self._wrapper.orders_manager.next_order_id
 
+    async def req_open_orders(self):
+        """Request all active orders submitted by the client application
+        connected with the exact same client ID with which the orders were sent
+        to the TWS/Gateway.
+
+        Raises:
+            ibpy_native.error.IBError: If
+                - queue destinated for the open orders requests is being used
+                by other on-going task/request;
+                - connection with IB TWS/Gateway is dropped while waiting for
+                the task to finish.
+        """
+        try:
+            queue = self._wrapper.get_request_queue(
+                req_id=_global.IDX_OPEN_ORDERS)
+        except error.IBError as err:
+            raise err
+
+        self.reqOpenOrders()
+        result = await queue.get()
+        if queue.status is fq.Status.ERROR:
+            if isinstance(result[-1], error.IBError):
+                raise result[-1]
+
     async def submit_order(self, contract: ib_contract.Contract,
                            order: ib_order.Order):
         """Send the order to IB TWS/Gateway for submission.

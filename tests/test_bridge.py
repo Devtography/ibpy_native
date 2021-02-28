@@ -232,6 +232,13 @@ class TestOrder(unittest.TestCase):
         self.assertGreater(next_order_id, old_order_id)
 
     @utils.async_test
+    async def test_req_open_orders(self):
+        """Test function `req_open_orders`."""
+        await self._bridge.req_open_orders()
+        # Nothing to assert.
+        # The function is good if there's no error thrown.
+
+    @utils.async_test
     async def test_place_orders(self):
         """Test function `place_orders`."""
         # Prepare orders

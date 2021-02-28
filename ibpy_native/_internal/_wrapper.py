@@ -54,6 +54,9 @@ class IBWrapper(wrapper.EWrapper):
 
         # Queue with ID -1 is always reserved for next order ID
         self._req_queue[-1] = fq.FinishableQueue(queue.Queue())
+        # -2 is reserved for open orders requests
+        self._req_queue[_global.IDX_OPEN_ORDERS] = fq.FinishableQueue(
+            queue_to_finish=queue.Queue())
 
         super().__init__()
 
@@ -245,6 +248,12 @@ class IBWrapper(wrapper.EWrapper):
             contract=contract, order=order, order_state=orderState
         )
 
+    def openOrderEnd(self):
+        if self._req_queue[_global.IDX_OPEN_ORDERS].status is not (
+            fq.Status.INIT or fq.Status.FINISHED):
+            self._req_queue[_global.IDX_OPEN_ORDERS].put(
+                element=fq.Status.FINISHED)
+
     def orderStatus(self, orderId: int, status: str, filled: float,
                     remaining: float, avgFillPrice: float, permId: int,
                     parentId: int, lastFillPrice: float, clientId: int,
@@ -330,9 +339,12 @@ class IBWrapper(wrapper.EWrapper):
                 `self.__req_queue[req_id]` and it's not finished.
         """
         if req_id in self._req_queue:
-            if self._req_queue[req_id].finished or (
-                req_id == -1 and self._req_queue[-1].status is fq.Status.INIT
-            ):
+            if (self._req_queue[req_id].finished
+                or (req_id == -1
+                    and self._req_queue[-1].status is fq.Status.INIT)
+                or (req_id == _global.IDX_OPEN_ORDERS
+                    and (self._req_queue[_global.IDX_OPEN_ORDERS].status
+                         is fq.Status.INIT))):
                 self._req_queue[req_id].reset()
             else:
                 raise error.IBError(
@@ -370,6 +382,8 @@ class IBWrapper(wrapper.EWrapper):
     def _reset(self):
         self._req_queue.clear()
         self._req_queue[-1] = fq.FinishableQueue(queue_to_finish=queue.Queue())
+        self._req_queue[_global.IDX_OPEN_ORDERS] = fq.FinishableQueue(
+            queue_to_finish=queue.Queue())
 
     #region - Ticks handling
     def _handle_historical_ticks_results(

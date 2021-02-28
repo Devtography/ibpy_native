@@ -141,6 +141,7 @@ disable=print-statement,
         comprehension-escape,
         too-many-arguments,
         too-many-branches,
+        too-many-instance-attributes,
         too-many-locals,
         no-self-use
 

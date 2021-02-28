@@ -7,12 +7,12 @@ from ibapi import wrapper
 
 from ibpy_native.interfaces.listeners import base
 
-class LiveTicksListener(base._BaseListener):
+class LiveTicksListener(base.BaseListener):
     """Interface of listener for "Tick-by-Tick Data" related functions."""
     @abc.abstractmethod
     def on_tick_receive(self, req_id: int, tick: Union[
             wrapper.HistoricalTick, wrapper.HistoricalTickBidAsk,
-            wrapper.HistoricalTickLast
+            wrapper.HistoricalTickLast,
         ]):
         """Callback on receives new live tick records.
 

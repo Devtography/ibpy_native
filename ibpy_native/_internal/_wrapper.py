@@ -175,6 +175,11 @@ class IBWrapper(wrapper.EWrapper):
                     msg=errorString
                 )
 
+    # Connection related
+    def connectionClosed(self):
+        # Notifies the connection is dropped successfully.
+        self._on_disconnected()
+
     #region - Accounts & portfolio
     def managedAccounts(self, accountsList: str):
         # Trim the spaces in `accountsList` received

@@ -33,6 +33,10 @@ class IBBridge:
             interface as `Client {client_id}`. Defaults to `1`.
         auto_conn (bool, optional): `IBBridge` auto connects to IB Gateway on
             initial. Defaults to `True`.
+        connection_listener (:obj:`ibpy_native.interfaces.listeners
+            .ConnectionListener`, optional): Listener to receive connection
+            status callback on connection with IB TWS/Gateway is established or
+            dropped. Defaults to `None`.
         notification_listener (:obj:`ibpy_native.internfaces.listeners
             .NotificationListener`, optional): Handler to receive system
             notifications from IB Gateway. Defaults to `None`.
@@ -45,6 +49,7 @@ class IBBridge:
     def __init__(
         self, host: str="127.0.0.1", port: int=4001,
         client_id: int=1, auto_conn: bool=True,
+        connection_listener: Optional[listeners.ConnectionListener]=None,
         notification_listener: Optional[listeners.NotificationListener]=None,
         order_events_listener: Optional[listeners.OrderEventsListener]=None,
         accounts_manager: Optional[ib_account.AccountsManager]=None
@@ -61,6 +66,7 @@ class IBBridge:
 
         self._wrapper = _wrapper.IBWrapper(
             orders_manager=self._orders_manager,
+            connection_listener=connection_listener,
             notification_listener=notification_listener
         )
         self._wrapper.set_accounts_management_delegate(

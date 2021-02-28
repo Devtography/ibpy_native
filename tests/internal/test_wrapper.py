@@ -65,6 +65,35 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(result[0].err_code, code)
         self.assertEqual(result[0].err_str, msg)
 
+class TestConnectionEvents(unittest.TestCase):
+    """Unit tests for connection events related mechanism implemented in
+    `IBWrapper`.
+
+    * Connection with IB is NOT REQUIRED.
+    """
+    def setUp(self):
+        self._listener = utils.MockConnectionListener()
+        self._wrapper = _wrapper.IBWrapper(
+            orders_manager=order.OrdersManager(),
+            connection_listener=self._listener
+        )
+
+    def test_on_connected(self):
+        """Test the event of connection established."""
+        # Mock the behaviour of initial handshake callback once the connection
+        # is made.
+        self._wrapper.nextValidId(orderId=1)
+
+        self.assertTrue(self._listener.connected)
+
+    def test_on_disconnected(self):
+        """Test the event of connection dropped."""
+        # Mock the `NOT_CONNECTED` error is returned to `error` callback
+        self._wrapper.error(reqId=-1, errorCode=error.IBErrorCode.NOT_CONNECTED,
+                            errorString=_global.MSG_NOT_CONNECTED)
+
+        self.assertFalse(self._listener.connected)
+
 class TestReqQueue(unittest.TestCase):
     """Unit tests for `_req_queue` related mechanicisms in `IBWrapper`.
 

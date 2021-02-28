@@ -3,7 +3,7 @@
 import asyncio
 import os
 import queue
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 from ibapi import wrapper as ib_wrapper
 
@@ -31,6 +31,17 @@ IB_HOST: str = os.getenv("IB_HOST", "127.0.0.1")
 IB_PORT: int = int(os.getenv("IB_PORT", "4002"))
 IB_CLIENT_ID: int = int(os.getenv("IB_CLIENT_ID", "1001"))
 IB_ACC_ID: str = os.getenv("IB_ACC_ID", "")
+
+class MockConnectionListener(listeners.ConnectionListener):
+    """Mock connection listener."""
+    def __init__(self):
+        self.connected: Optional[bool] = None
+
+    def on_connected(self):
+        self.connected = True
+
+    def on_disconnected(self):
+        self.connected = False
 
 class MockNotificationListener(listeners.NotificationListener):
     """Mock notification listener."""

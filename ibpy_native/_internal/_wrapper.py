@@ -26,6 +26,10 @@ class IBWrapper(wrapper.EWrapper):
         orders_manager (:obj:`ibpy_native.interfaces.delgates.order
             .OrdersManagementDelegate`): Manager to handler orders related
             events.
+        connection_listener (:obj:`ibpy_native.interfaces.listeners
+            .ConnectionListener`, optional): Listener to receive connection
+            status callback on connection with IB TWS/Gateway is established or
+            dropped. Defaults to `None`.
         notification_listener (:obj:`ibpy_native.interfaces.listeners
             .NotificationListener`, optional): Handler to receive system
             notifications from IB Gateway. Defaults to `None`.
@@ -33,6 +37,7 @@ class IBWrapper(wrapper.EWrapper):
     def __init__(
         self,
         orders_manager: delegates.OrdersManagementDelegate,
+        connection_listener: Optional[listeners.ConnectionListener]=None,
         notification_listener: Optional[listeners.NotificationListener]=None
     ):
         self._lock = threading.Lock()
@@ -42,6 +47,7 @@ class IBWrapper(wrapper.EWrapper):
             delegates.AccountsManagementDelegate] = None
 
         self._orders_manager = orders_manager
+        self._connection_listener = connection_listener
         self._notification_listener = notification_listener
 
         # Queue with ID -1 is always reserved for next order ID
@@ -219,6 +225,13 @@ class IBWrapper(wrapper.EWrapper):
 
     #region - Orders
     def nextValidId(self, orderId: int):
+        if (self._connection_listener
+            and self._orders_manager.next_order_id == 0):
+            # Next order ID is 0 before any next order ID update.
+            # Hence can determine this is the initial callback from IB after
+            # the connection has been established.
+            self._connection_listener.on_connected()
+
         # Next valid order ID returned from IB
         self._orders_manager.update_next_order_id(order_id=orderId)
         # To finish waiting on IBClient.req_next_order_id
@@ -349,6 +362,9 @@ class IBWrapper(wrapper.EWrapper):
         self._orders_manager.on_disconnected()
         if self._ac_man_delegate:
             self._ac_man_delegate.on_disconnected()
+
+        if self._connection_listener:
+            self._connection_listener.on_disconnected()
 
     def _reset(self):
         self._req_queue.clear()

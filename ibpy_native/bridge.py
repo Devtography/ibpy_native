@@ -358,9 +358,14 @@ class IBBridge(interfaces.IBridge):
                 excuteing the task, and max retry attemps has been reached.
         """
         # Error checking
-        if start.tzinfo is not None or end.tzinfo is not None:
-            raise ValueError("Value of argument `start` & `end` must be an "
-                             "native `datetime` object.")
+        if start is not None:
+            if start.tzinfo is not None:
+                raise ValueError("Value of argument `start` & `end` must be an "
+                                 "native `datetime` object.")
+        if end is not None:
+            if end.tzinfo is not None:
+                raise ValueError("Value of argument `start` & `end` must be an "
+                                 "native `datetime` object.")
         # Prep start and end time
         try:
             if tick_type is datatype.HistoricalTicks.TRADES:

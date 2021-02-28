@@ -11,6 +11,7 @@ from ibapi import wrapper
 
 from ibpy_native import error
 from ibpy_native import models
+from ibpy_native._internal import _global
 from ibpy_native._internal import _typing
 from ibpy_native.interfaces import delegates
 from ibpy_native.interfaces import listeners
@@ -25,6 +26,10 @@ class IBWrapper(wrapper.EWrapper):
         orders_manager (:obj:`ibpy_native.interfaces.delgates.order
             .OrdersManagementDelegate`): Manager to handler orders related
             events.
+        connection_listener (:obj:`ibpy_native.interfaces.listeners
+            .ConnectionListener`, optional): Listener to receive connection
+            status callback on connection with IB TWS/Gateway is established or
+            dropped. Defaults to `None`.
         notification_listener (:obj:`ibpy_native.interfaces.listeners
             .NotificationListener`, optional): Handler to receive system
             notifications from IB Gateway. Defaults to `None`.
@@ -32,6 +37,7 @@ class IBWrapper(wrapper.EWrapper):
     def __init__(
         self,
         orders_manager: delegates.OrdersManagementDelegate,
+        connection_listener: Optional[listeners.ConnectionListener]=None,
         notification_listener: Optional[listeners.NotificationListener]=None
     ):
         self._lock = threading.Lock()
@@ -41,6 +47,7 @@ class IBWrapper(wrapper.EWrapper):
             delegates.AccountsManagementDelegate] = None
 
         self._orders_manager = orders_manager
+        self._connection_listener = connection_listener
         self._notification_listener = notification_listener
 
         # Queue with ID -1 is always reserved for next order ID
@@ -158,12 +165,20 @@ class IBWrapper(wrapper.EWrapper):
                                                    reason=errorString)
         elif reqId is not -1 and reqId in self._req_queue:
             self._req_queue[reqId].put(element=err)
+        elif reqId == -1 and errorCode == error.IBErrorCode.NOT_CONNECTED:
+            # Connection dropped
+            self._on_disconnected()
         else:
             if self._notification_listener is not None:
                 self._notification_listener.on_notify(
                     msg_code=errorCode,
                     msg=errorString
                 )
+
+    # Connection related
+    def connectionClosed(self):
+        # Notifies the connection is dropped successfully.
+        self._on_disconnected()
 
     #region - Accounts & portfolio
     def managedAccounts(self, accountsList: str):
@@ -215,6 +230,13 @@ class IBWrapper(wrapper.EWrapper):
 
     #region - Orders
     def nextValidId(self, orderId: int):
+        if (self._connection_listener
+            and self._orders_manager.next_order_id == 0):
+            # Next order ID is 0 before any next order ID update.
+            # Hence can determine this is the initial callback from IB after
+            # the connection has been established.
+            self._connection_listener.on_connected()
+
         # Next valid order ID returned from IB
         self._orders_manager.update_next_order_id(order_id=orderId)
         # To finish waiting on IBClient.req_next_order_id
@@ -324,6 +346,36 @@ class IBWrapper(wrapper.EWrapper):
         else:
             self._req_queue[req_id] = fq.FinishableQueue(queue.Queue())
 
+    def _on_disconnected(self):
+        """Stop all active requests."""
+        if self._req_queue[-1].status is not (
+            fq.Status.INIT or fq.Status.FINISHED):
+            # Send finish signal to the active next order ID request
+            self._req_queue[-1].put(element=fq.Status.FINISHED)
+
+        for key, f_queue in self._req_queue.items():
+            if key == -1:
+                continue
+            if f_queue.status is not fq.Status.FINISHED or fq.Status.ERROR:
+                err = error.IBError(
+                    rid=key, err_code=error.IBErrorCode.NOT_CONNECTED,
+                    err_str=_global.MSG_NOT_CONNECTED
+                )
+                f_queue.put(element=err)
+
+        self._reset()
+        self._orders_manager.on_disconnected()
+        if self._ac_man_delegate:
+            self._ac_man_delegate.on_disconnected()
+
+        if self._connection_listener:
+            self._connection_listener.on_disconnected()
+
+    def _reset(self):
+        self._req_queue.clear()
+        self._req_queue[-1] = fq.FinishableQueue(queue_to_finish=queue.Queue())
+
+    #region - Ticks handling
     def _handle_historical_ticks_results(
         self, req_id: int, ticks: _typing.WrapperResHistoricalTicks, done: bool
     ):
@@ -342,4 +394,5 @@ class IBWrapper(wrapper.EWrapper):
         received into corresponding queue.
         """
         self._req_queue[req_id].put(element=tick)
+    #endregion - Ticks handling
     #endregion - Private functions

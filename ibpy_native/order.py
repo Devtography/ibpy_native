@@ -1,4 +1,5 @@
 """IB order related resources."""
+# pylint: disable=protected-access
 import threading
 import queue
 from typing import Dict, Optional
@@ -10,6 +11,7 @@ from ibapi import order_state as ib_order_state
 
 from ibpy_native import error
 from ibpy_native import models
+from ibpy_native._internal import _global
 from ibpy_native.interfaces import delegates
 from ibpy_native.interfaces import listeners
 from ibpy_native.utils import datatype
@@ -129,4 +131,20 @@ class OrdersManager(delegates.OrdersManagementDelegate):
             self._listener.on_rejected(order=self._open_orders[order_id],
                                        reason=reason)
     #endregion - Order events
+
+    def on_disconnected(self):
+        for key, f_queue in self._pending_queues.items():
+            if f_queue.status is not fq.Status.FINISHED or fq.Status.ERROR:
+                err = error.IBError(
+                    rid=key, err_code=error.IBErrorCode.NOT_CONNECTED,
+                    err_str=_global.MSG_NOT_CONNECTED
+                )
+                f_queue.put(element=err)
+
+        self._reset()
     #endregion - Internal functions
+
+    def _reset(self):
+        self._next_order_id = 0
+        self._open_orders.clear()
+        self._pending_queues.clear()

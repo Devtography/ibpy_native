@@ -49,6 +49,24 @@ class TestOrder(unittest.TestCase):
         self.assertGreater(next_order_id, 0)
 
     @utils.async_test
+    async def test_req_open_orders(self):
+        """Test function `req_open_orders`."""
+        await self._client.req_open_orders()
+        # Nothing to assert in this test.
+        # The function is good as long as there's no error thrown.
+
+    @utils.async_test
+    async def test_req_open_orders_err(self):
+        """Test function `req_open_orders`.
+
+        * Error returned as the queue is being used.
+        """
+        # Mock queue is occupied
+        self._wrapper.get_request_queue(req_id=_global.IDX_OPEN_ORDERS)
+        with self.assertRaises(error.IBError):
+            await self._client.req_open_orders()
+
+    @utils.async_test
     async def test_submit_order(self):
         """Test function `submit_order`."""
         order_id = await self._client.req_next_order_id()

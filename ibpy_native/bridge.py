@@ -219,6 +219,20 @@ class IBBridge:
         """
         return await self._client.req_next_order_id()
 
+    async def req_open_orders(self):
+        """Get all active orders submitted by the client application connected
+        with the exact same client ID with which the orders were sent to
+        TWS/Gateway.
+
+        Raises:
+            ibpy_native.error.IBError: If the connection is dropped while
+                waiting the request to finish.
+        """
+        try:
+            await self._client.req_open_orders()
+        except error.IBError as err:
+            raise err
+
     async def place_orders(self, contract: ib_contract.Contract,
                            orders: List[ib_order.Order]):
         """Place order(s) to IB.

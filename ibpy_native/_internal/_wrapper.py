@@ -53,7 +53,11 @@ class IBWrapper(wrapper.EWrapper):
         self._notification_listener = notification_listener
 
         # Queue with ID -1 is always reserved for next order ID
-        self._req_queue[-1] = fq.FinishableQueue(queue.Queue())
+        self._req_queue[_global.IDX_NEXT_ORDER_ID] = fq.FinishableQueue(
+            queue_to_finish=queue.Queue())
+        # -2 is reserved for open orders requests
+        self._req_queue[_global.IDX_OPEN_ORDERS] = fq.FinishableQueue(
+            queue_to_finish=queue.Queue())
 
         super().__init__()
 
@@ -235,15 +239,22 @@ class IBWrapper(wrapper.EWrapper):
         # Next valid order ID returned from IB
         self._orders_manager.update_next_order_id(order_id=orderId)
         # To finish waiting on IBClient.req_next_order_id
-        if (self._req_queue[-1].status is not
+        if (self._req_queue[_global.IDX_NEXT_ORDER_ID].status is not
             (fq.Status.INIT or fq.Status.FINISHED)):
-            self._req_queue[-1].put(element=fq.Status.FINISHED)
+            self._req_queue[_global.IDX_NEXT_ORDER_ID].put(
+                element=fq.Status.FINISHED)
 
     def openOrder(self, orderId: int, contract: ib_contract.Contract,
                   order: ib_order.Order, orderState: order_state.OrderState):
         self._orders_manager.on_open_order_updated(
             contract=contract, order=order, order_state=orderState
         )
+
+    def openOrderEnd(self):
+        if self._req_queue[_global.IDX_OPEN_ORDERS].status is not (
+            fq.Status.INIT or fq.Status.FINISHED):
+            self._req_queue[_global.IDX_OPEN_ORDERS].put(
+                element=fq.Status.FINISHED)
 
     def orderStatus(self, orderId: int, status: str, filled: float,
                     remaining: float, avgFillPrice: float, permId: int,
@@ -330,9 +341,13 @@ class IBWrapper(wrapper.EWrapper):
                 `self.__req_queue[req_id]` and it's not finished.
         """
         if req_id in self._req_queue:
-            if self._req_queue[req_id].finished or (
-                req_id == -1 and self._req_queue[-1].status is fq.Status.INIT
-            ):
+            if (self._req_queue[req_id].finished
+                or (req_id == _global.IDX_NEXT_ORDER_ID
+                    and (self._req_queue[_global.IDX_NEXT_ORDER_ID].status
+                         is fq.Status.INIT))
+                or (req_id == _global.IDX_OPEN_ORDERS
+                    and (self._req_queue[_global.IDX_OPEN_ORDERS].status
+                         is fq.Status.INIT))):
                 self._req_queue[req_id].reset()
             else:
                 raise error.IBError(
@@ -345,13 +360,14 @@ class IBWrapper(wrapper.EWrapper):
 
     def _on_disconnected(self):
         """Stop all active requests."""
-        if self._req_queue[-1].status is not (
+        if self._req_queue[_global.IDX_NEXT_ORDER_ID].status is not (
             fq.Status.INIT or fq.Status.FINISHED):
             # Send finish signal to the active next order ID request
-            self._req_queue[-1].put(element=fq.Status.FINISHED)
+            self._req_queue[_global.IDX_NEXT_ORDER_ID].put(
+                element=fq.Status.FINISHED)
 
         for key, f_queue in self._req_queue.items():
-            if key == -1:
+            if key == _global.IDX_NEXT_ORDER_ID:
                 continue
             if f_queue.status is not fq.Status.FINISHED or fq.Status.ERROR:
                 err = error.IBError(
@@ -369,7 +385,10 @@ class IBWrapper(wrapper.EWrapper):
 
     def _reset(self):
         self._req_queue.clear()
-        self._req_queue[-1] = fq.FinishableQueue(queue_to_finish=queue.Queue())
+        self._req_queue[_global.IDX_NEXT_ORDER_ID] = fq.FinishableQueue(
+            queue_to_finish=queue.Queue())
+        self._req_queue[_global.IDX_OPEN_ORDERS] = fq.FinishableQueue(
+            queue_to_finish=queue.Queue())
 
     #region - Ticks handling
     def _handle_historical_ticks_results(

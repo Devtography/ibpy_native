@@ -394,9 +394,15 @@ class IBBridge(interfaces.IBridge):
                     start_date_time=start_date_time, show=tick_type
                 )
             except error.IBError as err:
+                if err.err_code == error.IBErrorCode.NOT_CONNECTED.value:
+                    raise err
                 if retry_attemps < retry:
+                    retry_attemps += 1
                     continue
+
                 raise err
+
+            retry_attemps = 0
 
             if ticks:
                 # Drop the 1st tick as tick time of it is `start_date_time`
@@ -479,7 +485,7 @@ class IBBridge(interfaces.IBridge):
         """Infinity loop to monitor connection with TWS/Gateway."""
         while True:
             time.sleep(2)
-            self._client.reqCurrentTime()
             if not self._client.isConnected():
                 break
+            self._client.reqCurrentTime()
     #endregion - Private functions

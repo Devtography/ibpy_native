@@ -327,6 +327,7 @@ class IBBridge(interfaces.IBridge):
         daily_data_starting_point: Optional[datetime.time]=None,
         retry: int=0
     ) -> AsyncIterator[datatype.ResHistoricalTicks]:
+        # pylint: disable=too-many-statements
         """Retrieve historical tick data for specificed instrument/contract
         from IB.
 

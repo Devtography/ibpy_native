@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.1] - 2021-03-07
+Minor enhancement on function `IBBridge.req_historical_ticks` to provide option
+for much shorter process time on requests starting from the earliest available
+data point.
+
+### Added
+- Optional argument `daily_data_starting_point` on function
+  `IBBridge.req_historical_ticks`.
+
+### Changed
+- Data returned from `IBBridge.req_historical_ticks` to include the next start
+  time for the next API request when the task is not finished yet.
+
 ## [v1.0.0] - 2021-02-28
 `v1.0.0` is the first usable release of the framework. Accounts & orders
 management features are now implemented, so as placing orders. It's a usable
@@ -155,7 +168,8 @@ returns with `finished` mark as `True` unexpectedly while IB returns less than
 1000 records but there're more historical ticks those should be fetched 
 in next request.
 
-[Unreleased]: https://github.com/Devtography/ibpy_native/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Devtography/ibpy_native/compare/v1.0.1...HEAD
+[v1.0.1]: https://github.com/Devtography/ibpy_native/compare/v1.0.1...v1.0.0
 [v1.0.0]: https://github.com/Devtography/ibpy_native/compare/v1.0.0...v0.2.0
 [v0.2.0]: https://github.com/Devtography/ibpy_native/compare/v0.2.0...v0.1.4
 [v0.1.4]: https://github.com/Devtography/ibpy_native/compare/v0.1.4...v0.1.3 

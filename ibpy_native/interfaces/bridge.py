@@ -226,6 +226,7 @@ class IBridge(metaclass=abc.ABCMeta):
         start: Optional[datetime.datetime]=None,
         end: Optional[datetime.datetime]=None,
         tick_type: datatype.HistoricalTicks=datatype.HistoricalTicks.TRADES,
+        daily_data_starting_point: Optional[datetime.time]=None,
         retry: int=0
     ) -> AsyncIterator[datatype.ResHistoricalTicks]:
         """Retrieve historical tick data for specificed instrument/contract
@@ -243,6 +244,10 @@ class IBridge(metaclass=abc.ABCMeta):
             tick_type (:obj:`ibpy_native.utils.datatype.HistoricalTicks`,
                 optional): Type of tick data. Defaults to
                 `HistoricalTicks.TRADES`.
+            daily_data_starting_point (:obj:`datetime.time`, optional): The
+                starting time of the ticks for each trading day. Specified this
+                value to reduce number of requests needed to go over day(s)
+                with no tick. Defaults to `None`.
             retry (int): Max retry attempts if error occur before terminating
                 the task and rasing the error.
 

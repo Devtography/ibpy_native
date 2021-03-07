@@ -366,6 +366,9 @@ class TestHistoricalData(unittest.TestCase):
             self.assertTrue(result.ticks)
             self.assertIsInstance(result.ticks[0], wrapper.HistoricalTick)
 
+            if result.completed:
+                self.assertIsNone(result.next_start_time)
+
     @utils.async_test
     async def test_req_historical_ticks_2(self):
         """Test function `req_historical_ticks`.
@@ -379,6 +382,9 @@ class TestHistoricalData(unittest.TestCase):
         ):
             self.assertTrue(result.ticks)
             self.assertIsInstance(result.ticks[0], wrapper.HistoricalTickLast)
+
+            if result.completed:
+                self.assertIsNone(result.next_start_time)
 
     @utils.async_test
     async def test_req_historical_ticks_err_0(self):
@@ -414,6 +420,24 @@ class TestHistoricalData(unittest.TestCase):
     async def test_req_historical_ticks_err_2(self):
         """Test function `req_historical_ticks`.
 
+        * Expect `ValueError` due to value of `end` is an aware datetime
+          object.
+        """
+        with self.assertRaises(ValueError):
+            async for _ in self._bridge.req_historical_ticks(
+                contract=sample_contracts.gbp_usd_fx(),
+                start=self._start, end=self._end,
+                tick_type=datatype.HistoricalTicks.BID_ASK,
+                daily_data_starting_point=datetime.time(
+                    hour=17, minute=0, tzinfo=_global.TZ),
+                retry=0
+            ):
+                pass
+
+    @utils.async_test
+    async def test_req_historical_ticks_err_3(self):
+        """Test function `req_historical_ticks`.
+
         * Expect `IBError` due to unresolvable `Contract`.
         """
         with self.assertRaises(error.IBError):
@@ -424,7 +448,7 @@ class TestHistoricalData(unittest.TestCase):
                 pass
 
     @utils.async_test
-    async def test_req_historical_ticks_err_3(self):
+    async def test_req_historical_ticks_err_4(self):
         """Test function `req_historical_ticks`.
 
         * Expect `IBError` due to IB returning an error

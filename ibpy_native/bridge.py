@@ -324,6 +324,7 @@ class IBBridge(interfaces.IBridge):
         start: Optional[datetime.datetime]=None,
         end: Optional[datetime.datetime]=None,
         tick_type: datatype.HistoricalTicks=datatype.HistoricalTicks.TRADES,
+        daily_data_starting_point: Optional[datetime.time]=None,
         retry: int=0
     ) -> AsyncIterator[datatype.ResHistoricalTicks]:
         """Retrieve historical tick data for specificed instrument/contract
@@ -341,6 +342,10 @@ class IBBridge(interfaces.IBridge):
             tick_type (:obj:`ibpy_native.utils.datatype.HistoricalTicks`,
                 optional): Type of tick data. Defaults to
                 `HistoricalTicks.TRADES`.
+            daily_data_starting_point (:obj:`datetime.time`, optional): The
+                starting time of the ticks for each trading day. Specified this
+                value to reduce number of requests needed to go over day(s)
+                with no tick. Defaults to `None`.
             retry (int): Max retry attempts if error occur before terminating
                 the task and rasing the error.
 
@@ -350,8 +355,10 @@ class IBBridge(interfaces.IBridge):
                 within the specified time period are received.
 
         Raises:
-            ValueError: If either argument `start` or `end` is not an native
+            ValueError: If
+                - either argument `start`, `end`, or is not an native
                 `datetime` object;
+                - `tzinfo` of `daily_data_starting_point` is not `None`.
             ibpy_native.error.IBError: If
                 - `contract` passed in is unresolvable;
                 - there is any issue raised from the request function while
@@ -366,6 +373,11 @@ class IBBridge(interfaces.IBridge):
             if end.tzinfo is not None:
                 raise ValueError("Value of argument `start` & `end` must be an "
                                  "native `datetime` object.")
+
+        if daily_data_starting_point is not None:
+            if daily_data_starting_point.tzinfo is not None:
+                raise ValueError("Value of argument `daily_data_starting_point`"
+                                 " must not contain timezone info.")
         # Prep start and end time
         try:
             if tick_type is datatype.HistoricalTicks.TRADES:
@@ -418,6 +430,7 @@ class IBBridge(interfaces.IBridge):
                 if last_tick_time >= end_date_time:
                     # All ticks within the specified time period are received
                     finished = True
+                    start_date_time = None
                     for i in range(len(ticks) - 1, -1, -1):
                         data_time = datetime.datetime.fromtimestamp(
                             timestamp=ticks[i].time, tz=_global.TZ
@@ -431,19 +444,34 @@ class IBBridge(interfaces.IBridge):
                     start_date_time = (last_tick_time +
                                        datetime.timedelta(seconds=1))
             else: # If no tick is returned
-                delta = datetime.timedelta(minutes=start_date_time.minute % 30,
-                                           seconds=start_date_time.second)
-                if delta.total_seconds() == 0: # Plus 30 minutes
-                    start_date_time = (start_date_time +
-                                       datetime.timedelta(minutes=30))
-                else: # Round up to next 30 minutes point
-                    start_date_time = (
-                        start_date_time + (datetime.datetime.min -
-                        start_date_time) % datetime.timedelta(minutes=30)
+                if daily_data_starting_point is not None:
+                    if start_date_time.time() >= daily_data_starting_point:
+                        start_date_time += datetime.timedelta(days=1)
+
+                    start_date_time = start_date_time.replace(
+                        hour=daily_data_starting_point.hour,
+                        minute=daily_data_starting_point.minute,
+                        second=0, microsecond=0
                     )
+                else:
+                    delta = datetime.timedelta(
+                        minutes=start_date_time.minute % 30,
+                        seconds=start_date_time.second
+                    )
+                    if delta.total_seconds() == 0: # Plus 30 minutes
+                        start_date_time = (start_date_time +
+                                        datetime.timedelta(minutes=30))
+                    else: # Round up to next 30 minutes point
+                        start_date_time = (
+                            start_date_time + (datetime.datetime.min -
+                            start_date_time) % datetime.timedelta(minutes=30)
+                        )
 
             # Yield the result
-            yield datatype.ResHistoricalTicks(ticks=ticks, completed=finished)
+            yield datatype.ResHistoricalTicks(
+                ticks=ticks, completed=finished,
+                next_start_time=start_date_time
+            )
     #endregion - Historical data
 
     #region - Live data

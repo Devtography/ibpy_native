@@ -1,4 +1,5 @@
 """Enums/Types for parameters or return objects."""
+import datetime
 import enum
 from typing import List, NamedTuple, Union
 
@@ -37,6 +38,7 @@ class ResHistoricalTicks(NamedTuple):
         wrapper.HistoricalTickLast
     ]]
     completed: bool
+    next_start_time: datetime.datetime
 #endregion - Return type
 
 #region - Order related

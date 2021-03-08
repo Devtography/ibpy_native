@@ -419,10 +419,18 @@ class IBBridge(interfaces.IBridge):
             retry_attemps = 0
 
             if ticks:
-                # Drop the 1st tick as tick time of it is `start_date_time`
-                # - 1 second
-                if len(ticks) > 1:
-                    del ticks[0]
+                # pylint: disable=consider-using-enumerate
+                # Use range as the list itself may be modified
+                for i in range(len(ticks)):
+                    data_time = datetime.datetime.fromtimestamp(
+                        timestamp=ticks[i].time, tz=_global.TZ
+                    ).replace(tzinfo=None)
+                    if data_time < start_date_time:
+                        # Drop tick that's earlier than the specificed
+                        # start time
+                        del ticks[i]
+                    else:
+                        break
                 # Determine if it should fetch next batch of data
                 last_tick_time = datetime.datetime.fromtimestamp(
                     timestamp=ticks[-1].time, tz=_global.TZ

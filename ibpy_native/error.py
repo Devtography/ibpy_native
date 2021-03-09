@@ -33,7 +33,7 @@ class IBError(Exception):
 
     def __str__(self):
         # override method
-        error_msg = ("IB error id %d errorcode %d string %s"
+        error_msg = ("IB error - ID %d: code %d - %s"
                      % (self.rid, self.err_code, self.err_str))
 
         return error_msg

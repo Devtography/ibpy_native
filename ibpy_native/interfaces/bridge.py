@@ -12,6 +12,7 @@ from ibpy_native.interfaces import listeners
 from ibpy_native.utils import datatype
 
 class IBridge(metaclass=abc.ABCMeta):
+    # pylint: disable=too-many-public-methods
     """Public interface of the class that bridge between `ibpy-native` & IB API.
 
     Args:
@@ -47,6 +48,27 @@ class IBridge(metaclass=abc.ABCMeta):
     ):
         pass
 
+    #region - Properties
+    @property
+    @abc.abstractmethod
+    def host(self) -> str:
+        """str: Hostname / IP address of the TWS / IB Gateway instance
+        connecting to.
+        """
+        return NotImplemented
+
+    @property
+    @abc.abstractmethod
+    def port(self) -> int:
+        """int: Socket port of this instance connecting to."""
+        return NotImplemented
+
+    @property
+    @abc.abstractmethod
+    def client_id(self) -> int:
+        """int: Client ID specified for this instance."""
+        return NotImplemented
+
     @property
     @abc.abstractmethod
     def is_connected(self) -> bool:
@@ -63,6 +85,7 @@ class IBridge(metaclass=abc.ABCMeta):
         events.
         """
         return NotImplemented
+    #endregion - Properties
 
     @abc.abstractmethod
     def set_timezone(self, tz: datetime.tzinfo):

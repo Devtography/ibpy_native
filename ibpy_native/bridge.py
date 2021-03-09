@@ -23,6 +23,7 @@ from ibpy_native.interfaces import listeners
 from ibpy_native.utils import datatype
 
 class IBBridge(interfaces.IBridge):
+    # pylint: disable=too-many-public-methods
     """Public class to bridge between `ibpy-native` & IB API.
 
     Args:
@@ -48,6 +49,9 @@ class IBBridge(interfaces.IBridge):
         order_events_listener (:obj:`ibpy_native.interfaces.listeners
             .OrderEventsListener`, optional): Listener for order events.
             Defaults to `None`.
+
+    Raises:
+        ValueError: If value of argument `client_id` is greater than 9999.
     """
     def __init__(
         self, host: str="127.0.0.1", port: int=4001,
@@ -58,6 +62,9 @@ class IBBridge(interfaces.IBridge):
         order_events_listener: Optional[listeners.OrderEventsListener]=None
     ):
         super().__init__()
+
+        if client_id > 9999:
+            raise ValueError(f"Invalid client ID ({client_id} > 9999)")
 
         self._host = host
         self._port = port
@@ -70,6 +77,7 @@ class IBBridge(interfaces.IBridge):
             event_listener=order_events_listener)
 
         self._wrapper = _wrapper.IBWrapper(
+            client_id=client_id,
             accounts_manager=self._accounts_manager,
             orders_manager=self._orders_manager,
             connection_listener=connection_listener,
@@ -81,7 +89,19 @@ class IBBridge(interfaces.IBridge):
         if auto_conn:
             self.connect()
 
-    # Properties
+    #region - Properties
+    @property
+    def host(self) -> str:
+        return self._host
+
+    @property
+    def port(self) -> int:
+        return self._port
+
+    @property
+    def client_id(self) -> int:
+        return self._client_id
+
     @property
     def is_connected(self) -> bool:
         """Check if the bridge is connected to a running & logged in TWS/IB
@@ -104,6 +124,7 @@ class IBBridge(interfaces.IBridge):
         events.
         """
         return self._orders_manager
+    #endregion - Properties
 
     #region - Setters
     def set_timezone(self, tz: datetime.tzinfo):
@@ -418,11 +439,19 @@ class IBBridge(interfaces.IBridge):
 
             retry_attemps = 0
 
+            # pylint: disable=consider-using-enumerate
+            # Use range as the index is needed to slice the list
+            for i in range(len(ticks)):
+                data_time = datetime.datetime.fromtimestamp(
+                    timestamp=ticks[i].time, tz=_global.TZ
+                ).replace(tzinfo=None)
+                if data_time >= start_date_time:
+                    # Slices the list to include ticks not earlier than
+                    # the start time of this iteration.
+                    ticks = ticks[i:]
+                    break
+
             if ticks:
-                # Drop the 1st tick as tick time of it is `start_date_time`
-                # - 1 second
-                if len(ticks) > 1:
-                    del ticks[0]
                 # Determine if it should fetch next batch of data
                 last_tick_time = datetime.datetime.fromtimestamp(
                     timestamp=ticks[-1].time, tz=_global.TZ
@@ -445,28 +474,17 @@ class IBBridge(interfaces.IBridge):
                     start_date_time = (last_tick_time +
                                        datetime.timedelta(seconds=1))
             else: # If no tick is returned
-                if daily_data_starting_point is not None:
-                    if start_date_time.time() >= daily_data_starting_point:
-                        start_date_time += datetime.timedelta(days=1)
+                start_date_time = self._advance_time(
+                    time_to_advance=start_date_time,
+                    reset_point=daily_data_starting_point
+                )
 
-                    start_date_time = start_date_time.replace(
-                        hour=daily_data_starting_point.hour,
-                        minute=daily_data_starting_point.minute,
-                        second=0, microsecond=0
-                    )
-                else:
-                    delta = datetime.timedelta(
-                        minutes=start_date_time.minute % 30,
-                        seconds=start_date_time.second
-                    )
-                    if delta.total_seconds() == 0: # Plus 30 minutes
-                        start_date_time = (start_date_time +
-                                        datetime.timedelta(minutes=30))
-                    else: # Round up to next 30 minutes point
-                        start_date_time = (
-                            start_date_time + (datetime.datetime.min -
-                            start_date_time) % datetime.timedelta(minutes=30)
-                        )
+            if start_date_time is not None:
+                if (_global.TZ.localize(start_date_time)
+                    >= datetime.datetime.now().astimezone(_global.TZ)):
+                    # Indicates all ticks up until now are received
+                    finished = True
+                    start_date_time = None
 
             # Yield the result
             yield datatype.ResHistoricalTicks(
@@ -531,4 +549,35 @@ class IBBridge(interfaces.IBridge):
             if not self._client.isConnected():
                 break
             self._client.reqCurrentTime()
+
+    def _advance_time(
+        self, time_to_advance=datetime.datetime,
+        reset_point: Optional[datetime.time] = None
+    ) -> datetime.datetime:
+        """Advances the specificed time to either next 30 minutes point or the
+        time specified in `reset_point`.
+        """
+        result = time_to_advance
+
+        if reset_point is not None:
+            if time_to_advance.time() >= reset_point:
+                time_to_advance += datetime.timedelta(days=1)
+
+            result = time_to_advance.replace(
+                hour=reset_point.hour, minute=reset_point.minute,
+                second=0, microsecond=0
+            )
+        else:
+            delta = datetime.timedelta(minutes=time_to_advance.minute % 30,
+                                       seconds=time_to_advance.second)
+            if delta.total_seconds() == 0: # Plus 30 minutes
+                result = time_to_advance + datetime.timedelta(minutes=30)
+            else: # Rounds up to next 30 minutes point
+                result = (
+                        time_to_advance + (datetime.datetime.min -
+                        time_to_advance) % datetime.timedelta(minutes=30)
+                )
+
+        return result
+
     #endregion - Private functions

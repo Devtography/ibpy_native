@@ -418,16 +418,15 @@ class IBBridge(interfaces.IBridge):
             retry_attemps = 0
 
             # pylint: disable=consider-using-enumerate
-            # Use range as the list itself may be modified
+            # Use range as the index is needed to slice the list
             for i in range(len(ticks)):
                 data_time = datetime.datetime.fromtimestamp(
                     timestamp=ticks[i].time, tz=_global.TZ
                 ).replace(tzinfo=None)
-                if data_time < start_date_time:
-                    # Drop tick that's earlier than the specificed
-                    # start time
-                    del ticks[i]
-                else:
+                if data_time >= start_date_time:
+                    # Slices the list to include ticks not earlier than
+                    # the start time of this iteration.
+                    ticks = ticks[i:]
                     break
 
             if ticks:

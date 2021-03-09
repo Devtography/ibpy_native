@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Properties `host`, `port`, and `client_id` on interface
+  `ibpy_native.interfaces.IBBridge` and its' implementation
+  `ibpy_native.IBBridge`.
+
 ### Changed
 - `ibpy_native.IBBridge.req_historical_ticks()` to enhance its' reliability and
   accuracy on filtering out ticks received which shouldn't be included in the

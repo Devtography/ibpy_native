@@ -81,7 +81,19 @@ class IBBridge(interfaces.IBridge):
         if auto_conn:
             self.connect()
 
-    # Properties
+    #region - Properties
+    @property
+    def host(self) -> str:
+        return self._host
+
+    @property
+    def port(self) -> int:
+        return self._port
+
+    @property
+    def client_id(self) -> int:
+        return self._client_id
+
     @property
     def is_connected(self) -> bool:
         """Check if the bridge is connected to a running & logged in TWS/IB
@@ -104,6 +116,7 @@ class IBBridge(interfaces.IBridge):
         events.
         """
         return self._orders_manager
+    #endregion - Properties
 
     #region - Setters
     def set_timezone(self, tz: datetime.tzinfo):

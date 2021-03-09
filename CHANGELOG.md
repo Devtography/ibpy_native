@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `ibpy_native.IBBridge.req_historical_ticks()` to enhance its' reliability and
+  accuracy on filtering out ticks received which shouldn't be included in the
+  result of the request.
+
+### Fixed
+- Type hint of return type `ibpy_native.utils.datatype.ResHistoricalTicks`.
+- Error of error code `10187 - "Invalid starting time (future data request)"`
+  raises from `ibpy_native.IBBridge.req_historical_ticks()` at the end of the
+  task when argument `end` is `None`.
+
 ## [v1.0.1] - 2021-03-07
 Minor enhancement on function `IBBridge.req_historical_ticks` to provide option
 for much shorter process time on requests starting from the earliest available

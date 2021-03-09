@@ -32,11 +32,9 @@ class LiveTicks(enum.Enum):
 #region - Return type
 class ResHistoricalTicks(NamedTuple):
     """Return type of function `bridge.IBBridge.get_historical_ticks_v2`."""
-    ticks: List[Union[
-        wrapper.HistoricalTick,
-        wrapper.HistoricalTickBidAsk,
-        wrapper.HistoricalTickLast
-    ]]
+    ticks: Union[List[wrapper.HistoricalTick],
+                 List[wrapper.HistoricalTickBidAsk],
+                 List[wrapper.HistoricalTickLast],]
     completed: bool
     next_start_time: datetime.datetime
 #endregion - Return type

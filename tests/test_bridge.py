@@ -387,6 +387,26 @@ class TestHistoricalData(unittest.TestCase):
                 self.assertIsNone(result.next_start_time)
 
     @utils.async_test
+    async def test_req_historical_ticks_3(self):
+        """Test function `req_historical_ticks`.
+
+        * Should return `None` for the next start time as it'd be later then
+          `now` for its' next iteration.
+        """
+        start_time = (
+            (datetime.datetime.now() - datetime.timedelta(minutes=5))
+            .astimezone(_global.TZ)
+            .replace(second=0, microsecond=0, tzinfo=None)
+        )
+        async for result in self._bridge.req_historical_ticks(
+            contract=sample_contracts.us_future_next(), start=start_time,
+            tick_type=datatype.HistoricalTicks.TRADES,
+            retry=0
+        ):
+            if result.completed:
+                self.assertIsNone(result.next_start_time)
+
+    @utils.async_test
     async def test_req_historical_ticks_err_0(self):
         """Test function `req_historical_ticks`.
 

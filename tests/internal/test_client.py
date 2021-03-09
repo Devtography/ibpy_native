@@ -29,6 +29,7 @@ class TestOrder(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._wrapper = _wrapper.IBWrapper(
+            client_id=utils.IB_CLIENT_ID,
             accounts_manager=utils.MockAccountsManagementDelegate(),
             orders_manager=manager.OrdersManager()
         )
@@ -118,6 +119,7 @@ class TestContract(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._wrapper = _wrapper.IBWrapper(
+            client_id=utils.IB_CLIENT_ID,
             accounts_manager=utils.MockAccountsManagementDelegate(),
             orders_manager=manager.OrdersManager()
         )
@@ -190,6 +192,7 @@ class TestHistoricalData(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._wrapper = _wrapper.IBWrapper(
+            client_id=utils.IB_CLIENT_ID,
             accounts_manager=utils.MockAccountsManagementDelegate(),
             orders_manager=manager.OrdersManager()
         )
@@ -349,6 +352,7 @@ class TestLiveData(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._wrapper = _wrapper.IBWrapper(
+            client_id=utils.IB_CLIENT_ID,
             accounts_manager=utils.MockAccountsManagementDelegate(),
             orders_manager=manager.OrdersManager()
         )

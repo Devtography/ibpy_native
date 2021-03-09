@@ -70,6 +70,7 @@ class IBBridge(interfaces.IBridge):
             event_listener=order_events_listener)
 
         self._wrapper = _wrapper.IBWrapper(
+            client_id=client_id,
             accounts_manager=self._accounts_manager,
             orders_manager=self._orders_manager,
             connection_listener=connection_listener,

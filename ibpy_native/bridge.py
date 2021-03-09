@@ -23,6 +23,7 @@ from ibpy_native.interfaces import listeners
 from ibpy_native.utils import datatype
 
 class IBBridge(interfaces.IBridge):
+    # pylint: disable=too-many-public-methods
     """Public class to bridge between `ibpy-native` & IB API.
 
     Args:
@@ -550,7 +551,7 @@ class IBBridge(interfaces.IBridge):
             self._client.reqCurrentTime()
 
     def _advance_time(
-        self, time_to_advance=datetime.datetime, 
+        self, time_to_advance=datetime.datetime,
         reset_point: Optional[datetime.time] = None
     ) -> datetime.datetime:
         """Advances the specificed time to either next 30 minutes point or the

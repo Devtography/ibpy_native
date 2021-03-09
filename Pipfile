@@ -10,6 +10,7 @@ pandas = "*"
 pylint = "*"
 pipenv-setup = "*"
 twine = "*"
+python-dateutil = "*"
 
 [packages]
 pytz = "*"

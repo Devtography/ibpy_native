@@ -77,7 +77,7 @@ setup(
         "Development Status :: 5 - Production/Stable",
         # Indicate who your project is intended for
         "Intended Audience :: Developers",
-        "Topic :: Office/Business :: Financial :: Investment"
+        "Topic :: Office/Business :: Financial :: Investment",
         "Topic :: Software Development :: Libraries",
         # Pick your license as you wish
         "License :: Free for non-commercial use",

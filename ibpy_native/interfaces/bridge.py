@@ -12,6 +12,7 @@ from ibpy_native.interfaces import listeners
 from ibpy_native.utils import datatype
 
 class IBridge(metaclass=abc.ABCMeta):
+    # pylint: disable=too-many-public-methods
     """Public interface of the class that bridge between `ibpy-native` & IB API.
 
     Args:

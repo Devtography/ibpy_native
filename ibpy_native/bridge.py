@@ -478,11 +478,12 @@ class IBBridge(interfaces.IBridge):
                     reset_point=daily_data_starting_point
                 )
 
-            if (_global.TZ.localize(start_date_time)
-                >= datetime.datetime.now().astimezone(_global.TZ)):
-                # Indicates all ticks up until now are received
-                finished = True
-                start_date_time = None
+            if start_date_time is not None:
+                if (_global.TZ.localize(start_date_time)
+                    >= datetime.datetime.now().astimezone(_global.TZ)):
+                    # Indicates all ticks up until now are received
+                    finished = True
+                    start_date_time = None
 
             # Yield the result
             yield datatype.ResHistoricalTicks(

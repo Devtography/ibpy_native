@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.2] - 2021-03-09
+Minor release focuses on bug fixes.
+
 ### Added
 - Properties `host`, `port`, and `client_id` on interface
   `ibpy_native.interfaces.IBBridge` and its' implementation
@@ -82,10 +85,11 @@ restructured the project.
 - Function `ibpy_native.bridge.IBBridge.search_detailed_contracts(contract)` to
   search for contracts with complete details from IB's database. This newly
   implemented function is recommended to replace the deprecated functions
-  `get_us_stock_contract(symbol)` & `get_us_future_contract(symbol, contract_month)`
-  in `IBBridge`.
+  `get_us_stock_contract(symbol)` & `get_us_future_contract(symbol,
+  contract_month)` in `IBBridge`.
 - Feature of streaming live "tick-by-tick" data from IB via functions
-  `ibpy_native.bridge.IBBridge.stream_live_ticks(contract, listener, tick_type=ibpy_native.utils.datatype.LiveTicks.LAST)` and
+  `ibpy_native.bridge.IBBridge.stream_live_ticks(contract, listener, 
+  tick_type=ibpy_native.utils.datatype.LiveTicks.LAST)` and
   `ibpy_native.bridge.IBBridge.stop_live_ticks_stream(stream_id)`.
 
 ### Changed
@@ -188,7 +192,8 @@ returns with `finished` mark as `True` unexpectedly while IB returns less than
 1000 records but there're more historical ticks those should be fetched 
 in next request.
 
-[Unreleased]: https://github.com/Devtography/ibpy_native/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/Devtography/ibpy_native/compare/v1.0.2...HEAD
+[v1.0.2]: https://github.com/Devtography/ibpy_native/compare/v1.0.2...v1.0.1
 [v1.0.1]: https://github.com/Devtography/ibpy_native/compare/v1.0.1...v1.0.0
 [v1.0.0]: https://github.com/Devtography/ibpy_native/compare/v1.0.0...v0.2.0
 [v0.2.0]: https://github.com/Devtography/ibpy_native/compare/v0.2.0...v0.1.4

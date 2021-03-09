@@ -327,7 +327,6 @@ class IBBridge(interfaces.IBridge):
         daily_data_starting_point: Optional[datetime.time]=None,
         retry: int=0
     ) -> AsyncIterator[datatype.ResHistoricalTicks]:
-        # pylint: disable=too-many-statements
         """Retrieve historical tick data for specificed instrument/contract
         from IB.
 
@@ -453,28 +452,10 @@ class IBBridge(interfaces.IBridge):
                     start_date_time = (last_tick_time +
                                        datetime.timedelta(seconds=1))
             else: # If no tick is returned
-                if daily_data_starting_point is not None:
-                    if start_date_time.time() >= daily_data_starting_point:
-                        start_date_time += datetime.timedelta(days=1)
-
-                    start_date_time = start_date_time.replace(
-                        hour=daily_data_starting_point.hour,
-                        minute=daily_data_starting_point.minute,
-                        second=0, microsecond=0
-                    )
-                else:
-                    delta = datetime.timedelta(
-                        minutes=start_date_time.minute % 30,
-                        seconds=start_date_time.second
-                    )
-                    if delta.total_seconds() == 0: # Plus 30 minutes
-                        start_date_time = (start_date_time +
-                                        datetime.timedelta(minutes=30))
-                    else: # Round up to next 30 minutes point
-                        start_date_time = (
-                            start_date_time + (datetime.datetime.min -
-                            start_date_time) % datetime.timedelta(minutes=30)
-                        )
+                start_date_time = self._advance_time(
+                    time_to_advance=start_date_time,
+                    reset_point=daily_data_starting_point
+                )
 
             # Yield the result
             yield datatype.ResHistoricalTicks(
@@ -539,4 +520,35 @@ class IBBridge(interfaces.IBridge):
             if not self._client.isConnected():
                 break
             self._client.reqCurrentTime()
+
+    def _advance_time(
+        self, time_to_advance=datetime.datetime, 
+        reset_point: Optional[datetime.time] = None
+    ) -> datetime.datetime:
+        """Advances the specificed time to either next 30 minutes point or the
+        time specified in `reset_point`.
+        """
+        result = time_to_advance
+
+        if reset_point is not None:
+            if time_to_advance.time() >= reset_point:
+                time_to_advance += datetime.timedelta(days=1)
+
+            result = time_to_advance.replace(
+                hour=reset_point.hour, minute=reset_point.minute,
+                second=0, microsecond=0
+            )
+        else:
+            delta = datetime.timedelta(minutes=time_to_advance.minute % 30,
+                                       seconds=time_to_advance.second)
+            if delta.total_seconds() == 0: # Plus 30 minutes
+                result = time_to_advance + datetime.timedelta(minutes=30)
+            else: # Rounds up to next 30 minutes point
+                result = (
+                        time_to_advance + (datetime.datetime.min -
+                        time_to_advance) % datetime.timedelta(minutes=30)
+                )
+
+        return result
+
     #endregion - Private functions

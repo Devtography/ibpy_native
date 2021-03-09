@@ -327,6 +327,7 @@ class IBBridge(interfaces.IBridge):
         daily_data_starting_point: Optional[datetime.time]=None,
         retry: int=0
     ) -> AsyncIterator[datatype.ResHistoricalTicks]:
+        # pylint: disable=too-many-statements
         """Retrieve historical tick data for specificed instrument/contract
         from IB.
 
@@ -456,6 +457,12 @@ class IBBridge(interfaces.IBridge):
                     time_to_advance=start_date_time,
                     reset_point=daily_data_starting_point
                 )
+
+            if (_global.TZ.localize(start_date_time)
+                >= datetime.datetime.now().astimezone(_global.TZ)):
+                # Indicates all ticks up until now are received
+                finished = True
+                start_date_time = None
 
             # Yield the result
             yield datatype.ResHistoricalTicks(

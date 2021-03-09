@@ -42,6 +42,22 @@ def us_future() -> ib_contract.Contract:
 
     return contract
 
+def us_future_next() -> ib_contract.Contract:
+    """US future - YM; Next contract month"""
+    contract = us_future()
+    year = int(contract.lastTradeDateOrContractMonth[:4])
+    month = int(contract.lastTradeDateOrContractMonth[-2:])
+
+    if month == 12:
+        year += 1
+        month = 3
+    else:
+        month += 3
+
+    contract.lastTradeDateOrContractMonth = f"{year}{month:02d}"
+
+    return contract
+
 def us_future_expired() -> ib_contract.Contract:
     """Expired US future"""
     contract = ib_contract.Contract()

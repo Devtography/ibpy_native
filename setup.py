@@ -30,7 +30,7 @@ setup(
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version="1.0.1",  # Required
+    version="1.0.2",  # Required
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
@@ -77,6 +77,7 @@ setup(
         "Development Status :: 5 - Production/Stable",
         # Indicate who your project is intended for
         "Intended Audience :: Developers",
+        "Topic :: Office/Business :: Financial :: Investment"
         "Topic :: Software Development :: Libraries",
         # Pick your license as you wish
         "License :: Free for non-commercial use",
@@ -85,6 +86,11 @@ setup(
         # These classifiers are *not* checked by 'pip install'. See instead
         # 'python_requires' below.
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Intended Audience :: Financial and Insurance Industry",
+        "Natural Language :: English",
+        "Typing :: Typed",
     ],
     # This field adds keywords for your project which will appear on the
     # project page. What does your project relate to?

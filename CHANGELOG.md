@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Properties `host`, `port`, and `client_id` on interface
   `ibpy_native.interfaces.IBBridge` and its' implementation
   `ibpy_native.IBBridge`.
+- Limits value of argument `client_id` on `ibpy_native.IBBridge` to `9999` max.
 
 ### Changed
 - `ibpy_native.IBBridge.req_historical_ticks()` to enhance its' reliability and
@@ -21,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Error of error code `10187 - "Invalid starting time (future data request)"`
   raises from `ibpy_native.IBBridge.req_historical_ticks()` at the end of the
   task when argument `end` is `None`.
+- Issue of request will hang up on clients under the condition of multiple
+  clients submitted the same type of request to the same TWS / IB Gateway
+  instance and appear to have used the same request / ticker ID.
 
 ## [v1.0.1] - 2021-03-07
 Minor enhancement on function `IBBridge.req_historical_ticks` to provide option

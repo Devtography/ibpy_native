@@ -23,6 +23,9 @@ class IBWrapper(wrapper.EWrapper):
     TWS instance.
 
     Args:
+        client_id (int): Client ID specified for this connection session &
+            instance. The same ID is shown on IB Gateway as
+            `Client {client_id}`.
         accounts_manager (:obj:`ibpy_native.interfaces.delegates
             .AccountsManagementDelegate`): Manager to handler accounts related
             data.
@@ -38,15 +41,17 @@ class IBWrapper(wrapper.EWrapper):
             notifications from IB Gateway. Defaults to `None`.
     """
     def __init__(
-        self,
+        self, client_id: int,
         accounts_manager: delegates.AccountsManagementDelegate,
         orders_manager: delegates.OrdersManagementDelegate,
         connection_listener: Optional[listeners.ConnectionListener]=None,
         notification_listener: Optional[listeners.NotificationListener]=None
     ):
         self._lock = threading.Lock()
+        self._initial_req_id = client_id * 1000 - 1
         self._req_queue: Dict[int, fq.FinishableQueue] = {}
 
+        self._client_id = client_id
         self._accounts_manager = accounts_manager
         self._orders_manager = orders_manager
         self._connection_listener = connection_listener
@@ -73,11 +78,11 @@ class IBWrapper(wrapper.EWrapper):
         Returns:
             int: The next usable request ID.
         """
-        usable_id = 0
+        usable_id = self._initial_req_id
 
         if self._req_queue:
             for key, f_queue in self._req_queue.items():
-                if f_queue.finished:
+                if key > usable_id and f_queue.finished:
                     return key
 
                 if key > usable_id:

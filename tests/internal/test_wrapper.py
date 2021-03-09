@@ -28,6 +28,7 @@ class TestGeneral(unittest.TestCase):
     """
     def setUp(self):
         self._wrapper = _wrapper.IBWrapper(
+            client_id=utils.IB_CLIENT_ID,
             accounts_manager=utils.MockAccountsManagementDelegate(),
             orders_manager=manager.OrdersManager()
         )
@@ -77,6 +78,7 @@ class TestConnectionEvents(unittest.TestCase):
     def setUp(self):
         self._listener = utils.MockConnectionListener()
         self._wrapper = _wrapper.IBWrapper(
+            client_id=utils.IB_CLIENT_ID,
             accounts_manager=utils.MockAccountsManagementDelegate(),
             orders_manager=manager.OrdersManager(),
             connection_listener=self._listener
@@ -105,9 +107,12 @@ class TestReqQueue(unittest.TestCase):
     """
     def setUp(self):
         self._wrapper = _wrapper.IBWrapper(
+            client_id=utils.IB_CLIENT_ID,
             accounts_manager=utils.MockAccountsManagementDelegate(),
             orders_manager=manager.OrdersManager()
         )
+
+        self._init_id = utils.IB_CLIENT_ID * 1000
 
     def test_next_req_id_0(self):
         """Test property `next_req_id` for retrieval of next usable
@@ -115,33 +120,34 @@ class TestReqQueue(unittest.TestCase):
 
         * No ID has been occupied yet.
         """
-        # 1st available request ID should always be 1
-        self.assertEqual(self._wrapper.next_req_id, 1)
+        # 1st available request ID should always be initial request ID
+        self.assertEqual(self._wrapper.next_req_id, self._init_id)
 
     def test_next_req_id_1(self):
         """Test property `next_req_id` for retrieval of next usable
         request ID.
 
-        * Request ID 1 has already been occupied.
+        * Initial request ID has already been occupied.
         """
-        self._wrapper.get_request_queue(req_id=1) # Occupy request ID 1
-        # Next available request ID should be 2
-        self.assertEqual(self._wrapper.next_req_id, 2)
+        # Occupy request ID `CLIENT_ID * 1000`
+        self._wrapper.get_request_queue(req_id=self._init_id)
+        # Next available request ID should be `CLIENT_ID * 1000 + 1`
+        self.assertEqual(self._wrapper.next_req_id, self._init_id + 1)
 
     @utils.async_test
     async def test_next_req_id_2(self):
         """Test property `next_req_id` for retrieval of next usable
         request ID.
 
-        * Request ID 1 was occupied but released for reuse.
+        * Initial request ID was occupied but released for reuse.
         """
-        # Occupy request ID 1
-        queue = self._wrapper.get_request_queue(req_id=1)
-        # Release request ID 1 by marking the queue associated as FINISHED
+        # Occupy initial request ID
+        queue = self._wrapper.get_request_queue(req_id=self._init_id)
+        # Release initial request ID by marking the queue associated as FINISHED
         queue.put(element=fq.Status.FINISHED)
         await queue.get()
-        # Next available request ID should reuse 1
-        self.assertEqual(self._wrapper.next_req_id, 1)
+        # Next available request ID should reuse initial request ID
+        self.assertEqual(self._wrapper.next_req_id, self._init_id)
 
     def test_get_request_queue_0(self):
         """Test getter `get_request_queue`."""
@@ -206,6 +212,7 @@ class TestAccountAndPortfolio(unittest.TestCase):
     def setUp(self):
         self._delegate = utils.MockAccountsManagementDelegate()
         self._wrapper = _wrapper.IBWrapper(
+            client_id=utils.IB_CLIENT_ID,
             accounts_manager=self._delegate,
             orders_manager=manager.OrdersManager()
         )
@@ -270,6 +277,7 @@ class TestOrder(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._wrapper = _wrapper.IBWrapper(
+            client_id=utils.IB_CLIENT_ID,
             accounts_manager=utils.MockAccountsManagementDelegate(),
             orders_manager=manager.OrdersManager()
         )
@@ -330,6 +338,7 @@ class TestContract(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._wrapper = _wrapper.IBWrapper(
+            client_id=utils.IB_CLIENT_ID,
             accounts_manager=utils.MockAccountsManagementDelegate(),
             orders_manager=manager.OrdersManager()
         )
@@ -381,6 +390,7 @@ class TestHistoricalData(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._wrapper = _wrapper.IBWrapper(
+            client_id=utils.IB_CLIENT_ID,
             accounts_manager=utils.MockAccountsManagementDelegate(),
             orders_manager=manager.OrdersManager()
         )
@@ -483,6 +493,7 @@ class TestTickByTickData(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._wrapper = _wrapper.IBWrapper(
+            client_id=utils.IB_CLIENT_ID,
             accounts_manager=utils.MockAccountsManagementDelegate(),
             orders_manager=manager.OrdersManager()
         )

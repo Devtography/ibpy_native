@@ -48,6 +48,9 @@ class IBBridge(interfaces.IBridge):
         order_events_listener (:obj:`ibpy_native.interfaces.listeners
             .OrderEventsListener`, optional): Listener for order events.
             Defaults to `None`.
+
+    Raises:
+        ValueError: If value of argument `client_id` is greater than 9999.
     """
     def __init__(
         self, host: str="127.0.0.1", port: int=4001,
@@ -58,6 +61,9 @@ class IBBridge(interfaces.IBridge):
         order_events_listener: Optional[listeners.OrderEventsListener]=None
     ):
         super().__init__()
+
+        if client_id > 9999:
+            raise ValueError(f"Invalid client ID ({client_id} > 9999)")
 
         self._host = host
         self._port = port
@@ -70,6 +76,7 @@ class IBBridge(interfaces.IBridge):
             event_listener=order_events_listener)
 
         self._wrapper = _wrapper.IBWrapper(
+            client_id=client_id,
             accounts_manager=self._accounts_manager,
             orders_manager=self._orders_manager,
             connection_listener=connection_listener,

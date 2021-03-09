@@ -417,19 +417,20 @@ class IBBridge(interfaces.IBridge):
 
             retry_attemps = 0
 
+            # pylint: disable=consider-using-enumerate
+            # Use range as the list itself may be modified
+            for i in range(len(ticks)):
+                data_time = datetime.datetime.fromtimestamp(
+                    timestamp=ticks[i].time, tz=_global.TZ
+                ).replace(tzinfo=None)
+                if data_time < start_date_time:
+                    # Drop tick that's earlier than the specificed
+                    # start time
+                    del ticks[i]
+                else:
+                    break
+
             if ticks:
-                # pylint: disable=consider-using-enumerate
-                # Use range as the list itself may be modified
-                for i in range(len(ticks)):
-                    data_time = datetime.datetime.fromtimestamp(
-                        timestamp=ticks[i].time, tz=_global.TZ
-                    ).replace(tzinfo=None)
-                    if data_time < start_date_time:
-                        # Drop tick that's earlier than the specificed
-                        # start time
-                        del ticks[i]
-                    else:
-                        break
                 # Determine if it should fetch next batch of data
                 last_tick_time = datetime.datetime.fromtimestamp(
                     timestamp=ticks[-1].time, tz=_global.TZ

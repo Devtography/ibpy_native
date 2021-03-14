@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.3] - 2021-03-14
+Hotfix `IBBridge.req_historical_ticks`.
+
+### Fixed
+- Issue of end time specified for `IBBridge.req_historical_ticks` get ignored
+  when fetching expired futures contract.
+
 ## [v1.0.2] - 2021-03-09
 Minor release focuses on bug fixes.
 
@@ -192,7 +199,8 @@ returns with `finished` mark as `True` unexpectedly while IB returns less than
 1000 records but there're more historical ticks those should be fetched 
 in next request.
 
-[Unreleased]: https://github.com/Devtography/ibpy_native/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/Devtography/ibpy_native/compare/v1.0.3...HEAD
+[v1.0.3]: https://github.com/Devtography/ibpy_native/compare/v1.0.3...v1.0.2
 [v1.0.2]: https://github.com/Devtography/ibpy_native/compare/v1.0.2...v1.0.1
 [v1.0.1]: https://github.com/Devtography/ibpy_native/compare/v1.0.1...v1.0.0
 [v1.0.0]: https://github.com/Devtography/ibpy_native/compare/v1.0.0...v0.2.0

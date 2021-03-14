@@ -416,7 +416,13 @@ class IBBridge(interfaces.IBridge):
 
         start_date_time = (head_time if start is None or head_time > start
                            else start)
-        end_date_time = datetime.datetime.now() if end is None else end
+        end_date_time = (datetime.datetime.now()
+                         .astimezone(_global.TZ)
+                         .replace(tzinfo=None))
+
+        if end is not None:
+            if end < end_date_time:
+                end_date_time = end
 
         # Request tick data
         finished = False
@@ -481,7 +487,8 @@ class IBBridge(interfaces.IBridge):
 
             if start_date_time is not None:
                 if (_global.TZ.localize(start_date_time)
-                    >= datetime.datetime.now().astimezone(_global.TZ)):
+                    >= datetime.datetime.now().astimezone(_global.TZ)
+                    or start_date_time >= end_date_time):
                     # Indicates all ticks up until now are received
                     finished = True
                     start_date_time = None

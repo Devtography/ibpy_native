@@ -456,6 +456,10 @@ class IBBridge(interfaces.IBridge):
                     # the start time of this iteration.
                     ticks = ticks[i:]
                     break
+                if i == len(ticks) - 1:
+                    # Only 1 tick received and that record is earlier the
+                    # requested start time.
+                    ticks = []
 
             if ticks:
                 # Determine if it should fetch next batch of data

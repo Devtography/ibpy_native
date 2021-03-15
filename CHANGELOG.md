@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.4] - 2021-03-15
+Hotfix `IBBridge.req_historical_ticks`.
+
+### Fixed
+- Issue of the recursive historical ticks requests won't have its' next start
+  time advanced when IB returns only 1 tick which is earlier than the start
+  time requested for that iteration of request.
+
 ## [v1.0.3] - 2021-03-14
 Hotfix `IBBridge.req_historical_ticks`.
 
@@ -199,7 +207,8 @@ returns with `finished` mark as `True` unexpectedly while IB returns less than
 1000 records but there're more historical ticks those should be fetched 
 in next request.
 
-[Unreleased]: https://github.com/Devtography/ibpy_native/compare/v1.0.3...HEAD
+[Unreleased]: https://github.com/Devtography/ibpy_native/compare/v1.0.4...HEAD
+[v1.0.4]: https://github.com/Devtography/ibpy_native/compare/v1.0.4...v1.0.3
 [v1.0.3]: https://github.com/Devtography/ibpy_native/compare/v1.0.3...v1.0.2
 [v1.0.2]: https://github.com/Devtography/ibpy_native/compare/v1.0.2...v1.0.1
 [v1.0.1]: https://github.com/Devtography/ibpy_native/compare/v1.0.1...v1.0.0

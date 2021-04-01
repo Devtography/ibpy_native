@@ -435,7 +435,7 @@ class IBBridge(interfaces.IBridge):
                     start_date_time=start_date_time, show=tick_type
                 )
             except error.IBError as err:
-                if err.err_code == error.IBErrorCode.NOT_CONNECTED.value:
+                if err.err_code == error.IBErrorCode.NOT_CONNECTED:
                     raise err
                 if retry_attemps < retry:
                     retry_attemps += 1

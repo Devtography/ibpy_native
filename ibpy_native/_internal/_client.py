@@ -72,7 +72,7 @@ class IBClient(ib_client.EClient):
             return resolved_contract
 
         raise error.IBError(
-            rid=req_id, err_code=error.IBErrorCode.RES_NO_CONTENT,
+            rid=req_id, err_code=error.IBErrorCode.RES_NO_CONTENT.value,
             err_str="Failed to get additional contract details"
         )
 
@@ -258,14 +258,14 @@ class IBClient(ib_client.EClient):
 
             if len(res) > 1:
                 raise error.IBError(
-                    rid=req_id, err_code=error.IBErrorCode.RES_UNEXPECTED,
+                    rid=req_id, err_code=error.IBErrorCode.RES_UNEXPECTED.value,
                     err_str="[Abnormal] Multiple result received"
                 )
 
             return int(res[0])
 
         raise error.IBError(
-            rid=req_id, err_code=error.IBErrorCode.RES_NO_CONTENT,
+            rid=req_id, err_code=error.IBErrorCode.RES_NO_CONTENT.value,
             err_str="Failed to get the earliest available data point"
         )
 
@@ -332,7 +332,7 @@ class IBClient(ib_client.EClient):
 
             if not result[1]:
                 raise error.IBError(
-                    rid=req_id, err_code=error.IBErrorCode.RES_UNEXPECTED,
+                    rid=req_id, err_code=error.IBErrorCode.RES_UNEXPECTED.value,
                     err_str="Not all historical tick data has been received "
                             "for this request. Please retry."
                 )
@@ -408,7 +408,7 @@ class IBClient(ib_client.EClient):
             f_queue.put(element=fq.Status.FINISHED)
         else:
             raise error.IBError(
-                rid=req_id, err_code=error.IBErrorCode.RES_NOT_FOUND,
+                rid=req_id, err_code=error.IBErrorCode.RES_NOT_FOUND.value,
                 err_str=f"Task associated with request ID {req_id} not found"
             )
     #endregion - Stream live tick data
@@ -430,7 +430,7 @@ class IBClient(ib_client.EClient):
                 error code `50500: UNKNOWN`
         """
         return error.IBError(
-            rid=req_id, err_code=error.IBErrorCode.UNKNOWN,
+            rid=req_id, err_code=error.IBErrorCode.UNKNOWN.value,
             err_str="Unknown error: Internal queue reported error "
                     "status but no exception received",
             err_extra=extra

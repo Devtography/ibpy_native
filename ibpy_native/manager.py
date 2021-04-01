@@ -152,7 +152,7 @@ class AccountsManager(delegates.AccountsManagementDelegate):
         if self._account_updates_queue.status is not (
             fq.Status.ERROR or fq.Status.FINISHED):
             err = error.IBError(
-                rid=-1, err_code=error.IBErrorCode.NOT_CONNECTED,
+                rid=-1, err_code=error.IBErrorCode.NOT_CONNECTED.value,
                 err_str=_global.MSG_NOT_CONNECTED
             )
             self._account_updates_queue.put(element=err)
@@ -255,7 +255,8 @@ class OrdersManager(delegates.OrdersManagementDelegate):
             )
         else:
             raise error.IBError(
-                rid=order_id, err_code=error.IBErrorCode.DUPLICATE_ORDER_ID,
+                rid=order_id,
+                err_code=error.IBErrorCode.DUPLICATE_ORDER_ID.value,
                 err_str=f"Existing queue assigned for order ID {order_id} "
                         "found. Possiblely duplicate order ID is being used."
             )
@@ -305,7 +306,7 @@ class OrdersManager(delegates.OrdersManagementDelegate):
         for key, f_queue in self._pending_queues.items():
             if f_queue.status is not fq.Status.FINISHED or fq.Status.ERROR:
                 err = error.IBError(
-                    rid=key, err_code=error.IBErrorCode.NOT_CONNECTED,
+                    rid=key, err_code=error.IBErrorCode.NOT_CONNECTED.value,
                     err_str=_global.MSG_NOT_CONNECTED
                 )
                 f_queue.put(element=err)

@@ -356,7 +356,7 @@ class IBWrapper(wrapper.EWrapper):
                 self._req_queue[req_id].reset()
             else:
                 raise error.IBError(
-                    rid=req_id, err_code=error.IBErrorCode.QUEUE_IN_USE,
+                    rid=req_id, err_code=error.IBErrorCode.QUEUE_IN_USE.value,
                     err_str=f"Requested queue with ID {str(req_id)} is "
                             "currently in use"
                 )
@@ -376,7 +376,7 @@ class IBWrapper(wrapper.EWrapper):
                 continue
             if f_queue.status is not fq.Status.FINISHED or fq.Status.ERROR:
                 err = error.IBError(
-                    rid=key, err_code=error.IBErrorCode.NOT_CONNECTED,
+                    rid=key, err_code=error.IBErrorCode.NOT_CONNECTED.value,
                     err_str=_global.MSG_NOT_CONNECTED
                 )
                 f_queue.put(element=err)

@@ -79,6 +79,15 @@ class IBridge(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
+    def accounts_manager(self) -> delegates.AccountsManagementDelegate:
+        """:obj:`ibpy_native.interfaces.delegates.AccountsManagementDelegate`:
+        `ibpy_native.manager.AccountsManager` instance that stores & manages
+        all IB account(s) related data.
+        """
+        return NotImplemented
+
+    @property
+    @abc.abstractmethod
     def orders_manager(self) -> delegates.OrdersManagementDelegate:
         """:obj:`ibpy_native.interfaces.delegates.OrdersManagementDelegate`:
         `ibpy_native.manager.OrdersManager` instance that handles order related

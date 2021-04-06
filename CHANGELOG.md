@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.5] - 2021-04-06
+Minor fixes on error code returns and missing property on `IBridge`.
+
+### Added
+- Property `accounts_manager` on interface `ibpy_native.interfaces.IBridge`.
+
+### Fixed
+- Value of `err_code` for all `ibpy_native.error.IBError` raised are now aligned
+  to be type `int` instead of `ibpy_native.error.IBErrorCode` being passed in
+  some cases.
+
 ## [v1.0.4] - 2021-03-15
 Hotfix `IBBridge.req_historical_ticks`.
 
@@ -207,7 +218,8 @@ returns with `finished` mark as `True` unexpectedly while IB returns less than
 1000 records but there're more historical ticks those should be fetched 
 in next request.
 
-[Unreleased]: https://github.com/Devtography/ibpy_native/compare/v1.0.4...HEAD
+[Unreleased]: https://github.com/Devtography/ibpy_native/compare/v1.0.5...HEAD
+[v1.0.5]: https://github.com/Devtography/ibpy_native/compare/v1.0.5...v1.0.4
 [v1.0.4]: https://github.com/Devtography/ibpy_native/compare/v1.0.4...v1.0.3
 [v1.0.3]: https://github.com/Devtography/ibpy_native/compare/v1.0.3...v1.0.2
 [v1.0.2]: https://github.com/Devtography/ibpy_native/compare/v1.0.2...v1.0.1
